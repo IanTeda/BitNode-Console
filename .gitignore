@@ -1,0 +1,16 @@
+#-- .gitignore
+
+# By Default, ignore any dot files `.*`, except for:
+.*
+!.gitignore
+!.github
+!.devcontainer
+!.vscode
+!.gitmodules
+
+# By default, ignore any underscore files `_*`, except for:
+_*
+
+# By default, ignore all logs
+*.log
+logs/
