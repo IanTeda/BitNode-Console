@@ -49,6 +49,8 @@ The BitNode uses the following technology stack:
 
 No information available yet. Details will be added during the concept stage.
 
+TODO: Add git flow repository structure
+
 ### Testing
 
 No information available yet. Details will be added during the feasibility stage.
