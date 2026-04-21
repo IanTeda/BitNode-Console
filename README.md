@@ -55,7 +55,7 @@ No information available yet. Details will be added during the feasibility stage
 
 ## 8. Roadmap
 
-It is anticipated that there will be three stages to the initial development of BitNode, which will have their own git branch within the repository:
+It is anticipated that there will be three stages to the initial development of BitNode, which will have their own git release branch within the repository:
 
 1. __Feasibility Stage:__ This stage will demonstrate the underlying technologies and their suitability for achieving the desired outcomes.
 2. __Concept Stage:__ This stage will be used to develop a minimal viable product that demonstrates functionality and use cases.
