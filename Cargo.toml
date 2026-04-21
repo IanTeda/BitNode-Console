@@ -1,0 +1,110 @@
+# BitNode Console - Cargo Workspace Configuration
+#
+# BitNode Console is organised as a Cargo workspace to separate code into areas of
+# concern and responsibility while sharing common dependencies and configuration. 
+# This has been done to improve maintainability, modularity, and to allow for code
+# reuse across different parts of the code and different projects.
+
+## --- [ WORKSPACE CONFIGURATION ] ---------------------------------------------
+# The workspace section defines the overall configuration for the Cargo workspace.
+# This allows us to manage multiple related crates together, sharing dependencies 
+# and settings.
+[workspace]
+
+# Resolver version for dependency resolution, when using rust edition 2024 this needs 
+# to be set to 3 to enable the new features and improvements in dependency resolution.
+# https://doc.rust-lang.org/cargo/reference/resolver.html
+resolver = "3"
+
+# Crates to be included in the workspace are added here. This config uses a glob 
+# pattern to include all crates under the `crates/` directory. Each crate should 
+# have its own Cargo.toml file with its specific configuration and dependencies.
+members = [
+    "crates/*", # Automatically includes everything under crates/
+]
+
+## --- [ SHARED WORKSPACE METADATA ] -------------------------------------------
+# Shared (default) metadata for all workspace members are defined here to ensure 
+# consistency. Individual crates can override these settings if necessary. Defaults
+# will be applied to all members unless overridden in their own Cargo.toml files.
+[workspace.package]
+
+description = "BitNode Console is a web-based interface for managing a Bitcoin Knots/Core daemon node. It aims to simplify configuration changes, provide configuration profiles, monitor daemon status, and view logs without needing to enter the command line."
+
+repository = "https://github.com/IanTeda/BitNode-Console"
+
+# Shared (default) binary and library version.
+version = "0.1.0"
+
+# Shared (default) rust edition.
+edition = "2024"
+
+# Shared (default) authors information.
+authors = ["Ian Teda <ian@teda.id.au>"]
+
+# Shared (default) license information.
+license = "GPL-3.0-only"
+
+## --- [ SHARED WORKSPACE LINT CONFIGURATION ] ---------------------------------
+# Shared (default) lint configuration for all workspace members. This enforcers
+# consistent coding standards across the entire project. Individual crates can override
+# these settings if necessary, but the defaults will apply to all members unless 
+# overridden in their own Cargo.toml files.
+[workspace.lints.rust]
+
+# Forbid unsafe code across the workspace for safety
+unsafe_code = "forbid"
+
+# Allow unused code/variables during development, with low priority to allow overrides
+# For exploratory dev, comment out for commits
+unused = { level = "allow", priority = -1 }
+
+# Treat all warnings as errors to enforce code quality and prevent issues from being 
+# ignored
+warnings = "deny"
+
+[workspace.lints.clippy]
+
+# Enable pedantic lints to catch more potential issues and enforce stricter coding 
+# standards
+pedantic = { level = "warn", priority = -1 }
+
+# Allow certain clippy lints that may be too strict or not applicable to our codebase, 
+# with low priority to allow overrides
+nursery = { level = "warn", priority = -1 }
+
+## --- [ SHARED WORKSPACE DEPENDENCIES ] ---------------------------------------
+# Define shared (default) code dependencies here to ensure consistent versions across 
+# workspace members.
+# In member crates' Cargo.toml, reference them as: serde = { workspace = true }
+[workspace.dependencies]
+# chrono = { version = "0.4.42", features = ["serde", "clock"] }
+# clap = { version = "4.5.53", features = ["derive", "cargo"] }
+# fake = { version = "4.4.0", features = [
+#     "derive",
+#     "bigdecimal",
+#     "chrono",
+#     "chrono-tz",
+#     "http",
+#     "random_color",
+#     "time",
+#     "uuid",
+# ] }
+# serde = { version = "1.0.228", features = ["derive"] }
+# serde_json = "1.0.145"
+# sqlx = { version = "0.8.6", features = [
+#     "any",
+#     "chrono",
+#     "derive",
+#     "macros",
+#     "migrate",
+#     "postgres",
+#     "runtime-tokio-rustls",
+#     "sqlite",
+#     "uuid",
+# ] }
+# thiserror = { version = "2.0.6" }
+# tokio = { version = "1.48.0", features = ["full"] }
+# tonic = { version = "0.14.2", features = ["transport", "codegen"] }
+# tracing = { version = "0.1.43" }
+# uuid = { version = "1.19.0", features = ["v7", "serde"] }

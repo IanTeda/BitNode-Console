@@ -23,7 +23,7 @@
     </a>
     <h3 align="center">BitNode Console</h3>
     <p align="center">
-        BitNode Console is a web-based interface for managing a Bitcoin Knots/Core daemons. It aims to simplify configuration changes, provide configuration profiles, monitor daemon status, and view logs without needing to enter the command line.
+        BitNode Console is a web-based interface for managing a Bitcoin Knots/Core daemon node. It aims to simplify configuration changes, provide configuration profiles, monitor daemon status, and view logs without needing to enter the command line.
     <br />
     <a href="https://ianteda.github.io/BitNode-Console/">Explore the Docs</a>
     ·
