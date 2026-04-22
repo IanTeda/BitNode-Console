@@ -10,6 +10,8 @@
         "codegen",
         "color",
         "dtolnay",
+        "journalctl",
+        "journcalctl",
         "mdbook",
         "rustdoc",
         "rustls",
