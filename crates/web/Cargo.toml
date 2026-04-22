@@ -6,6 +6,8 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+console_error_panic_hook = "0.1.7"
+leptos = { version = "0.8.19", features = ["csr"] }
 
 [lints]
 workspace = true

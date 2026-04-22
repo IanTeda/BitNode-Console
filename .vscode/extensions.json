@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "fill-labs.dependi",
+        "gruntfuggly.todo-tree",
+        "masterustacean.leptos-fmt",
+        "mhutchie.git-graph",
+        "rust-lang.rust-analyzer",
+        "streetsidesoftware.code-spell-checker-australian-english",
+        "streetsidesoftware.code-spell-checker",
+        "tamasfe.even-better-toml",
+        "vadimcn.vscode-lldb",
+        "vector-of-bool.gitflow",
+    ]
+}

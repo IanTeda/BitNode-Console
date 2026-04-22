@@ -1,4 +1,10 @@
 {
+    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.rustfmt.overrideCommand": [
+        "leptosfmt",
+        "--stdin",
+        "--rustfmt"
+    ],
     "todo-tree.filtering.excludeGlobs": [
         "**/node_modules/*/**",
         "**/.github/*/**"

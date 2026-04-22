@@ -116,12 +116,26 @@ No information available yet. Details will be added during the feasibility stage
 
 ```
 
+TODO: Add git flow repository structure
+
 <!-- GETTING STARTED WITH DEVELOPMENT/CONTRIBUTING -->
 ### Getting Started
 
 No information available yet. Details will be added during the concept stage.
 
-TODO: Add git flow repository structure
+To get started with developing with this repository check off the following:
+
+1. Update rust
+
+`$ rustup update`
+
+2. Setup Leptos
+
+[Leptos Getting Started](https://book.leptos.dev/getting_started/index.html)
+
+[Leptos Developer Experience](https://book.leptos.dev/getting_started/leptos_dx.html)
+
+
 
 <!-- CODE TESTING NOTES -->
 ### Testing
