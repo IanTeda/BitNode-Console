@@ -13,8 +13,9 @@
 
 </div>
 
-<!-- PROJECT HEADER -->
 <br />
+
+<!-- PROJECT HEADER -->
 <div align="center">
     <a href="https://github.com/IanTeda/BitNode-Console">
         <img src="https://github.com/IanTeda/BitNode-Console/raw/develop/docs/images/logo.png" alt="Logo" width="80" height="80">
