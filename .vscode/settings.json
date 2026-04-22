@@ -3,9 +3,12 @@
         "**/node_modules/*/**",
         "**/.github/*/**"
     ],
+    "cSpell.language": "en-AU",
+    "cSpell.diagnosticLevel": "Hint",
     "cSpell.words": [
         "bigdecimal",
         "chrono",
+        "CJDNS",
         "clippy",
         "codegen",
         "color",
@@ -13,10 +16,12 @@
         "journalctl",
         "journcalctl",
         "mdbook",
+        "regtest",
         "rustdoc",
         "rustls",
         "serde",
         "sqlx",
-        "thiserror"
+        "thiserror",
+        "Uptime"
     ]
 }

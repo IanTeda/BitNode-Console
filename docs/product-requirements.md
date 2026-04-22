@@ -15,7 +15,7 @@ To provide Bitcoin Knots/Core users with an intuitive, secure, and feature-rich 
 
 Currently, managing Bitcoin Knots/Core requires understanding and access to a Command-Line Interface (CLI) for tasks such as changing settings (e.g., bitcoin.conf), checking daemon status, or viewing log files. This can be a barrier for less technical users, making configuration, troubleshooting, and general daemon management more difficult.
 
-Bitcoin Knots/Core has sensibly built-in defaults, designed to minimise understanding and avoid mistakes. Power users may like a more customisable configuration.
+Bitcoin Knots/Core has sensibly built-in defaults, designed to minimise understanding and avoid mistakes. Power users may like a more customizable configuration.
 
 Additionally, you may have users who want to remain anonymous, run on a lower-spec machine, or operate a full public node. All require different configuration profiles that can be suggested.
 
@@ -65,7 +65,7 @@ Write to the `bitcoin.conf` file.
 Daemon Status Dashboard:
 Current Block Height (synced vs. latest known).
 Network Connections (peers, active connections).
-Network Connectivity (vpn, Tor, I2Pd, Cjdns status).
+Network Connectivity (vpn, Tor, I2Pd, CJDNS status).
 Disk Usage (blockchain size, prune status).
 Synchronisation Progress (percentage).
 Uptime.
