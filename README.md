@@ -45,7 +45,7 @@
       <a href="#development">Code Development</a>
       <ul>
         <li><a href="#technology-stack">Application Technology Stack</a></li>
-        <li><a href="#repository-structure">Repository Structure/a></li>
+        <li><a href="#repository-structure">Repository Structure</a></li>
         <li><a href="#getting-started">Code Getting Started</a></li>
         <li><a href="#testing">Code Testing</a></li>
       </ul>
