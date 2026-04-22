@@ -17,7 +17,7 @@ extra-watch-dirs = ["docs"]
 
 [output.html]
 default-theme = "dark"
-# additional-css = ["custom.css"]
+additional-css = ["docs/css/custom.css"]
 
 [output.html.search]
 limit-results = 30

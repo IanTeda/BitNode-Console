@@ -45,7 +45,7 @@
       <a href="#development">Code Development</a>
       <ul>
         <li><a href="#technology-stack">Application Technology Stack</a></li>
-        <li><a href="#repository-structure">Repository Structure/a></li>
+        <li><a href="#repository-structure">Repository Structure</a></li>
         <li><a href="#getting-started">Code Getting Started</a></li>
         <li><a href="#testing">Code Testing</a></li>
       </ul>
@@ -53,9 +53,9 @@
     <li>
         <a href="#roadmap">Project Roadmap</a>
         <ul>
-            <li><a href="#1-feasibility-stage">1. Feasibility</a></li>
-            <li><a href="#2-concept-stage">2. Concept Stage</a></li>
-            <li><a href="#3-development-stage">3. Development Stage</a></li>
+            <li><a href="#feasibility-stage">Feasibility</a></li>
+            <li><a href="#concept-stage">Concept Stage</a></li>
+            <li><a href="#development-stage">Development Stage</a></li>
         </ul>
     </li>
     <li><a href="#license">License</a></li>
@@ -138,7 +138,7 @@ It is anticipated that there will be three stages to the initial development of 
 3. __Development Stage:__ This stage will be used to fill out the functionality and user experience. While refining the code and security aspects.
 
 <!-- FEASIBILITY STAGE -->
-### 1. Feasibility Stage
+### Feasibility Stage
 
 The feasibility stage will initially aim to demonstrate the following:
 
@@ -148,12 +148,12 @@ The feasibility stage will initially aim to demonstrate the following:
 4. Provide a logical list of current node settings (read and parse the bitcoin.con file)
 
 <!-- CONCEPT STAGE -->
-### 2. Concept Stage
+### Concept Stage
 
 No information available yet. Details will be added during the concept stage.
 
 <!-- DEVELOPMENT STAGE -->
-### 3 Development Stage
+### Development Stage
 
 No information available yet. Details will be added during the development stage.
 
