@@ -1,0 +1,27 @@
+[book]
+title = "BitNode Console Documentation"
+authors = ["Ian Teda"]
+description = "Documentation for the Personal Ledger."
+src = "docs"
+language = "en"
+text-direction = "ltr"
+
+[rust]
+edition = "2021"  # Github Pages currently requires 2021 edition for mdBook
+
+[build]
+build-dir = "docs/.book/"
+create-missing = false
+extra-watch-dirs = ["docs"] 
+
+
+[output.html]
+default-theme = "dark"
+# additional-css = ["custom.css"]
+
+[output.html.search]
+limit-results = 30
+
+[preprocessor.index]
+
+[preprocessor.links]

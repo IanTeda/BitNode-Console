@@ -1,0 +1,22 @@
+{
+    "todo-tree.filtering.excludeGlobs": [
+        "**/node_modules/*/**",
+        "**/.github/*/**"
+    ],
+    "cSpell.words": [
+        "bigdecimal",
+        "chrono",
+        "clippy",
+        "codegen",
+        "color",
+        "dtolnay",
+        "journalctl",
+        "journcalctl",
+        "mdbook",
+        "rustdoc",
+        "rustls",
+        "serde",
+        "sqlx",
+        "thiserror"
+    ]
+}

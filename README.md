@@ -2,8 +2,6 @@
 <!-- Improved compatibility of back to top link -->
 <a name="readme-top"></a>
 
-# BitNode Console
-
 <!-- The extra return after center is needed for it to render the markdown links center -->
 <div align="center">
 
@@ -15,15 +13,16 @@
 
 </div>
 
-<!-- PROJECT HEADER -->
 <br />
+
+<!-- PROJECT HEADER -->
 <div align="center">
     <a href="https://github.com/IanTeda/BitNode-Console">
         <img src="https://github.com/IanTeda/BitNode-Console/raw/develop/docs/images/logo.png" alt="Logo" width="80" height="80">
     </a>
-    <h3 align="center">BitNode Console</h3>
+    <h1 align="center">BitNode Console</h1>
     <p align="center">
-        BitNode Console is a web-based interface for managing a Bitcoin Knots/Core daemons. It aims to simplify configuration changes, provide configuration profiles, monitor daemon status, and view logs without needing to enter the command line.
+        BitNode Console is a web-based interface for managing a Bitcoin Knots/Core daemon node. It aims to simplify configuration changes, provide configuration profiles, monitor daemon status, and view logs without needing to enter the command line.
     <br />
     <a href="https://ianteda.github.io/BitNode-Console/">Explore the Docs</a>
     ·
@@ -54,7 +53,7 @@
     <li>
         <a href="#roadmap">Project Roadmap</a>
         <ul>
-            <li><a href="#1-feasibility-stage">1. Feasability</a></li>
+            <li><a href="#1-feasibility-stage">1. Feasibility</a></li>
             <li><a href="#2-concept-stage">2. Concept Stage</a></li>
             <li><a href="#3-development-stage">3. Development Stage</a></li>
         </ul>

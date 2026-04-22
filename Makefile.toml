@@ -1,0 +1,17 @@
+## --- [BUILD MD BOOK]----------------------------------------------------------
+
+[tasks.docs-mdbook]
+description = "Build mdBook documentation"
+command = "sh"
+args = ["-c", "mdbook build"]
+
+[tasks.docs-build]
+description = "Build all documentation"
+dependencies = ["docs-mdbook"]
+
+[tasks.docs-serve]
+workspace = false
+install_crate = "mdbook"
+description = "Serve mdBook documentation on port 8001"
+command = "mdbook"
+args = ["serve", "--port", "8001"]
