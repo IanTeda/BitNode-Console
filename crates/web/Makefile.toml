@@ -1,5 +1,0 @@
-[tasks.web-serve]
-description = "Serve the web application"
-install_crate = "trunk"
-command = "trunk"
-args = ["serve", "--open"]

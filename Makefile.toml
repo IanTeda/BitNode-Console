@@ -15,3 +15,28 @@ install_crate = "mdbook"
 description = "Serve mdBook documentation on port 8001"
 command = "mdbook"
 args = ["serve", "--port", "8001"]
+
+## --- [FRONTEND + SERVER WORKFLOW]--------------------------------------------
+
+[tasks.frontend-build]
+workspace = false
+description = "Build frontend assets into embedded server assets directory"
+command = "sh"
+args = ["-c", "cd frontend && npm run build"]
+
+[tasks.server-run]
+description = "Run Axum server using embedded assets"
+command = "cargo"
+args = ["run", "-p", "lib_server"]
+
+[tasks.server-build-release]
+description = "Build release server binary with embedded frontend assets"
+dependencies = ["frontend-build"]
+command = "cargo"
+args = ["build", "-p", "lib_server", "--release"]
+
+[tasks.server-run-release]
+description = "Build frontend assets then run release server"
+dependencies = ["frontend-build"]
+command = "cargo"
+args = ["run", "-p", "lib_server", "--release"]
