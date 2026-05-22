@@ -2,13 +2,13 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::net::SocketAddr;
 
+use axum::Router;
 use axum::body::Body;
 use axum::extract::Path;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{HeaderValue, Response, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -25,8 +25,11 @@ impl Display for ServerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::MissingEmbeddedIndex => {
-                write!(f, "frontend index asset was not embedded; run frontend build first")
-            }
+                write!(
+                    f,
+                    "frontend index asset was not embedded; run frontend build first"
+                )
+            },
             Self::Io(error) => write!(f, "server IO error: {error}"),
         }
     }
