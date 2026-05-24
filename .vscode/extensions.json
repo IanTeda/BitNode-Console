@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "mkhl.direnv",
+    "LiemLB.nix-flakes",
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml",
+    "dbaeumer.vscode-eslint",
+    "usernamehw.errorlens",
+    "bradlc.vscode-tailwindcss"
+  ]
+}
