@@ -21,6 +21,7 @@ pkgs.mkShell {
     rustfmt
     clippy
     rust-analyzer
+    taplo
 
     # Docs and task runner
     mdbook
