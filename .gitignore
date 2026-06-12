@@ -1,6 +1,6 @@
 #-- .gitignore
 
-# This file is starting `.gitignore`. This file specifies files and folders for git 
+# This file is starting `.gitignore`. This file specifies files and folders for git
 # to not track. It ignores all files of certain patters, with the exclusion of certain
 # files.
 # To find out more about `.gitignore` check out https://git-scm.com/docs/gitignore
@@ -9,13 +9,15 @@
 # ----------------------------[ DOT FILES ]------------------------------------
 # By Default, ignore all dot files `.*`, except for those with `!`
 .*
-!.gitignore
-!.github
+!.ai
 !.devcontainer
-!.vscode
+!.envrc
+!.github
+!.gitignore
 !.gitmodules
-# Needed for Github Dockerfile actions workflows
-!.sqlx/
+!.sqlx
+!.vscode
+!.zed
 
 
 # ---------------------------[ UNDERSCORE FILES ]--------------------------------
