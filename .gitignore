@@ -15,8 +15,9 @@
 !.github
 !.gitignore
 !.gitmodules
-!.sqlx/
+!.sqlx
 !.vscode
+!.zed
 
 
 # ---------------------------[ UNDERSCORE FILES ]--------------------------------
