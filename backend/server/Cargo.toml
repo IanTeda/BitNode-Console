@@ -1,16 +1,24 @@
 [package]
-name = "web"
+name = "server"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
-[dependencies]
-axum = { version = "0.7", features = ["macros"] }
-tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
 [lints]
+# Inherit lint configuration from the workspace Cargo.toml
 workspace = true
+
+[dependencies]
+## -- Internal Dependencies --
+lib_utils = { path = "../lib_utils" }
+
+## -- Workspace Dependencies --
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+## -- Library Dependencies --
+axum = { version = "0.7", features = ["macros"] }
+tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

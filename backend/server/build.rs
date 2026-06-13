@@ -3,7 +3,7 @@ use std::{env, path::PathBuf, process::Command};
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
-    // backend/web is two levels deep; the workspace root holds `frontend/`.
+    // backend/server is two levels deep; the workspace root holds `frontend/`.
     let workspace_root = manifest_dir
         .parent()
         .and_then(|p| p.parent())

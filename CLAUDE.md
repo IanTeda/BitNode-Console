@@ -9,13 +9,13 @@ node — configuration (`bitcoin.conf`), status monitoring, and log viewing with
 requiring CLI/SSH access. The project is currently in its **feasibility stage**
 (see `docs/product-requirements.md` and `README.md` roadmap): demonstrating
 auth via RPC credentials, daemon status, journalctl log output, and parsing
-`bitcoin.conf` settings. Most functionality does not exist yet — `crates/web` is
+`bitcoin.conf` settings. Most functionality does not exist yet — `backend/server` is
 currently a minimal axum "Hello, World!" server.
 
 ## Repository Structure
 
-- Cargo workspace (`Cargo.toml`) with members under `crates/*`.
-- `crates/web` — axum-based web server (binary crate, `src/main.rs`).
+- Cargo workspace (`Cargo.toml`) with members under `backend/*`.
+- `backend/server` — axum-based web server (binary crate, `src/main.rs`).
 - `docs/` — mdBook documentation source (`book.toml`, built to `docs/.book/`).
 - `shell.nix` / `.envrc` — Nix + direnv development environment.
 
@@ -30,7 +30,7 @@ run `nix-shell` manually from the repo root.
 ## Common Commands
 
 - Build: `cargo build`
-- Run the web server: `cargo run -p web` (serves on `0.0.0.0:3000`)
+- Run the web server: `cargo run -p server` (serves on `0.0.0.0:3000`)
 - Test (all): `cargo test`
 - Test (single, by name): `cargo test <test_name>`
 - Lint: `cargo clippy`
