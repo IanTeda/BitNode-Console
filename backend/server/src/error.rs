@@ -11,6 +11,10 @@ pub enum ServerError {
     // Start with generic error during development and then expand error types below as needed.
     #[error("Generic error {0}")]
     Generic(String),
+
+    /// Settings loading or validating application errors.
+    #[error("Settings error: {0}")]
+    Settings(#[from] lib_settings::SettingsError),
 }
 
 #[cfg(test)]

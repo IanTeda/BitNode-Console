@@ -1,5 +1,5 @@
 [package]
-name = "lib_config"
+name = "lib_settings"
 description.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -22,3 +22,6 @@ serde = { workspace = true }
 ## --- Library Dependencies
 config = { version = "0.15.19" }
 dirs = { version = "6.0.0" }
+
+[dev-dependencies]
+serde_json = { version = "1.0" }
