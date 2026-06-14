@@ -20,7 +20,7 @@ pub use error::{SettingsError, SettingsResult};
 /// 1. Change this constant to match your application name
 /// 2. Update the corresponding ENV_PREFIX if needed
 /// 3. Ensure your binary name matches this constant
-const APPLICATION_NAME: &str = "bitnode-console";
+const APPLICATION_NAME: &str = "bitnode_console";
 
 /// Environment variable prefix derived from the application name.
 /// Converts "bitnode-console" to "BITNODE_CONSOLE" for environment variables.
@@ -59,7 +59,7 @@ where
 
         //--- 01. Build-in defaults
         // Seed the config builder with the default configuration so that
-        // any fields not supplied by later sources fall back to it.
+        // any fields not supplied by later sources default back to this.
         let defaults = Settings::<S>::default();
         let mut config_builder =
             Config::builder().add_source(Config::try_from(&defaults).map_err(|err| {
@@ -68,12 +68,23 @@ where
             })?);
 
         //--- 02. System config directory
+        // The system-wide config directory, typically
+
+        // TODO: Add system config directory source
 
         //--- 03. User config directory
+        // The user-specific config directory, typically ~/.local/share/ or ~/.config/
+
+        // TODO: Add user config directory source
 
         //--- 04. Executable directory
+        // The directory where the actual executable file physically lives on disk.
+
+        // TODO: Add executable directory source
 
         //--- 05. Working directory
+        // The directory you are "in" when you run the program (the folder your shell is currently in).
+
         let working_directory_path =
             std::env::current_dir()?.join(format!("{APPLICATION_NAME}.conf"));
 
@@ -84,10 +95,13 @@ where
         }
 
         //--- 06. Explicit config file
+        // The config path passed into the `Settings::parse` method. Typically the --config --c CLI argument.
 
         //--- 07. Environment variables
+        // Environment variables read from the process environment.
 
         //--- 08. Command line arguments
+        // TODO: Add command line arguments source
 
         //--- 09. Build the config
         let config =
