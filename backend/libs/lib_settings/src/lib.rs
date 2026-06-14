@@ -10,34 +10,63 @@ use std::path::Path;
 /// Settings loading and validation errors.
 pub use error::{SettingsError, SettingsResult};
 
+/// Application name used for configuration directories and environment variables.
+/// This should match the binary name and be used consistently across the application.
+///
+/// # Changing the Application Name
+///
+/// To use this configuration system for a different application:
+/// 1. Change this constant to match your application name
+/// 2. Update the corresponding ENV_PREFIX if needed
+/// 3. Ensure your binary name matches this constant
+const APPLICATION_NAME: &str = "bitnode-console";
+
+/// Environment variable prefix derived from the application name.
+/// Converts "bitnode-console" to "BITNODE_CONSOLE" for environment variables.
+///
+/// # Changing the Environment Prefix
+///
+/// If your application name contains characters that aren't valid in environment
+/// variable names, update this constant accordingly.
+const ENV_PREFIX: &str = "BITNODE_CONSOLE";
+
 /// Configuration for the API.
 ///
 /// The `server` field is generic so that each binary crate (e.g. `server`)
 /// can supply its own server-specific settings type, avoiding a dependency
 /// from this crate back onto its consumers.
-#[derive(serde::Deserialize, Clone, Debug, Default)]
+/// Path, relative to the current working directory, of the working
+/// directory configuration file (source 5).
+const CWD_CONFIG_PATH: &str = "./config/bitnode-console.conf";
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Settings<S> {
     pub server: S,
 }
 
 impl<S> Settings<S>
 where
-    S: Default + serde::de::DeserializeOwned,
+    S: Default + serde::Serialize + serde::de::DeserializeOwned,
 {
     pub fn parse(config_file: Option<&Path>) -> SettingsResult<Settings<S>> {
         // Higher precedence sources override lower precedence ones:
-        // 1. Built-in default config values (lowest)
-        // 2. System config directory
-        // 3. User config directory
-        // 4. Executable directory
-        // 5. Working directory
-        // 6. Explicit config file
-        // 7. Environment variables
-        // 8. Command line arguments (highest)
+        // 01. Built-in default config values (lowest)
+        // 02. System config directory
+        // 03. User config directory
+        // 04. Executable directory
+        // 05. Working directory
+        // 06. Explicit config file
+        // 07. Environment variables
+        // 08. Command line arguments (highest)
+        // 09. Build the config
 
         //--- 01. Build-in defaults
-        // Build the default configuration using the `Default` trait
-        let mut settings = Settings::<S>::default();
+        // Seed the config builder with the default configuration so that
+        // any fields not supplied by later sources fall back to it.
+        let defaults = Settings::<S>::default();
+        let mut config_builder = Config::builder().add_source(
+            Config::try_from(&defaults).map_err(|err| SettingsError::Generic(err.to_string()))?,
+        );
 
         //--- 02. System config directory
 
@@ -46,11 +75,95 @@ where
         //--- 04. Executable directory
 
         //--- 05. Working directory
+        if config_file.is_none() {
+            let cwd_config_path = Path::new(CWD_CONFIG_PATH);
+            if cwd_config_path.exists() {
+                config_builder = config_builder.add_source(
+                    config::File::from(cwd_config_path).format(config::FileFormat::Ini),
+                );
+            }
+        }
 
         //--- 06. Explicit config file
 
         //--- 07. Environment variables
 
-        Ok(settings)
+        //--- 08. Command line arguments
+
+        //--- 09. Build the config
+        let config =
+            config_builder.build().map_err(|err| SettingsError::Generic(err.to_string()))?;
+
+        config.try_deserialize().map_err(|err| SettingsError::Generic(err.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Minimal stand-in for a consumer-supplied server settings type, used
+    /// to exercise `Settings<S>` without depending on the `server` crate.
+    #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
+    struct TestServerSettings {
+        port: u16,
+        host: String,
+    }
+
+    #[test]
+    fn test_default() {
+        let settings = Settings::<TestServerSettings>::default();
+        assert_eq!(settings.server, TestServerSettings::default());
+    }
+
+    #[test]
+    fn test_parse_returns_defaults() {
+        let settings = Settings::<TestServerSettings>::parse(None).expect("parse should succeed");
+
+        assert_eq!(settings.server, TestServerSettings::default());
+    }
+
+    #[test]
+    fn test_clone() {
+        let settings = Settings::<TestServerSettings> {
+            server: TestServerSettings {
+                port: 9000,
+                host: "0.0.0.0".to_string(),
+            },
+        };
+
+        let cloned = settings.clone();
+
+        assert_eq!(settings.server, cloned.server);
+    }
+
+    #[test]
+    fn test_debug_format() {
+        let settings = Settings::<TestServerSettings>::default();
+
+        let debug_str = format!("{settings:?}");
+
+        assert!(debug_str.contains("Settings"));
+        assert!(debug_str.contains("TestServerSettings"));
+    }
+
+    #[test]
+    fn test_deserialize() {
+        let json = r#"{"server": {"port": 9000, "host": "0.0.0.0"}}"#;
+
+        let settings: Settings<TestServerSettings> =
+            serde_json::from_str(json).expect("deserialize Settings");
+
+        assert_eq!(settings.server.port, 9000);
+        assert_eq!(settings.server.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn test_deserialize_missing_server_fails() {
+        let json = "{}";
+
+        let result: Result<Settings<TestServerSettings>, _> = serde_json::from_str(json);
+
+        assert!(result.is_err());
     }
 }
