@@ -5,6 +5,7 @@
 mod error;
 
 use config::Config;
+use directories;
 use std::path::Path;
 
 /// Settings loading and validation errors.
@@ -60,9 +61,11 @@ where
         // Seed the config builder with the default configuration so that
         // any fields not supplied by later sources fall back to it.
         let defaults = Settings::<S>::default();
-        let mut config_builder = Config::builder().add_source(
-            Config::try_from(&defaults).map_err(|err| SettingsError::Generic(err.to_string()))?,
-        );
+        let mut config_builder =
+            Config::builder().add_source(Config::try_from(&defaults).map_err(|err| {
+                let msg = format!("Error parsing default settings: {err}");
+                SettingsError::Parsing(msg)
+            })?);
 
         //--- 02. System config directory
 
@@ -71,16 +74,13 @@ where
         //--- 04. Executable directory
 
         //--- 05. Working directory
-        if config_file.is_none() {
-            let cwd_config_path = std::env::current_dir()
-                .map_err(|err| SettingsError::Generic(err.to_string()))?
-                .join(format!("{APPLICATION_NAME}.conf"));
+        let working_directory_path =
+            std::env::current_dir()?.join(format!("{APPLICATION_NAME}.conf"));
 
-            if cwd_config_path.exists() {
-                config_builder = config_builder.add_source(
-                    config::File::from(cwd_config_path).format(config::FileFormat::Ini),
-                );
-            }
+        if working_directory_path.exists() {
+            config_builder = config_builder.add_source(
+                config::File::from(working_directory_path).format(config::FileFormat::Ini),
+            );
         }
 
         //--- 06. Explicit config file
