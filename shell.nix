@@ -18,14 +18,18 @@ pkgs.mkShell {
     # Rust toolchain
     cargo
     rustc
-    rustfmt
-    clippy
     rust-analyzer
     taplo
 
     # Docs and task runner
     mdbook
     cargo-make
+
+    # Code Linting and Coverage
+    cargo-tarpaulin
+    clippy
+    rustfmt
+    cargo-audit
 
     # Frontend tooling
     nodejs_22

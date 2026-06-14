@@ -20,7 +20,8 @@ resolver = "3"
 # pattern to include all crates under the `crates/` directory. Each crate should
 # have its own Cargo.toml file with its specific configuration and dependencies.
 members = [
-    "backend/*", # Automatically includes everything under backend/
+    "backend/server",
+    "backend/libs/*",
 ]
 
 ## --- [ SHARED WORKSPACE METADATA ] -------------------------------------------

@@ -12,6 +12,7 @@
 !.ai
 !.devcontainer
 !.envrc
+!.editorconfig
 !.github
 !.gitignore
 !.gitmodules

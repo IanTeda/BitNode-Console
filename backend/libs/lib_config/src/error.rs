@@ -1,13 +1,14 @@
-//! Error types for the server crate.
+//! Config Crate Error
 //!
-//! Defines [`ServerError`], the top-level error type returned by fallible
-//! operations in this crate, along with its associated [`ServerResult`]
-//! alias (re-exported via the crate prelude).
+//! This module provides error types for the configuration module.
 
 use thiserror::Error;
 
+/// Result type alias used across configuration module.
+pub type ConfigResult<T> = std::result::Result<T, ConfigError>;
+
 #[derive(Error, Debug)]
-pub enum ServerError {
+pub enum ConfigError {
     // Start with generic error during development and then expand error types below as needed.
     #[error("Generic error {0}")]
     Generic(String),
@@ -19,7 +20,7 @@ mod tests {
 
     #[test]
     fn generic_error_displays_message() {
-        let error = ServerError::Generic("something went wrong".to_string());
+        let error = ConfigError::Generic("something went wrong".to_string());
 
         assert_eq!(error.to_string(), "Generic error something went wrong");
     }

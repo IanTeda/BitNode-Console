@@ -10,15 +10,16 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## -- Internal Dependencies --
-lib_utils = { path = "../lib_utils" }
+## --- Internal Dependencies
+lib_config = { path = "../libs/lib_config" }
+lib_utils = { path = "../libs/lib_utils" }
 
-## -- Workspace Dependencies --
+## --- Workspace Dependencies
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 
-## -- Library Dependencies --
+## --- Library Dependencies
 axum = { version = "0.7", features = ["macros"] }
 tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
