@@ -35,10 +35,6 @@ const ENV_PREFIX: &str = "BITNODE_CONSOLE";
 /// The `server` field is generic so that each binary crate (e.g. `server`)
 /// can supply its own server-specific settings type, avoiding a dependency
 /// from this crate back onto its consumers.
-/// Path, relative to the current working directory, of the working
-/// directory configuration file (source 5).
-const CWD_CONFIG_PATH: &str = "./config/bitnode-console.conf";
-
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Settings<S> {
     pub server: S,
@@ -76,7 +72,10 @@ where
 
         //--- 05. Working directory
         if config_file.is_none() {
-            let cwd_config_path = Path::new(CWD_CONFIG_PATH);
+            let cwd_config_path = std::env::current_dir()
+                .map_err(|err| SettingsError::Generic(err.to_string()))?
+                .join(format!("{APPLICATION_NAME}.conf"));
+
             if cwd_config_path.exists() {
                 config_builder = config_builder.add_source(
                     config::File::from(cwd_config_path).format(config::FileFormat::Ini),

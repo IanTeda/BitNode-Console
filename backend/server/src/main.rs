@@ -13,6 +13,10 @@ const ASSETS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
 
 #[tokio::main]
 async fn main() -> ServerResult<()> {
+    if std::env::var("CARGO").is_ok() {
+        println!("Run from cargo run");
+    }
+
     let settings = Settings::parse(None)?;
 
     println!("Server settings: {:?}", settings);
