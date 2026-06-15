@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
-lib_utils = { path = "../lib_utils" }
+lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies
 thiserror = { workspace = true }
@@ -21,8 +21,8 @@ serde = { workspace = true }
 
 ## --- Library Dependencies
 config = { version = "0.15.19" }
-dirs = { version = "6.0.0" }
-directories = "6.0.0"
+directories = { version = "6.0.0" }
 
 [dev-dependencies]
 serde_json = { version = "1.0" }
+tempfile = { version = "3" }
