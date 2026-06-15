@@ -1,4 +1,4 @@
-//-- ./backend/libs/lib_telemetry/src/domain.rs
+//-- ./backend/libs/lib_tracing/src/domain.rs
 
 //! Telemetry domain types.
 
@@ -73,7 +73,7 @@ impl From<TelemetryLevels> for tracing::level_filters::LevelFilter {
 /// # Examples
 ///
 /// ```rust
-/// use lib_telemetry::TelemetryLevels;
+/// use lib_tracing::TelemetryLevels;
 ///
 /// assert_eq!(format!("{}", TelemetryLevels::INFO), "info");
 /// assert_eq!(format!("{}", TelemetryLevels::DEBUG), "debug");

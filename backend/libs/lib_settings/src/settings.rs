@@ -39,7 +39,7 @@ pub struct Settings<S> {
 
     /// Telemetry (logging and tracing) configuration.
     #[serde(default)]
-    pub telemetry: lib_telemetry::TelemetrySettings,
+    pub telemetry: lib_tracing::TelemetrySettings,
 }
 
 impl<S> Settings<S>
@@ -239,7 +239,7 @@ mod tests {
                 port: 9000,
                 host: "0.0.0.0".to_string(),
             },
-            telemetry: lib_telemetry::TelemetrySettings::default(),
+            telemetry: lib_tracing::TelemetrySettings::default(),
         };
 
         let cloned = settings.clone();
@@ -303,7 +303,7 @@ mod tests {
 
         assert_eq!(
             settings.telemetry.telemetry_level,
-            lib_telemetry::TelemetryLevels::DEBUG
+            lib_tracing::TelemetryLevels::DEBUG
         );
     }
 

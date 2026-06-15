@@ -17,7 +17,7 @@ async fn main() -> ServerResult<()> {
     let settings = Settings::parse(None)?;
 
     let telemetry_level = Some(settings.telemetry.telemetry_level());
-    lib_telemetry::init(telemetry_level)?;
+    lib_tracing::init(telemetry_level)?;
     tracing::info!("Starting server with settings: {:#?}", settings);
 
     let index_html = format!("{ASSETS_DIR}/index.html");

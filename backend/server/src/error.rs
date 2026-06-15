@@ -18,7 +18,7 @@ pub enum ServerError {
 
     /// Telemetry initialisation errors.
     #[error("Telemetry error: {0}")]
-    Telemetry(#[from] lib_telemetry::TelemetryError),
+    Telemetry(#[from] lib_tracing::TelemetryError),
 }
 
 #[cfg(test)]
