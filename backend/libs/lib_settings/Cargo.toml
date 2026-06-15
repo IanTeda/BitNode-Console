@@ -16,8 +16,9 @@ workspace = true
 lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies
-thiserror = { workspace = true }
+clap = { workspace = true }
 serde = { workspace = true }
+thiserror = { workspace = true }
 
 ## --- Library Dependencies
 config = { version = "0.15.19" }
