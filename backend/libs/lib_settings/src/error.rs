@@ -1,4 +1,4 @@
-//! Settings Crate Error
+//! Settings Library Crate Error
 //!
 //! This module provides error types for the settings module.
 

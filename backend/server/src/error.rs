@@ -15,6 +15,10 @@ pub enum ServerError {
     /// Settings loading or validating application errors.
     #[error("Settings error: {0}")]
     Settings(#[from] lib_settings::SettingsError),
+
+    /// Telemetry initialisation errors.
+    #[error("Telemetry error: {0}")]
+    Telemetry(#[from] lib_telemetry::TelemetryError),
 }
 
 #[cfg(test)]

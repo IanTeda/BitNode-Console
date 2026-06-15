@@ -15,7 +15,7 @@ use crate::{SettingsError, SettingsResult};
 ///
 /// To use this configuration system for a different application:
 /// 1. Change this constant to match your application name
-/// 2. Update the corresponding ENV_PREFIX if needed
+/// 2. Update the corresponding `ENV_PREFIX` if needed
 /// 3. Ensure your binary name matches this constant
 const APPLICATION_NAME: &str = "bitnode_console";
 
@@ -36,6 +36,10 @@ const ENV_PREFIX: &str = "BITNODE_CONSOLE";
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct Settings<S> {
     pub server: S,
+
+    /// Telemetry (logging and tracing) configuration.
+    #[serde(default)]
+    pub telemetry: lib_telemetry::TelemetrySettings,
 }
 
 impl<S> Settings<S>
@@ -235,11 +239,13 @@ mod tests {
                 port: 9000,
                 host: "0.0.0.0".to_string(),
             },
+            telemetry: lib_telemetry::TelemetrySettings::default(),
         };
 
         let cloned = settings.clone();
 
         assert_eq!(settings.server, cloned.server);
+        assert_eq!(settings.telemetry, cloned.telemetry);
     }
 
     #[test]
@@ -284,6 +290,21 @@ mod tests {
 
         assert_eq!(settings.server.port, 9100);
         assert_eq!(settings.server.host, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_parse_with_explicit_config_file_overrides_telemetry_level() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp config file");
+        writeln!(file, "[telemetry]").expect("write temp config file");
+        writeln!(file, "telemetry_level = debug").expect("write temp config file");
+
+        let settings =
+            Settings::<TestServerSettings>::parse(Some(file.path())).expect("parse should succeed");
+
+        assert_eq!(
+            settings.telemetry.telemetry_level,
+            lib_telemetry::TelemetryLevels::DEBUG
+        );
     }
 
     #[test]

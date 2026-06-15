@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
+lib_telemetry = { path = "../../libs/lib_telemetry" }
 lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies

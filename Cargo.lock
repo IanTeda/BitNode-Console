@@ -674,11 +674,25 @@ dependencies = [
  "clap",
  "config",
  "directories",
+ "lib_telemetry",
  "lib_utils",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "lib_telemetry"
+version = "0.1.0"
+dependencies = [
+ "lib_utils",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1116,6 +1130,7 @@ dependencies = [
  "axum",
  "clap",
  "lib_settings",
+ "lib_telemetry",
  "lib_utils",
  "serde",
  "serde_json",
