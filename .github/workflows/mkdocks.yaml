@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: 3.x
           cache: pip
-      - run: pip install mkdocs mkdocs-material pymdown-extensions
+      - run: pip install -r docs/requirements.txt
       # Repository > Settings > Actions > General > Workflow permissions > Read and write permissions
       - run: mkdocs gh-deploy --force --clean --verbose
 

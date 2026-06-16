@@ -3,7 +3,7 @@
 # MkDocs site configuration for BitNode Console documentation.
 #
 # Local development:
-#   pip install mkdocs mkdocs-material pymdown-extensions
+#   pip install -r docs/requirements.txt
 #   mkdocs serve          # live-reload preview at http://127.0.0.1:8000
 #   mkdocs build          # build static site to site/
 #
