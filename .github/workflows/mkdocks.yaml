@@ -1,7 +1,7 @@
 # .github/workflows/mkdocks.yaml
 #
 # Builds the MkDocs documentation site and deploys it to GitHub Pages.
-# Triggers on every push to main or develop.
+# Triggers on every push to main.
 #
 # GitHub Pages must be configured to use "GitHub Actions" as the source:
 #   Settings → Pages → Source → GitHub Actions
@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - main
-      - develop
 
 permissions:
   contents: read
