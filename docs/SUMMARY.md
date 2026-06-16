@@ -1,4 +1,5 @@
 # Summary
 
 - [Home](../README.md)
-- [Produce Requirements](produce-requirements.md)
+- [Product Requirements](product-requirements.md)
+- [Configuration](configuration.md)

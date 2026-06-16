@@ -11,6 +11,18 @@
 
 { pkgs ? import <nixpkgs> {} }:
 
+let
+  # Unified Python environment for MkDocs and all required plugins/extensions.
+  # Bundling them with withPackages ensures they share one interpreter and
+  # avoids PYTHONPATH conflicts between individually-installed packages.
+  mkdocsPython = pkgs.python3.withPackages (ps: with ps; [
+    mkdocs
+    mkdocs-material
+    pymdown-extensions
+  ]);
+
+in
+
 # Define the interactive development shell environment.
 pkgs.mkShell {
   # Tooling available in the shell PATH.
@@ -24,6 +36,7 @@ pkgs.mkShell {
     # Docs and task runner
     mdbook
     cargo-make
+    mkdocsPython  # mkdocs + material + pymdown-extensions
 
     # Code Linting and Coverage
     cargo-tarpaulin
