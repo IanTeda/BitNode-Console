@@ -10,25 +10,23 @@
 
 mod domain;
 mod error;
-mod settings;
 
 //--- Re-export for clean imports by other crates
 
 /// Telemetry level configuration.
-pub use domain::TelemetryLevels;
-
-/// Telemetry configuration settings.
-pub use settings::TelemetrySettings;
+pub use domain::TracingLevels;
 
 /// Telemetry error type.
-pub type TelemetryError = error::TelemetryError;
+pub type TracingError = error::TracingError;
 
 /// Telemetry Result type alias used across the telemetry module.
-pub type TelemetryResult<T> = std::result::Result<T, TelemetryError>;
+pub type TelemetryResult<T> = std::result::Result<T, TracingError>;
 
 use tracing::level_filters::LevelFilter;
 use tracing::subscriber::set_global_default;
 use tracing_subscriber::{EnvFilter, prelude::*};
+
+//--- Default values
 
 /// Default log level used when no `telemetry_level` is configured and the
 /// `RUST_LOG` environment variable is not set.
@@ -48,19 +46,18 @@ const DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::INFO;
 ///
 /// Returns [`TelemetryError::Generic`] if a global `log` bridge or `tracing`
 /// subscriber has already been installed for this process.
-pub fn init(telemetry_level: Option<TelemetryLevels>) -> TelemetryResult<()> {
+pub fn init(telemetry_level: Option<TracingLevels>) -> TelemetryResult<()> {
     let env_filter = build_env_filter(telemetry_level);
 
     let registry = tracing_subscriber::registry()
         .with(env_filter)
         .with(tracing_subscriber::fmt::layer());
 
-    tracing_log::LogTracer::init().map_err(|err| {
-        TelemetryError::Generic(format!("Log tracer initialisation failed: {err}"))
-    })?;
+    tracing_log::LogTracer::init()
+        .map_err(|err| TracingError::Generic(format!("Log tracer initialisation failed: {err}")))?;
 
     set_global_default(registry).map_err(|err| {
-        TelemetryError::Generic(format!("Failed to set global default subscriber: {err}"))
+        TracingError::Generic(format!("Failed to set global default subscriber: {err}"))
     })?;
 
     Ok(())
@@ -71,7 +68,7 @@ pub fn init(telemetry_level: Option<TelemetryLevels>) -> TelemetryResult<()> {
 /// The `RUST_LOG` environment variable takes precedence when set; otherwise
 /// `telemetry_level` is used, falling back to [`DEFAULT_LEVEL_FILTER`] when
 /// `telemetry_level` is `None`.
-fn build_env_filter(telemetry_level: Option<TelemetryLevels>) -> EnvFilter {
+fn build_env_filter(telemetry_level: Option<TracingLevels>) -> EnvFilter {
     let default_directive = default_level_filter(telemetry_level).into();
 
     EnvFilter::builder().with_default_directive(default_directive).from_env_lossy()
@@ -83,7 +80,7 @@ fn build_env_filter(telemetry_level: Option<TelemetryLevels>) -> EnvFilter {
 ///
 /// This is independent of the `RUST_LOG` environment variable, which is
 /// applied separately (and takes precedence) in [`build_env_filter`].
-fn default_level_filter(telemetry_level: Option<TelemetryLevels>) -> LevelFilter {
+fn default_level_filter(telemetry_level: Option<TracingLevels>) -> LevelFilter {
     telemetry_level.map_or(DEFAULT_LEVEL_FILTER, LevelFilter::from)
 }
 
@@ -99,7 +96,7 @@ mod tests {
     #[test]
     fn default_level_filter_with_some_uses_configured_level() {
         assert_eq!(
-            default_level_filter(Some(TelemetryLevels::TRACE)),
+            default_level_filter(Some(TracingLevels::TRACE)),
             LevelFilter::TRACE
         );
     }
@@ -107,7 +104,7 @@ mod tests {
     #[test]
     fn default_level_filter_respects_off_level() {
         assert_eq!(
-            default_level_filter(Some(TelemetryLevels::OFF)),
+            default_level_filter(Some(TracingLevels::OFF)),
             LevelFilter::OFF
         );
     }
@@ -115,7 +112,7 @@ mod tests {
     #[test]
     fn build_env_filter_does_not_panic() {
         let _ = build_env_filter(None);
-        let _ = build_env_filter(Some(TelemetryLevels::TRACE));
+        let _ = build_env_filter(Some(TracingLevels::TRACE));
     }
 
     #[test]
@@ -123,7 +120,7 @@ mod tests {
         // The global subscriber and `log` bridge can each only be installed
         // once per process, so the first call succeeds and any subsequent
         // call fails.
-        assert!(init(Some(TelemetryLevels::DEBUG)).is_ok());
+        assert!(init(Some(TracingLevels::DEBUG)).is_ok());
         assert!(init(None).is_err());
     }
 }

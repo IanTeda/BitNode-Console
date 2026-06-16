@@ -5,7 +5,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum TelemetryError {
+pub enum TracingError {
     // Start with generic error during development and then expand error types below as needed.
     #[error("Generic error {0}")]
     Generic(String),
@@ -17,7 +17,7 @@ mod tests {
 
     #[test]
     fn generic_error_displays_message() {
-        let error = TelemetryError::Generic("something went wrong".to_string());
+        let error = TracingError::Generic("something went wrong".to_string());
 
         assert_eq!(error.to_string(), "Generic error something went wrong");
     }

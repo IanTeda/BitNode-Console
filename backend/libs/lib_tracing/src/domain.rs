@@ -1,11 +1,11 @@
 //-- ./backend/libs/lib_tracing/src/domain.rs
 
-//! Telemetry domain types.
+//! Tracing domain types.
 
-/// Telemetry levels [OFF, ERROR, WARN, INFO, DEBUG, TRACE].
+/// Tracing levels [OFF, ERROR, WARN, INFO, DEBUG, TRACE].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, Default)]
 #[serde(rename_all = "lowercase")]
-pub enum TelemetryLevels {
+pub enum TracingLevels {
     /// No telemetry output.
     ///
     /// Completely disables all telemetry output. Useful for performance-critical
@@ -45,21 +45,21 @@ pub enum TelemetryLevels {
     TRACE,
 }
 
-/// Conversion from `TelemetryLevels` to `tracing::LevelFilter`.
+/// Conversion from `TracingLevels` to `tracing::LevelFilter`.
 ///
 /// This implementation allows seamless integration with the tracing ecosystem,
 /// enabling configuration-driven telemetry level control throughout the application.
 ///
 /// The conversion is infallible and maintains the same semantic meaning for each level.
-impl From<TelemetryLevels> for tracing::level_filters::LevelFilter {
-    fn from(level: TelemetryLevels) -> Self {
+impl From<TracingLevels> for tracing::level_filters::LevelFilter {
+    fn from(level: TracingLevels) -> Self {
         match level {
-            TelemetryLevels::OFF => Self::OFF,
-            TelemetryLevels::ERROR => Self::ERROR,
-            TelemetryLevels::WARN => Self::WARN,
-            TelemetryLevels::INFO => Self::INFO,
-            TelemetryLevels::DEBUG => Self::DEBUG,
-            TelemetryLevels::TRACE => Self::TRACE,
+            TracingLevels::OFF => Self::OFF,
+            TracingLevels::ERROR => Self::ERROR,
+            TracingLevels::WARN => Self::WARN,
+            TracingLevels::INFO => Self::INFO,
+            TracingLevels::DEBUG => Self::DEBUG,
+            TracingLevels::TRACE => Self::TRACE,
         }
     }
 }
@@ -78,7 +78,7 @@ impl From<TelemetryLevels> for tracing::level_filters::LevelFilter {
 /// assert_eq!(format!("{}", TelemetryLevels::INFO), "info");
 /// assert_eq!(format!("{}", TelemetryLevels::DEBUG), "debug");
 /// ```
-impl std::fmt::Display for TelemetryLevels {
+impl std::fmt::Display for TracingLevels {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let level_str = match self {
             Self::OFF => "off",
@@ -98,86 +98,104 @@ mod tests {
 
     #[test]
     fn default_is_warn() {
-        assert_eq!(TelemetryLevels::default(), TelemetryLevels::WARN);
+        assert_eq!(TracingLevels::default(), TracingLevels::WARN);
     }
 
     #[test]
     fn display_matches_serde_lowercase_names() {
-        assert_eq!(TelemetryLevels::OFF.to_string(), "off");
-        assert_eq!(TelemetryLevels::ERROR.to_string(), "error");
-        assert_eq!(TelemetryLevels::WARN.to_string(), "warn");
-        assert_eq!(TelemetryLevels::INFO.to_string(), "info");
-        assert_eq!(TelemetryLevels::DEBUG.to_string(), "debug");
-        assert_eq!(TelemetryLevels::TRACE.to_string(), "trace");
+        assert_eq!(TracingLevels::OFF.to_string(), "off");
+        assert_eq!(TracingLevels::ERROR.to_string(), "error");
+        assert_eq!(TracingLevels::WARN.to_string(), "warn");
+        assert_eq!(TracingLevels::INFO.to_string(), "info");
+        assert_eq!(TracingLevels::DEBUG.to_string(), "debug");
+        assert_eq!(TracingLevels::TRACE.to_string(), "trace");
     }
 
     #[test]
     fn converts_to_level_filter() {
         use tracing::level_filters::LevelFilter;
 
-        assert_eq!(LevelFilter::from(TelemetryLevels::OFF), LevelFilter::OFF);
-        assert_eq!(LevelFilter::from(TelemetryLevels::ERROR), LevelFilter::ERROR);
-        assert_eq!(LevelFilter::from(TelemetryLevels::WARN), LevelFilter::WARN);
-        assert_eq!(LevelFilter::from(TelemetryLevels::INFO), LevelFilter::INFO);
-        assert_eq!(LevelFilter::from(TelemetryLevels::DEBUG), LevelFilter::DEBUG);
-        assert_eq!(LevelFilter::from(TelemetryLevels::TRACE), LevelFilter::TRACE);
+        assert_eq!(LevelFilter::from(TracingLevels::OFF), LevelFilter::OFF);
+        assert_eq!(LevelFilter::from(TracingLevels::ERROR), LevelFilter::ERROR);
+        assert_eq!(LevelFilter::from(TracingLevels::WARN), LevelFilter::WARN);
+        assert_eq!(LevelFilter::from(TracingLevels::INFO), LevelFilter::INFO);
+        assert_eq!(LevelFilter::from(TracingLevels::DEBUG), LevelFilter::DEBUG);
+        assert_eq!(LevelFilter::from(TracingLevels::TRACE), LevelFilter::TRACE);
     }
 
     #[test]
     fn serializes_to_lowercase_json_strings() {
-        assert_eq!(serde_json::to_string(&TelemetryLevels::OFF).unwrap(), "\"off\"");
-        assert_eq!(serde_json::to_string(&TelemetryLevels::ERROR).unwrap(), "\"error\"");
-        assert_eq!(serde_json::to_string(&TelemetryLevels::WARN).unwrap(), "\"warn\"");
-        assert_eq!(serde_json::to_string(&TelemetryLevels::INFO).unwrap(), "\"info\"");
-        assert_eq!(serde_json::to_string(&TelemetryLevels::DEBUG).unwrap(), "\"debug\"");
-        assert_eq!(serde_json::to_string(&TelemetryLevels::TRACE).unwrap(), "\"trace\"");
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::OFF).unwrap(),
+            "\"off\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::ERROR).unwrap(),
+            "\"error\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::WARN).unwrap(),
+            "\"warn\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::INFO).unwrap(),
+            "\"info\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::DEBUG).unwrap(),
+            "\"debug\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TracingLevels::TRACE).unwrap(),
+            "\"trace\""
+        );
     }
 
     #[test]
     fn deserializes_from_lowercase_json_strings() {
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"off\"").unwrap(),
-            TelemetryLevels::OFF
+            serde_json::from_str::<TracingLevels>("\"off\"").unwrap(),
+            TracingLevels::OFF
         );
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"error\"").unwrap(),
-            TelemetryLevels::ERROR
+            serde_json::from_str::<TracingLevels>("\"error\"").unwrap(),
+            TracingLevels::ERROR
         );
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"warn\"").unwrap(),
-            TelemetryLevels::WARN
+            serde_json::from_str::<TracingLevels>("\"warn\"").unwrap(),
+            TracingLevels::WARN
         );
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"info\"").unwrap(),
-            TelemetryLevels::INFO
+            serde_json::from_str::<TracingLevels>("\"info\"").unwrap(),
+            TracingLevels::INFO
         );
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"debug\"").unwrap(),
-            TelemetryLevels::DEBUG
+            serde_json::from_str::<TracingLevels>("\"debug\"").unwrap(),
+            TracingLevels::DEBUG
         );
         assert_eq!(
-            serde_json::from_str::<TelemetryLevels>("\"trace\"").unwrap(),
-            TelemetryLevels::TRACE
+            serde_json::from_str::<TracingLevels>("\"trace\"").unwrap(),
+            TracingLevels::TRACE
         );
     }
 
     #[test]
     fn deserialize_rejects_unknown_variant() {
-        let result = serde_json::from_str::<TelemetryLevels>("\"verbose\"");
+        let result = serde_json::from_str::<TracingLevels>("\"verbose\"");
 
         assert!(result.is_err());
     }
 
     #[test]
     fn deserialize_rejects_uppercase_variant() {
-        let result = serde_json::from_str::<TelemetryLevels>("\"INFO\"");
+        let result = serde_json::from_str::<TracingLevels>("\"INFO\"");
 
         assert!(result.is_err());
     }
 
     #[test]
     fn is_clone_and_copy() {
-        let level = TelemetryLevels::DEBUG;
+        let level = TracingLevels::DEBUG;
         let cloned = Clone::clone(&level);
         let copied = level;
 
@@ -187,6 +205,6 @@ mod tests {
 
     #[test]
     fn debug_format_includes_variant_name() {
-        assert_eq!(format!("{:?}", TelemetryLevels::TRACE), "TRACE");
+        assert_eq!(format!("{:?}", TracingLevels::TRACE), "TRACE");
     }
 }
