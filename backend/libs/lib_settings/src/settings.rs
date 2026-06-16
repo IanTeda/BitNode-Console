@@ -1,52 +1,50 @@
 //-- ./backend/libs/lib_settings/src/settings.rs
 
-//! Settings struct and configuration parsing logic.
+//! Settings struct and parsing logic for application configuration.
 
 use config::Config;
 use directories as Directories;
 use std::path::{Path, PathBuf};
 
-use crate::{SettingsError, SettingsResult};
+use crate::{ApplicationSettings, SettingsError, SettingsResult, TracingSettings, WebSettings};
 
 /// Application name used for configuration directories and environment variables.
 /// This should match the binary name and be used consistently across the application.
-///
-/// # Changing the Application Name
-///
-/// To use this configuration system for a different application:
-/// 1. Change this constant to match your application name
-/// 2. Update the corresponding `ENV_PREFIX` if needed
-/// 3. Ensure your binary name matches this constant
 const APPLICATION_NAME: &str = "bitnode_console";
 
 /// Environment variable prefix derived from the application name.
 /// Converts "bitnode-console" to "`BITNODE_CONSOLE`" for environment variables.
-///
-/// # Changing the Environment Prefix
-///
-/// If your application name contains characters that aren't valid in environment
-/// variable names, update this constant accordingly.
 const ENV_PREFIX: &str = "BITNODE_CONSOLE";
 
 /// Settings for the Application.
 ///
-/// The `server` field is generic so that each binary crate (e.g. `server`)
-/// can supply its own server-specific settings type, avoiding a dependency
-/// from this crate back onto its consumers.
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
-pub struct Settings<S> {
-    pub server: S,
-
-    /// Telemetry (logging and tracing) configuration.
+/// This struct holds the parsed settings for the application, including
+/// server, tracing and web configurations.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct Settings {
     #[serde(default)]
-    pub telemetry: lib_tracing::TelemetrySettings,
+    pub application: crate::ApplicationSettings,
+
+    #[serde(default)]
+    pub tracing: crate::TracingSettings,
+
+    #[serde(default)]
+    pub web: crate::WebSettings,
 }
 
-impl<S> Settings<S>
-where
-    S: Default + serde::Serialize + serde::de::DeserializeOwned,
-{
+impl Settings {
     /// Parses the configuration files from the various directories and environment variables.
+    ///
+    /// The function first applies default settings, then overrides them with higher precedence sources:
+    /// 01. Built-in default config values (lowest)
+    /// 02. System config directory
+    /// 03. User config directory
+    /// 04. Executable directory
+    /// 05. Working directory
+    /// 06. Explicit config file
+    /// 07. Environment variables
+    /// 08. Command line arguments (highest)
+    /// 09. Build the config
     ///
     /// # Errors
     ///
@@ -54,17 +52,6 @@ where
     /// determined, if any configuration source fails to parse, or if the
     /// merged configuration cannot be deserialized into `Settings<S>`.
     pub fn parse(config_file: Option<&Path>) -> SettingsResult<Self> {
-        // Higher precedence sources override lower precedence ones:
-        // 01. Built-in default config values (lowest)
-        // 02. System config directory
-        // 03. User config directory
-        // 04. Executable directory
-        // 05. Working directory
-        // 06. Explicit config file
-        // 07. Environment variables
-        // 08. Command line arguments (highest)
-        // 09. Build the config
-
         //--- 01. Build-in defaults
         // Seed the config builder with the default configuration so that
         // any fields not supplied by later sources default back to this.
@@ -127,7 +114,7 @@ where
         }
 
         //--- 06. Explicit config file
-        // The config path passed into the parse method. Typically the --config --c CLI argument.
+        // The config file path passed into the parse method. Typically the --config --c CLI argument.
 
         if let Some(explicit_config_file) = config_file {
             config_builder = config_builder.add_source(
@@ -211,128 +198,161 @@ mod tests {
     use super::*;
     use std::io::Write;
 
-    /// Minimal stand-in for a consumer-supplied server settings type, used
-    /// to exercise `Settings<S>` without depending on the `server` crate.
-    #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
-    struct TestServerSettings {
-        port: u16,
-        host: String,
+    #[test]
+    fn default_applies_all_section_defaults() {
+        let settings = Settings::default();
+        assert!(!settings.application.setting);
+        assert!(settings.tracing.enabled);
+        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert!(!settings.tracing.show_settings_startup);
+        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.web.host, "127.0.0.1");
     }
 
     #[test]
-    fn test_default() {
-        let settings = Settings::<TestServerSettings>::default();
-        assert_eq!(settings.server, TestServerSettings::default());
+    fn clone_produces_equal_fields() {
+        let original = Settings::default();
+        let cloned = original.clone();
+        assert_eq!(original.application, cloned.application);
+        assert_eq!(original.tracing, cloned.tracing);
+        assert_eq!(original.web.port, cloned.web.port);
+        assert_eq!(original.web.host, cloned.web.host);
     }
 
     #[test]
-    fn test_parse_returns_defaults() {
-        let settings = Settings::<TestServerSettings>::parse(None).expect("parse should succeed");
-
-        assert_eq!(settings.server, TestServerSettings::default());
-    }
-
-    #[test]
-    fn test_clone() {
-        let settings = Settings::<TestServerSettings> {
-            server: TestServerSettings {
-                port: 9000,
-                host: "0.0.0.0".to_string(),
-            },
-            telemetry: lib_tracing::TelemetrySettings::default(),
-        };
-
-        let cloned = settings.clone();
-
-        assert_eq!(settings.server, cloned.server);
-        assert_eq!(settings.telemetry, cloned.telemetry);
-    }
-
-    #[test]
-    fn test_debug_format() {
-        let settings = Settings::<TestServerSettings>::default();
-
+    fn debug_format_includes_struct_name() {
+        let settings = Settings::default();
         let debug_str = format!("{settings:?}");
-
         assert!(debug_str.contains("Settings"));
-        assert!(debug_str.contains("TestServerSettings"));
     }
 
     #[test]
-    fn test_deserialize() {
-        let json = r#"{"server": {"port": 9000, "host": "0.0.0.0"}}"#;
-
-        let settings: Settings<TestServerSettings> =
-            serde_json::from_str(json).expect("deserialize Settings");
-
-        assert_eq!(settings.server.port, 9000);
-        assert_eq!(settings.server.host, "0.0.0.0");
+    fn deserialize_from_empty_json_uses_section_defaults() {
+        let settings: Settings = serde_json::from_str("{}").expect("deserialize Settings");
+        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert!(!settings.application.setting);
     }
 
     #[test]
-    fn test_deserialize_missing_server_fails() {
-        let json = "{}";
-
-        let result: Result<Settings<TestServerSettings>, _> = serde_json::from_str(json);
-
+    fn deserialize_partial_section_still_requires_all_section_fields() {
+        // [web] section without `host` — serde requires all WebSettings fields
+        let json = r#"{"web": {"port": 9000}}"#;
+        let result: Result<Settings, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_parse_with_explicit_config_file_overrides_defaults() {
-        let mut file = tempfile::NamedTempFile::new().expect("create temp config file");
-        writeln!(file, "[server]").expect("write temp config file");
-        writeln!(file, "port = 9100").expect("write temp config file");
-        writeln!(file, "host = 127.0.0.1").expect("write temp config file");
-
-        let settings =
-            Settings::<TestServerSettings>::parse(Some(file.path())).expect("parse should succeed");
-
-        assert_eq!(settings.server.port, 9100);
-        assert_eq!(settings.server.host, "127.0.0.1");
+    fn serialize_deserialize_json_roundtrip() {
+        let settings = Settings::default();
+        let json = serde_json::to_string(&settings).expect("serialize Settings");
+        let deserialized: Settings = serde_json::from_str(&json).expect("deserialize Settings");
+        assert_eq!(deserialized.web.port, settings.web.port);
+        assert_eq!(deserialized.web.host, settings.web.host);
+        assert_eq!(deserialized.tracing, settings.tracing);
+        assert_eq!(deserialized.application, settings.application);
     }
 
     #[test]
-    fn test_parse_with_explicit_config_file_overrides_telemetry_level() {
-        let mut file = tempfile::NamedTempFile::new().expect("create temp config file");
-        writeln!(file, "[telemetry]").expect("write temp config file");
-        writeln!(file, "telemetry_level = debug").expect("write temp config file");
-
-        let settings =
-            Settings::<TestServerSettings>::parse(Some(file.path())).expect("parse should succeed");
-
-        assert_eq!(
-            settings.telemetry.telemetry_level,
-            lib_tracing::TelemetryLevels::DEBUG
-        );
+    fn parse_with_no_config_file_returns_defaults() {
+        let settings = Settings::parse(None).expect("parse should succeed");
+        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert!(!settings.application.setting);
     }
 
     #[test]
-    fn test_parse_with_invalid_explicit_config_file_fails() {
-        let mut file = tempfile::NamedTempFile::new().expect("create temp config file");
-        writeln!(file, "[server]").expect("write temp config file");
-        writeln!(file, "port = not_a_number").expect("write temp config file");
+    fn parse_overrides_web_section_from_config_file() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[web]").unwrap();
+        writeln!(file, "port = 9100").unwrap();
+        writeln!(file, "host = 0.0.0.0").unwrap();
 
-        let result = Settings::<TestServerSettings>::parse(Some(file.path()));
+        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
 
+        assert_eq!(settings.web.port, 9100);
+        assert_eq!(settings.web.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn parse_overrides_tracing_level_from_config_file() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "level = debug").unwrap();
+
+        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+
+        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::DEBUG);
+    }
+
+    #[test]
+    fn parse_overrides_tracing_enabled_from_config_file() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "enabled = false").unwrap();
+
+        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+
+        assert!(!settings.tracing.enabled);
+    }
+
+    #[test]
+    fn parse_overrides_application_section_from_config_file() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[application]").unwrap();
+        writeln!(file, "log_settings = true").unwrap();
+
+        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+
+        assert!(settings.application.setting);
+    }
+
+    #[test]
+    fn parse_applies_multiple_sections_from_one_config_file() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[web]").unwrap();
+        writeln!(file, "port = 9200").unwrap();
+        writeln!(file, "host = 0.0.0.0").unwrap();
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "level = warn").unwrap();
+
+        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+
+        assert_eq!(settings.web.port, 9200);
+        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::WARN);
+    }
+
+    #[test]
+    fn parse_with_missing_config_file_fails() {
+        let result = Settings::parse(Some(Path::new("/nonexistent/bitnode_console.conf")));
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_parse_with_missing_explicit_config_file_fails() {
-        let missing_path = Path::new("/nonexistent/path/to/bitnode_console.conf");
+    fn parse_with_invalid_port_value_fails() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[web]").unwrap();
+        writeln!(file, "port = not_a_number").unwrap();
 
-        let result = Settings::<TestServerSettings>::parse(Some(missing_path));
+        let result = Settings::parse(Some(file.path()));
+        assert!(result.is_err());
+    }
 
+    #[test]
+    fn parse_with_invalid_tracing_level_fails() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "level = verbose").unwrap();
+
+        let result = Settings::parse(Some(file.path()));
         assert!(result.is_err());
     }
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn test_get_system_config_path_linux() {
-        let path = Settings::<TestServerSettings>::get_system_config_path()
+    fn get_system_config_path_returns_etc_path_on_linux() {
+        let path = Settings::get_system_config_path()
             .expect("system config path should be defined on linux");
-
         assert_eq!(
             path,
             PathBuf::from("/etc/bitnode_console/bitnode_console.conf")

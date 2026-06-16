@@ -68,6 +68,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "lib_settings",
+ "lib_tracing",
+ "lib_utils",
+ "lib_web",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "arraydeque"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -675,7 +694,6 @@ dependencies = [
  "config",
  "directories",
  "lib_tracing",
- "lib_utils",
  "serde",
  "serde_json",
  "tempfile",
@@ -698,6 +716,24 @@ dependencies = [
 [[package]]
 name = "lib_utils"
 version = "0.1.0"
+
+[[package]]
+name = "lib_web"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "lib_settings",
+ "lib_tracing",
+ "lib_utils",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "libc"
@@ -1121,24 +1157,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap",
- "lib_settings",
- "lib_tracing",
- "lib_utils",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "lib_settings"
+name = "lib_web"
 description.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -14,16 +14,20 @@ workspace = true
 [dependencies]
 ## --- Internal Dependencies
 lib_tracing = { path = "../../libs/lib_tracing" }
+lib_settings = { path = "../../libs/lib_settings" }
+lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies
-clap = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 
 ## --- Library Dependencies
-config = { version = "0.15.19" }
-directories = { version = "6.0.0" }
+axum = { version = "0.7", features = ["macros"] }
+clap = { version = "4.6.1", features = ["derive"] }
+tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0" }
-tempfile = { version = "3" }
