@@ -3,11 +3,13 @@ use std::{env, path::PathBuf, process::Command};
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
-    // backend/server is two levels deep; the workspace root holds `frontend/`.
+    // backend/libs/lib_http is three levels deep from the workspace root,
+    // which holds `frontend/`.
     let workspace_root = manifest_dir
         .parent()
         .and_then(|p| p.parent())
-        .expect("expected workspace root two levels above CARGO_MANIFEST_DIR");
+        .and_then(|p| p.parent())
+        .expect("expected workspace root three levels above CARGO_MANIFEST_DIR");
 
     let frontend_src = workspace_root.join("frontend/src");
     let frontend_dir = workspace_root.join("frontend");

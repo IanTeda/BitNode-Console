@@ -1,13 +1,12 @@
-//! Error types for the server crate.
+//! Application error types.
 //!
-//! Defines [`ServerError`], the top-level error type returned by fallible
-//! operations in this crate, along with its associated [`ServerResult`]
-//! alias (re-exported via the crate prelude).
+//! Defines [`ApplicationError`], the top-level error type returned by fallible
+//! operations in this crate.
 
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ServerError {
+pub enum ApplicationError {
     // Start with generic error during development and then expand error types below as needed.
     #[error("Generic error {0}")]
     Generic(String),
@@ -18,7 +17,11 @@ pub enum ServerError {
 
     /// Telemetry initialisation errors.
     #[error("Telemetry error: {0}")]
-    Telemetry(#[from] lib_tracing::TelemetryError),
+    Telemetry(#[from] lib_tracing::TracingError),
+
+    /// Web server errors.
+    #[error("Web error: {0}")]
+    Web(#[from] lib_web::WebError),
 }
 
 #[cfg(test)]
@@ -27,7 +30,7 @@ mod tests {
 
     #[test]
     fn generic_error_displays_message() {
-        let error = ServerError::Generic("something went wrong".to_string());
+        let error = ApplicationError::Generic("something went wrong".to_string());
 
         assert_eq!(error.to_string(), "Generic error something went wrong");
     }
