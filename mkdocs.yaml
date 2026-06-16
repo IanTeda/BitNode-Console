@@ -15,7 +15,7 @@
 # Reference: https://www.mkdocs.org/user-guide/configuration/
 
 site_name: BitNode Console
-site_url: https://ianteda.github.io/bitnode-console
+site_url: https://ianteda.github.io/BitNode-Console
 site_description: >-
   A web-based interface for managing a Bitcoin Knots/Core daemon node —
   configuration, status monitoring, and log viewing without CLI/SSH access.
@@ -49,7 +49,7 @@ theme:
     - content.code.copy
 
 nav:
-  - Home: README.md
+  - Home: index.md
   - Configuration: configuration.md
   - Development:
       - Structure: structure.md
