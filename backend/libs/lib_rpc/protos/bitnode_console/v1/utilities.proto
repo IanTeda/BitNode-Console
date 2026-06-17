@@ -1,0 +1,24 @@
+// BitNode-Console Utilities Service Protocol Buffer Definition
+//
+// Defines the RPC service and messages for utility operations,
+// such as health-check pings.
+//
+
+syntax = "proto3";
+
+package bitnode_console.v1;
+
+// UtilitiesService exposes miscellaneous utility RPCs.
+service UtilitiesService {
+  // Ping verifies that the server is reachable and responding.
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+// PingRequest carries no payload; the RPC is a pure health check.
+message PingRequest {}
+
+// PingResponse confirms that the server received the ping.
+message PingResponse {
+  // Human-readable confirmation, e.g. "pong".
+  string pong = 1;
+}

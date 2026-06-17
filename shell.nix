@@ -51,6 +51,7 @@ pkgs.mkShell {
     # Build dependencies
     pkg-config
     openssl
+    protobuf  # protoc compiler required by tonic-build/prost-build
 
     # direnv Nix shell caching (needed for VS Code extension host)
     nix-direnv
@@ -65,5 +66,6 @@ pkgs.mkShell {
     export RUST_BACKTRACE="1"
     export RUST_LOG="info"
     export RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}"
+    export PROTOC="${pkgs.protobuf}/bin/protoc"
   '';
 }
