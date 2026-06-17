@@ -13,12 +13,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
 
     // Re-run the build script if any of the files below change
-    println!("cargo:rerun-if-changed=protos/");
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=protos/bitnode_console/v1/utilities.proto");
+    println!("cargo:rerun-if-changed=protos/bitnode_console/v1/");
 
     tonic_build::configure()
-        .out_dir("src/protos")
+        .out_dir("src/generated_protos")
         .protoc_arg("--experimental_allow_proto3_optional")
         .build_client(true)
         .build_server(true)
