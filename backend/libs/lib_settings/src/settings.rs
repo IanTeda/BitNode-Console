@@ -205,7 +205,7 @@ mod tests {
         let settings = Settings::default();
         assert!(!settings.application.setting);
         assert!(settings.tracing.enabled);
-        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.tracing.show_settings_startup);
         assert_eq!(settings.web.port, 8090);
         assert_eq!(settings.web.host, "127.0.0.1");
@@ -232,7 +232,7 @@ mod tests {
     fn deserialize_from_empty_json_uses_section_defaults() {
         let settings: Settings = serde_json::from_str("{}").expect("deserialize Settings");
         assert_eq!(settings.web.port, 8090);
-        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.application.setting);
     }
 
@@ -259,7 +259,7 @@ mod tests {
     fn parse_with_no_config_file_returns_defaults() {
         let settings = Settings::parse(None).expect("parse should succeed");
         assert_eq!(settings.web.port, 8090);
-        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::INFO);
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.application.setting);
     }
 
@@ -284,7 +284,7 @@ mod tests {
 
         let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
 
-        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::DEBUG);
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::DEBUG);
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod tests {
         let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
 
         assert_eq!(settings.web.port, 9200);
-        assert_eq!(settings.tracing.level, lib_tracing::TracingLevels::WARN);
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::WARN);
     }
 
     #[test]

@@ -15,7 +15,7 @@ mod init;
 //--- Re-export for clean imports by other crates
 
 /// Telemetry level configuration.
-pub use domain::TracingLevels;
+pub use domain::Levels;
 
 /// Telemetry error type.
 pub use error::Error;

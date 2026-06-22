@@ -2,7 +2,7 @@
 
 //! gRPC server that hosts all RPC services.
 
-use std::net::SocketAddr;
+// use std::net::SocketAddr;
 
 use tokio_stream::wrappers::TcpListenerStream;
 
@@ -25,7 +25,7 @@ impl Server {
     /// # Errors
     ///
     /// Returns [`crate::Error::Transport`] if the TCP listener cannot bind.
-    pub async fn new(address: SocketAddr) -> crate::Result<Self> {
+    pub async fn new(address: std::net::SocketAddr) -> crate::Result<Self> {
         let listener = tokio::net::TcpListener::bind(address)
             .await
             .map_err(|e| crate::Error::Transport(e.to_string()))?;
@@ -36,7 +36,7 @@ impl Server {
     }
 
     /// Returns the local address the server is bound to.
-    pub fn address(&self) -> crate::Result<SocketAddr> {
+    pub fn address(&self) -> crate::Result<std::net::SocketAddr> {
         self.listener.local_addr().map_err(|e| crate::Error::Transport(e.to_string()))
     }
 
@@ -70,8 +70,8 @@ impl Server {
 mod tests {
     use super::*;
 
-    fn localhost(port: u16) -> SocketAddr {
-        SocketAddr::from(([127, 0, 0, 1], port))
+    fn localhost(port: u16) -> std::net::SocketAddr {
+        std::net::SocketAddr::from(([127, 0, 0, 1], port))
     }
 
     #[tokio::test]
@@ -92,14 +92,16 @@ mod tests {
 
     #[tokio::test]
     async fn new_fails_on_invalid_address() {
-        let result = Server::new(SocketAddr::from(([255, 255, 255, 255], 1))).await;
+        let result = Server::new(std::net::SocketAddr::from(([255, 255, 255, 255], 1))).await;
 
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn new_error_is_transport_variant() {
-        let err = Server::new(SocketAddr::from(([255, 255, 255, 255], 1))).await.unwrap_err();
+        let err = Server::new(std::net::SocketAddr::from(([255, 255, 255, 255], 1)))
+            .await
+            .unwrap_err();
 
         assert!(
             matches!(err, crate::Error::Transport(_)),

@@ -5,7 +5,7 @@
 /// Tracing levels [OFF, ERROR, WARN, INFO, DEBUG, TRACE].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, Default)]
 #[serde(rename_all = "lowercase")]
-pub enum TracingLevels {
+pub enum Levels {
     /// No telemetry output.
     ///
     /// Completely disables all telemetry output. Useful for performance-critical
@@ -51,15 +51,15 @@ pub enum TracingLevels {
 /// enabling configuration-driven telemetry level control throughout the application.
 ///
 /// The conversion is infallible and maintains the same semantic meaning for each level.
-impl From<TracingLevels> for tracing::level_filters::LevelFilter {
-    fn from(level: TracingLevels) -> Self {
+impl From<Levels> for tracing::level_filters::LevelFilter {
+    fn from(level: Levels) -> Self {
         match level {
-            TracingLevels::OFF => Self::OFF,
-            TracingLevels::ERROR => Self::ERROR,
-            TracingLevels::WARN => Self::WARN,
-            TracingLevels::INFO => Self::INFO,
-            TracingLevels::DEBUG => Self::DEBUG,
-            TracingLevels::TRACE => Self::TRACE,
+            Levels::OFF => Self::OFF,
+            Levels::ERROR => Self::ERROR,
+            Levels::WARN => Self::WARN,
+            Levels::INFO => Self::INFO,
+            Levels::DEBUG => Self::DEBUG,
+            Levels::TRACE => Self::TRACE,
         }
     }
 }
@@ -78,7 +78,7 @@ impl From<TracingLevels> for tracing::level_filters::LevelFilter {
 /// assert_eq!(format!("{}", TelemetryLevels::INFO), "info");
 /// assert_eq!(format!("{}", TelemetryLevels::DEBUG), "debug");
 /// ```
-impl std::fmt::Display for TracingLevels {
+impl std::fmt::Display for Levels {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let level_str = match self {
             Self::OFF => "off",
@@ -98,104 +98,86 @@ mod tests {
 
     #[test]
     fn default_is_warn() {
-        assert_eq!(TracingLevels::default(), TracingLevels::WARN);
+        assert_eq!(Levels::default(), Levels::WARN);
     }
 
     #[test]
     fn display_matches_serde_lowercase_names() {
-        assert_eq!(TracingLevels::OFF.to_string(), "off");
-        assert_eq!(TracingLevels::ERROR.to_string(), "error");
-        assert_eq!(TracingLevels::WARN.to_string(), "warn");
-        assert_eq!(TracingLevels::INFO.to_string(), "info");
-        assert_eq!(TracingLevels::DEBUG.to_string(), "debug");
-        assert_eq!(TracingLevels::TRACE.to_string(), "trace");
+        assert_eq!(Levels::OFF.to_string(), "off");
+        assert_eq!(Levels::ERROR.to_string(), "error");
+        assert_eq!(Levels::WARN.to_string(), "warn");
+        assert_eq!(Levels::INFO.to_string(), "info");
+        assert_eq!(Levels::DEBUG.to_string(), "debug");
+        assert_eq!(Levels::TRACE.to_string(), "trace");
     }
 
     #[test]
     fn converts_to_level_filter() {
         use tracing::level_filters::LevelFilter;
 
-        assert_eq!(LevelFilter::from(TracingLevels::OFF), LevelFilter::OFF);
-        assert_eq!(LevelFilter::from(TracingLevels::ERROR), LevelFilter::ERROR);
-        assert_eq!(LevelFilter::from(TracingLevels::WARN), LevelFilter::WARN);
-        assert_eq!(LevelFilter::from(TracingLevels::INFO), LevelFilter::INFO);
-        assert_eq!(LevelFilter::from(TracingLevels::DEBUG), LevelFilter::DEBUG);
-        assert_eq!(LevelFilter::from(TracingLevels::TRACE), LevelFilter::TRACE);
+        assert_eq!(LevelFilter::from(Levels::OFF), LevelFilter::OFF);
+        assert_eq!(LevelFilter::from(Levels::ERROR), LevelFilter::ERROR);
+        assert_eq!(LevelFilter::from(Levels::WARN), LevelFilter::WARN);
+        assert_eq!(LevelFilter::from(Levels::INFO), LevelFilter::INFO);
+        assert_eq!(LevelFilter::from(Levels::DEBUG), LevelFilter::DEBUG);
+        assert_eq!(LevelFilter::from(Levels::TRACE), LevelFilter::TRACE);
     }
 
     #[test]
     fn serializes_to_lowercase_json_strings() {
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::OFF).unwrap(),
-            "\"off\""
-        );
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::ERROR).unwrap(),
-            "\"error\""
-        );
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::WARN).unwrap(),
-            "\"warn\""
-        );
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::INFO).unwrap(),
-            "\"info\""
-        );
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::DEBUG).unwrap(),
-            "\"debug\""
-        );
-        assert_eq!(
-            serde_json::to_string(&TracingLevels::TRACE).unwrap(),
-            "\"trace\""
-        );
+        assert_eq!(serde_json::to_string(&Levels::OFF).unwrap(), "\"off\"");
+        assert_eq!(serde_json::to_string(&Levels::ERROR).unwrap(), "\"error\"");
+        assert_eq!(serde_json::to_string(&Levels::WARN).unwrap(), "\"warn\"");
+        assert_eq!(serde_json::to_string(&Levels::INFO).unwrap(), "\"info\"");
+        assert_eq!(serde_json::to_string(&Levels::DEBUG).unwrap(), "\"debug\"");
+        assert_eq!(serde_json::to_string(&Levels::TRACE).unwrap(), "\"trace\"");
     }
 
     #[test]
     fn deserializes_from_lowercase_json_strings() {
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"off\"").unwrap(),
-            TracingLevels::OFF
+            serde_json::from_str::<Levels>("\"off\"").unwrap(),
+            Levels::OFF
         );
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"error\"").unwrap(),
-            TracingLevels::ERROR
+            serde_json::from_str::<Levels>("\"error\"").unwrap(),
+            Levels::ERROR
         );
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"warn\"").unwrap(),
-            TracingLevels::WARN
+            serde_json::from_str::<Levels>("\"warn\"").unwrap(),
+            Levels::WARN
         );
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"info\"").unwrap(),
-            TracingLevels::INFO
+            serde_json::from_str::<Levels>("\"info\"").unwrap(),
+            Levels::INFO
         );
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"debug\"").unwrap(),
-            TracingLevels::DEBUG
+            serde_json::from_str::<Levels>("\"debug\"").unwrap(),
+            Levels::DEBUG
         );
         assert_eq!(
-            serde_json::from_str::<TracingLevels>("\"trace\"").unwrap(),
-            TracingLevels::TRACE
+            serde_json::from_str::<Levels>("\"trace\"").unwrap(),
+            Levels::TRACE
         );
     }
 
     #[test]
     fn deserialize_rejects_unknown_variant() {
-        let result = serde_json::from_str::<TracingLevels>("\"verbose\"");
+        let result = serde_json::from_str::<Levels>("\"verbose\"");
 
         assert!(result.is_err());
     }
 
     #[test]
     fn deserialize_rejects_uppercase_variant() {
-        let result = serde_json::from_str::<TracingLevels>("\"INFO\"");
+        let result = serde_json::from_str::<Levels>("\"INFO\"");
 
         assert!(result.is_err());
     }
 
     #[test]
     fn is_clone_and_copy() {
-        let level = TracingLevels::DEBUG;
+        let level = Levels::DEBUG;
         let cloned = Clone::clone(&level);
         let copied = level;
 
@@ -205,6 +187,6 @@ mod tests {
 
     #[test]
     fn debug_format_includes_variant_name() {
-        assert_eq!(format!("{:?}", TracingLevels::TRACE), "TRACE");
+        assert_eq!(format!("{:?}", Levels::TRACE), "TRACE");
     }
 }

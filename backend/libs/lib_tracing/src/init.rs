@@ -22,7 +22,7 @@ const DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::INFO;
 ///
 /// Returns [`TelemetryError::Generic`] if a global `log` bridge or `tracing`
 /// subscriber has already been installed for this process.
-pub fn init(telemetry_level: Option<crate::TracingLevels>) -> crate::Result<()> {
+pub fn init(telemetry_level: Option<crate::Levels>) -> crate::Result<()> {
     let env_filter = build_env_filter(telemetry_level);
 
     let registry = tracing_subscriber::registry()
@@ -44,7 +44,7 @@ pub fn init(telemetry_level: Option<crate::TracingLevels>) -> crate::Result<()> 
 /// The `RUST_LOG` environment variable takes precedence when set; otherwise
 /// `telemetry_level` is used, falling back to [`DEFAULT_LEVEL_FILTER`] when
 /// `telemetry_level` is `None`.
-fn build_env_filter(telemetry_level: Option<crate::TracingLevels>) -> EnvFilter {
+fn build_env_filter(telemetry_level: Option<crate::Levels>) -> EnvFilter {
     let default_directive = default_level_filter(telemetry_level).into();
 
     EnvFilter::builder().with_default_directive(default_directive).from_env_lossy()
@@ -56,7 +56,7 @@ fn build_env_filter(telemetry_level: Option<crate::TracingLevels>) -> EnvFilter 
 ///
 /// This is independent of the `RUST_LOG` environment variable, which is
 /// applied separately (and takes precedence) in [`build_env_filter`].
-fn default_level_filter(telemetry_level: Option<crate::TracingLevels>) -> LevelFilter {
+fn default_level_filter(telemetry_level: Option<crate::Levels>) -> LevelFilter {
     telemetry_level.map_or(DEFAULT_LEVEL_FILTER, LevelFilter::from)
 }
 
@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn default_level_filter_with_some_uses_configured_level() {
         assert_eq!(
-            default_level_filter(Some(crate::TracingLevels::TRACE)),
+            default_level_filter(Some(crate::Levels::TRACE)),
             LevelFilter::TRACE
         );
     }
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn default_level_filter_respects_off_level() {
         assert_eq!(
-            default_level_filter(Some(crate::TracingLevels::OFF)),
+            default_level_filter(Some(crate::Levels::OFF)),
             LevelFilter::OFF
         );
     }
@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn build_env_filter_does_not_panic() {
         let _ = build_env_filter(None);
-        let _ = build_env_filter(Some(crate::TracingLevels::TRACE));
+        let _ = build_env_filter(Some(crate::Levels::TRACE));
     }
 
     #[test]
@@ -96,7 +96,7 @@ mod tests {
         // The global subscriber and `log` bridge can each only be installed
         // once per process, so the first call succeeds and any subsequent
         // call fails.
-        assert!(init(Some(crate::TracingLevels::DEBUG)).is_ok());
+        assert!(init(Some(crate::Levels::DEBUG)).is_ok());
         assert!(init(None).is_err());
     }
 }

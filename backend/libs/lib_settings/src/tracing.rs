@@ -11,7 +11,7 @@
 const DEFAULT_ENABLED: bool = true;
 
 /// Default telemetry level if none is provided.
-const DEFAULT_TELEMETRY_LEVEL: lib_tracing::TracingLevels = lib_tracing::TracingLevels::INFO;
+const DEFAULT_TELEMETRY_LEVEL: lib_tracing::Levels = lib_tracing::Levels::INFO;
 
 /// Default show settings startup state if none is provided.
 const DEFAULT_SHOW_SETTINGS_STARTUP: bool = false;
@@ -23,7 +23,7 @@ pub struct TracingSettings {
     pub enabled: bool,
 
     /// The telemetry level to use for logging.
-    pub level: lib_tracing::TracingLevels,
+    pub level: lib_tracing::Levels,
 
     /// Whether to show settings startup information.
     pub show_settings_startup: bool,
@@ -42,7 +42,7 @@ impl Default for TracingSettings {
 impl TracingSettings {
     /// Returns the configured telemetry level.
     #[must_use]
-    pub const fn telemetry_level(&self) -> lib_tracing::TracingLevels {
+    pub const fn telemetry_level(&self) -> lib_tracing::Levels {
         self.level
     }
 }
@@ -50,13 +50,13 @@ impl TracingSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib_tracing::TracingLevels;
+    use lib_tracing::Levels;
 
     #[test]
     fn default_enables_tracing_at_info_level() {
         let settings = TracingSettings::default();
         assert!(settings.enabled);
-        assert_eq!(settings.level, TracingLevels::INFO);
+        assert_eq!(settings.level, Levels::INFO);
         assert!(!settings.show_settings_startup);
     }
 
@@ -64,21 +64,21 @@ mod tests {
     fn telemetry_level_returns_configured_level() {
         let settings = TracingSettings {
             enabled: true,
-            level: TracingLevels::DEBUG,
+            level: Levels::DEBUG,
             show_settings_startup: false,
         };
-        assert_eq!(settings.telemetry_level(), TracingLevels::DEBUG);
+        assert_eq!(settings.telemetry_level(), Levels::DEBUG);
     }
 
     #[test]
     fn telemetry_level_returns_correct_value_for_all_variants() {
         for level in [
-            TracingLevels::OFF,
-            TracingLevels::ERROR,
-            TracingLevels::WARN,
-            TracingLevels::INFO,
-            TracingLevels::DEBUG,
-            TracingLevels::TRACE,
+            Levels::OFF,
+            Levels::ERROR,
+            Levels::WARN,
+            Levels::INFO,
+            Levels::DEBUG,
+            Levels::TRACE,
         ] {
             let settings = TracingSettings {
                 enabled: true,
@@ -93,7 +93,7 @@ mod tests {
     fn clone_produces_equal_value() {
         let settings = TracingSettings {
             enabled: false,
-            level: TracingLevels::TRACE,
+            level: Levels::TRACE,
             show_settings_startup: true,
         };
         assert_eq!(settings.clone(), settings);
@@ -109,11 +109,11 @@ mod tests {
     #[test]
     fn different_levels_compare_unequal() {
         let a = TracingSettings {
-            level: TracingLevels::DEBUG,
+            level: Levels::DEBUG,
             ..Default::default()
         };
         let b = TracingSettings {
-            level: TracingLevels::ERROR,
+            level: Levels::ERROR,
             ..Default::default()
         };
         assert_ne!(a, b);
@@ -157,7 +157,7 @@ mod tests {
     fn serialize_to_json_roundtrip() {
         let settings = TracingSettings {
             enabled: true,
-            level: TracingLevels::WARN,
+            level: Levels::WARN,
             show_settings_startup: true,
         };
         let json = serde_json::to_string(&settings).expect("serialize TracingSettings");
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn serialize_level_as_lowercase_string() {
         let settings = TracingSettings {
-            level: TracingLevels::DEBUG,
+            level: Levels::DEBUG,
             ..Default::default()
         };
         let json = serde_json::to_string(&settings).expect("serialize TracingSettings");
@@ -185,7 +185,7 @@ mod tests {
         let settings: TracingSettings =
             serde_json::from_str(json).expect("deserialize TracingSettings");
         assert!(!settings.enabled);
-        assert_eq!(settings.level, TracingLevels::TRACE);
+        assert_eq!(settings.level, Levels::TRACE);
         assert!(settings.show_settings_startup);
     }
 
@@ -213,7 +213,10 @@ mod tests {
     fn serialize_produces_expected_json_field_names() {
         let settings = TracingSettings::default();
         let json = serde_json::to_string(&settings).expect("serialize TracingSettings");
-        assert!(json.contains("\"enabled\""), "missing 'enabled' field: {json}");
+        assert!(
+            json.contains("\"enabled\""),
+            "missing 'enabled' field: {json}"
+        );
         assert!(json.contains("\"level\""), "missing 'level' field: {json}");
         assert!(
             json.contains("\"show_settings_startup\""),
@@ -224,17 +227,18 @@ mod tests {
     #[test]
     fn deserialize_all_level_variants() {
         for (json_str, expected) in [
-            ("\"off\"", TracingLevels::OFF),
-            ("\"error\"", TracingLevels::ERROR),
-            ("\"warn\"", TracingLevels::WARN),
-            ("\"info\"", TracingLevels::INFO),
-            ("\"debug\"", TracingLevels::DEBUG),
-            ("\"trace\"", TracingLevels::TRACE),
+            ("\"off\"", Levels::OFF),
+            ("\"error\"", Levels::ERROR),
+            ("\"warn\"", Levels::WARN),
+            ("\"info\"", Levels::INFO),
+            ("\"debug\"", Levels::DEBUG),
+            ("\"trace\"", Levels::TRACE),
         ] {
-            let json =
-                format!(r#"{{"enabled": true, "level": {json_str}, "show_settings_startup": false}}"#);
-            let settings: TracingSettings =
-                serde_json::from_str(&json).unwrap_or_else(|_| panic!("failed to deserialize level {json_str}"));
+            let json = format!(
+                r#"{{"enabled": true, "level": {json_str}, "show_settings_startup": false}}"#
+            );
+            let settings: TracingSettings = serde_json::from_str(&json)
+                .unwrap_or_else(|_| panic!("failed to deserialize level {json_str}"));
             assert_eq!(settings.level, expected);
         }
     }
