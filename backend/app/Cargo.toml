@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
+lib_rpc = { path = "../libs/lib_rpc" }
 lib_settings = { path = "../libs/lib_settings" }
 lib_tracing = { path = "../libs/lib_tracing" }
 lib_web = { path = "../libs/lib_web" }
@@ -19,6 +20,7 @@ lib_web = { path = "../libs/lib_web" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
+tonic = { workspace = true }
 tracing = { workspace = true }
 
 ## --- Library Dependencies

@@ -55,6 +55,9 @@ pkgs.mkShell {
 
     # direnv Nix shell caching (needed for VS Code extension host)
     nix-direnv
+
+    # Development tools
+    grpcurl
   ];
 
   # Environment defaults applied whenever entering the shell.

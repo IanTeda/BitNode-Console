@@ -23,6 +23,10 @@ pub enum Error {
     /// Web server errors.
     #[error("Web error: {0}")]
     Web(#[from] lib_web::Error),
+
+    /// RPC server errors.
+    #[error("RPC error: {0}")]
+    Rpc(#[from] lib_rpc::Error),
 }
 
 #[cfg(test)]

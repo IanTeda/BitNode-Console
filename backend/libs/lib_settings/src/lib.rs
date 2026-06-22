@@ -6,6 +6,7 @@
 
 mod application;
 mod error;
+mod rpc;
 mod settings;
 mod tracing;
 mod web;
@@ -18,6 +19,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Re-export settings types.
 pub use application::ApplicationSettings;
+pub use rpc::RpcSettings;
 pub use settings::Settings;
 pub use tracing::TracingSettings;
 pub use web::WebSettings;

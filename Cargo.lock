@@ -73,6 +73,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "clap",
+ "lib_rpc",
  "lib_settings",
  "lib_tracing",
  "lib_web",
@@ -80,6 +81,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "tonic",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -808,8 +810,11 @@ dependencies = [
  "lib_tracing",
  "prost",
  "thiserror",
+ "tokio",
+ "tokio-stream",
  "tonic",
  "tonic-build",
+ "tracing",
 ]
 
 [[package]]

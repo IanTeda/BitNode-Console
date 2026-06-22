@@ -10,8 +10,6 @@ pub use error::Error;
 // Re-exports the result type for use in the application.
 pub type Result<T> = std::result::Result<T, Error>;
 
-//-- Application runtime
-
 /// Run the BitNode Console backend application.
 pub async fn run() -> Result<()> {
     let settings: lib_settings::Settings = lib_settings::Settings::parse(None)?;
@@ -24,8 +22,14 @@ pub async fn run() -> Result<()> {
         }
     }
 
-    let frontend_web_server = lib_web::HttpServer::new(&settings.web.host, settings.web.port);
-    frontend_web_server.run().await?;
+    let web_server = lib_web::HttpServer::new(&settings.web.host, settings.web.port);
+    let web_future = async { web_server.run().await.map_err(Error::from) };
+
+    let rpc_address = settings.rpc.socket_address()?;
+    let rpc_server = lib_rpc::Server::new(rpc_address).await?;
+    let rpc_future = async { rpc_server.run().await.map_err(Error::from) };
+
+    tokio::try_join!(web_future, rpc_future)?;
 
     Ok(())
 }
