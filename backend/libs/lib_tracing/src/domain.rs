@@ -73,10 +73,10 @@ impl From<Levels> for tracing::level_filters::LevelFilter {
 /// # Examples
 ///
 /// ```rust
-/// use lib_tracing::TelemetryLevels;
+/// use lib_tracing::Levels;
 ///
-/// assert_eq!(format!("{}", TelemetryLevels::INFO), "info");
-/// assert_eq!(format!("{}", TelemetryLevels::DEBUG), "debug");
+/// assert_eq!(format!("{}", Levels::INFO), "info");
+/// assert_eq!(format!("{}", Levels::DEBUG), "debug");
 /// ```
 impl std::fmt::Display for Levels {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

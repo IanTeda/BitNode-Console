@@ -302,7 +302,7 @@ mod tests {
     fn parse_overrides_application_section_from_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
         writeln!(file, "[application]").unwrap();
-        writeln!(file, "log_settings = true").unwrap();
+        writeln!(file, "setting = true").unwrap();
 
         let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
 

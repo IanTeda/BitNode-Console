@@ -66,7 +66,7 @@ mod tests {
 
         assert_eq!(
             error.to_string(),
-            "Telemetry error: Generic error init failed"
+            "Tracing error: Generic error init failed"
         );
     }
 
@@ -143,8 +143,8 @@ mod tests {
         let settings = Error::Settings(lib_settings::Error::Generic("x".to_string()));
         assert!(format!("{settings:?}").contains("Settings"));
 
-        let telemetry = Error::Tracing(lib_tracing::Error::Generic("x".to_string()));
-        assert!(format!("{telemetry:?}").contains("Telemetry"));
+        let tracing = Error::Tracing(lib_tracing::Error::Generic("x".to_string()));
+        assert!(format!("{tracing:?}").contains("Tracing"));
 
         let web = Error::Web(lib_web::Error::Generic("x".to_string()));
         assert!(format!("{web:?}").contains("Web"));
