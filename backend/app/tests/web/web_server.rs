@@ -1,8 +1,6 @@
 //! Integration tests for the HTTP web server.
 
-mod support;
-
-use support::TestWebServer;
+use crate::support::TestWebServer;
 
 #[tokio::test]
 async fn web_server_serves_index_html() {
@@ -13,7 +11,10 @@ async fn web_server_serves_index_html() {
     assert_eq!(response.status(), 200);
 
     let body = response.text().await.unwrap();
-    assert!(body.contains("html"), "expected HTML content in response body");
+    assert!(
+        body.contains("html"),
+        "expected HTML content in response body"
+    );
 }
 
 #[tokio::test]

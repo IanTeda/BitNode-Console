@@ -1,9 +1,7 @@
 //! Integration tests for the gRPC RPC server.
 
-mod support;
-
+use crate::support::TestRpcServer;
 use std::net::SocketAddr;
-use support::TestRpcServer;
 
 fn localhost(port: u16) -> SocketAddr {
     SocketAddr::from(([127, 0, 0, 1], port))
