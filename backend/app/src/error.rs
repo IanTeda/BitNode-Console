@@ -1,6 +1,6 @@
-//! Application error types.
+//! BitNode Console application error types.
 //!
-//! Defines [`ApplicationError`], the top-level error type returned by fallible
+//! Defines BitNode Console [`Error`], the top-level error type returned by fallible
 //! operations in this crate.
 
 /// The BitNode Console backend application error type.
@@ -12,21 +12,21 @@ pub enum Error {
     #[error("Generic error {0}")]
     Generic(String),
 
+    /// RPC server errors.
+    #[error("RPC error: {0}")]
+    Rpc(#[from] lib_rpc::Error),
+
     /// Settings loading or validating application errors.
     #[error("Settings error: {0}")]
     Settings(#[from] lib_settings::Error),
 
     /// Telemetry initialisation errors.
-    #[error("Telemetry error: {0}")]
-    Telemetry(#[from] lib_tracing::Error),
+    #[error("Tracing error: {0}")]
+    Tracing(#[from] lib_tracing::Error),
 
     /// Web server errors.
     #[error("Web error: {0}")]
     Web(#[from] lib_web::Error),
-
-    /// RPC server errors.
-    #[error("RPC error: {0}")]
-    Rpc(#[from] lib_rpc::Error),
 }
 
 #[cfg(test)]
@@ -45,7 +45,10 @@ mod tests {
         let settings_error = lib_settings::Error::Generic("bad config".to_string());
         let error = Error::Settings(settings_error);
 
-        assert_eq!(error.to_string(), "Settings error: Generic error bad config");
+        assert_eq!(
+            error.to_string(),
+            "Settings error: Generic error bad config"
+        );
     }
 
     #[test]
@@ -59,9 +62,12 @@ mod tests {
     #[test]
     fn telemetry_error_displays_message() {
         let tracing_error = lib_tracing::Error::Generic("init failed".to_string());
-        let error = Error::Telemetry(tracing_error);
+        let error = Error::Tracing(tracing_error);
 
-        assert_eq!(error.to_string(), "Telemetry error: Generic error init failed");
+        assert_eq!(
+            error.to_string(),
+            "Telemetry error: Generic error init failed"
+        );
     }
 
     #[test]
@@ -69,7 +75,7 @@ mod tests {
         let tracing_error = lib_tracing::Error::Generic("subscriber error".to_string());
         let error: Error = tracing_error.into();
 
-        assert!(matches!(error, Error::Telemetry(_)));
+        assert!(matches!(error, Error::Tracing(_)));
     }
 
     #[test]
@@ -77,7 +83,10 @@ mod tests {
         let web_error = lib_web::Error::Generic("connection refused".to_string());
         let error = Error::Web(web_error);
 
-        assert_eq!(error.to_string(), "Web error: Generic error: connection refused");
+        assert_eq!(
+            error.to_string(),
+            "Web error: Generic error: connection refused"
+        );
     }
 
     #[test]
@@ -113,7 +122,7 @@ mod tests {
     #[test]
     fn telemetry_error_source_exposes_underlying_error() {
         let tracing_error = lib_tracing::Error::Generic("oops".to_string());
-        let error = Error::Telemetry(tracing_error);
+        let error = Error::Tracing(tracing_error);
 
         assert!(std::error::Error::source(&error).is_some());
     }
@@ -134,7 +143,7 @@ mod tests {
         let settings = Error::Settings(lib_settings::Error::Generic("x".to_string()));
         assert!(format!("{settings:?}").contains("Settings"));
 
-        let telemetry = Error::Telemetry(lib_tracing::Error::Generic("x".to_string()));
+        let telemetry = Error::Tracing(lib_tracing::Error::Generic("x".to_string()));
         assert!(format!("{telemetry:?}").contains("Telemetry"));
 
         let web = Error::Web(lib_web::Error::Generic("x".to_string()));
