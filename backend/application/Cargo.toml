@@ -13,7 +13,6 @@ workspace = true
 ## --- Internal Dependencies
 lib_settings = { path = "../libs/lib_settings" }
 lib_tracing = { path = "../libs/lib_tracing" }
-lib_utils = { path = "../libs/lib_utils" }
 lib_web = { path = "../libs/lib_web" }
 
 ## --- Workspace Dependencies

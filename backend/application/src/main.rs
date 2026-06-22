@@ -9,7 +9,7 @@ mod prelude;
 use crate::prelude::*;
 
 #[tokio::main]
-async fn main() -> ServerResult<()> {
+async fn main() -> Result<()> {
     // Parse settings from the config file.
     let settings: lib_settings::Settings = lib_settings::Settings::parse(None)?;
 

@@ -2,10 +2,8 @@
 //!
 //! This module provides error types for the telemetry module.
 
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum TracingError {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     // Start with generic error during development and then expand error types below as needed.
     #[error("Generic error {0}")]
     Generic(String),
@@ -17,7 +15,7 @@ mod tests {
 
     #[test]
     fn generic_error_displays_message() {
-        let error = TracingError::Generic("something went wrong".to_string());
+        let error = Error::Generic("something went wrong".to_string());
 
         assert_eq!(error.to_string(), "Generic error something went wrong");
     }

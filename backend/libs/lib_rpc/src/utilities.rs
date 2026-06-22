@@ -1,34 +1,23 @@
-// // -- ./src/utilities.rs --
+// Re-export utilities service client from generated protobuf types
+pub use crate::generated_protos::utilities_service_client::UtilitiesServiceClient;
 
-// //! Utilities module - gRPC services and types for utility operations.
-// //!
-// //! This module provides re-exports of generated protobuf types and gRPC clients/servers
-// //! for the utilities service. It includes health check functionality and other utility
-// //! operations for the personal ledger system.
-// //!
-// //! ## Services
-// //!
-// //! - **UtilitiesService**: Provides utility operations like health checks via ping.
-// //!
-// //! ## Types
-// //!
-// //! - `PingRequest`: Empty request for ping operations
-// //! - `PingResponse`: Response containing a pong message
-// //! - `UtilitiesServiceClient`: gRPC client for connecting to utilities service
-// //! - `UtilitiesService`: Server trait for implementing utilities service
-// //! - `UtilitiesServiceServer`: Server implementation for utilities service
+pub use crate::generated_protos::utilities_service_server::{
+    UtilitiesService, UtilitiesServiceServer,
+};
 
-// /// gRPC client for the UtilitiesService.
-// /// Provides methods for utility operations, such as health checks via ping.
-// pub use crate::generated::utilities::utilities_service_client::UtilitiesServiceClient;
+pub use crate::generated_protos::{PingRequest, PingResponse};
 
-// /// gRPC server trait and implementation for the UtilitiesService.
-// /// Implement the `UtilitiesService` trait to handle utility requests like ping.
-// pub use crate::generated::utilities::utilities_service_server::{
-//     UtilitiesService, UtilitiesServiceServer,
-// };
+#[derive(Default)]
+pub struct MyUtilitiesService {}
 
-// /// Utilities-related message types.
-// /// Includes structs for ping requests and responses used in the UtilitiesService.
-// /// These are protobuf-generated types for serialization and deserialization.
-// pub use crate::generated::utilities::{PingRequest, PingResponse};
+// impl UtilitiesService for MyUtilitiesService {
+//     fn ping(&self, request: PingRequest) -> PingResponse {
+//         println!("Got a request from {:?}", request.remote_addr());
+
+//         let reply: PingResponse = PingResponse {
+//             message: "Pong...".to_string(),
+//         };
+
+//         Ok(Response::new(reply)) // Send back ping response
+//     }
+// }

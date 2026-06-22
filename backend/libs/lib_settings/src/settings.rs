@@ -6,7 +6,7 @@ use config::Config;
 use directories as Directories;
 use std::path::{Path, PathBuf};
 
-use crate::{ApplicationSettings, SettingsError, SettingsResult, TracingSettings, WebSettings};
+use crate::{ApplicationSettings, Error, SettingsResult, TracingSettings, WebSettings};
 
 /// Application name used for configuration directories and environment variables.
 /// This should match the binary name and be used consistently across the application.
@@ -59,7 +59,7 @@ impl Settings {
         let mut config_builder =
             Config::builder().add_source(Config::try_from(&defaults).map_err(|err| {
                 let msg = format!("Error parsing default settings: {err}");
-                SettingsError::Parsing(msg)
+                Error::Parsing(msg)
             })?);
 
         //--- 02. System config directory
@@ -138,11 +138,11 @@ impl Settings {
         // return the `Settings` struct.
 
         let config =
-            config_builder.build().map_err(|err| SettingsError::Generic(err.to_string()))?;
+            config_builder.build().map_err(|err| Error::Generic(err.to_string()))?;
 
         let settings: Self = config
             .try_deserialize()
-            .map_err(|err| SettingsError::Generic(err.to_string()))?;
+            .map_err(|err| Error::Generic(err.to_string()))?;
 
         Ok(settings)
     }

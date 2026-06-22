@@ -1,10 +1,8 @@
 //! Error types for the `lib_web` crate.
 
-use thiserror::Error;
-
 /// Errors that can occur in the [`crate::HttpServer`].
-#[derive(Error, Debug)]
-pub enum WebError {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error("Generic error: {0}")]
     Generic(String),
 
@@ -21,23 +19,20 @@ pub enum WebError {
     Serve(std::io::Error),
 }
 
-/// Convenience [`Result`] alias for [`HttpError`].
-pub type WebResult<T> = std::result::Result<T, WebError>;
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn generic_error_displays_message() {
-        let error = WebError::Generic("something went wrong".to_string());
+        let error = Error::Generic("something went wrong".to_string());
         assert_eq!(error.to_string(), "Generic error: something went wrong");
     }
 
     #[test]
     fn bind_error_includes_address_and_cause() {
         let source = std::io::Error::new(std::io::ErrorKind::AddrInUse, "address already in use");
-        let error = WebError::Bind {
+        let error = Error::Bind {
             address: "127.0.0.1:8080".to_string(),
             source,
         };
@@ -55,7 +50,7 @@ mod tests {
     #[test]
     fn bind_error_formats_full_message() {
         let source = std::io::Error::new(std::io::ErrorKind::AddrInUse, "address already in use");
-        let error = WebError::Bind {
+        let error = Error::Bind {
             address: "0.0.0.0:3000".to_string(),
             source,
         };
@@ -68,7 +63,7 @@ mod tests {
     #[test]
     fn serve_error_displays_message() {
         let source = std::io::Error::new(std::io::ErrorKind::BrokenPipe, "broken pipe");
-        let error = WebError::Serve(source);
+        let error = Error::Serve(source);
         assert!(error.to_string().contains("Server error while serving requests"));
     }
 }

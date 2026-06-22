@@ -75,7 +75,6 @@ dependencies = [
  "clap",
  "lib_settings",
  "lib_tracing",
- "lib_utils",
  "lib_web",
  "serde",
  "serde_json",
@@ -831,7 +830,6 @@ dependencies = [
 name = "lib_tracing"
 version = "0.1.0"
 dependencies = [
- "lib_utils",
  "serde",
  "serde_json",
  "thiserror",
@@ -841,10 +839,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib_utils"
-version = "0.1.0"
-
-[[package]]
 name = "lib_web"
 version = "0.1.0"
 dependencies = [
@@ -852,7 +846,6 @@ dependencies = [
  "clap",
  "lib_settings",
  "lib_tracing",
- "lib_utils",
  "serde",
  "serde_json",
  "thiserror",

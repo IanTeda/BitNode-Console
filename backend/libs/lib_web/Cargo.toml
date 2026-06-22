@@ -15,7 +15,6 @@ workspace = true
 ## --- Internal Dependencies
 lib_tracing = { path = "../../libs/lib_tracing" }
 lib_settings = { path = "../../libs/lib_settings" }
-lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies
 serde = { workspace = true }

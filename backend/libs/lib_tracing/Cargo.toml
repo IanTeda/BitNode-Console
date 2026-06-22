@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
-lib_utils = { path = "../../libs/lib_utils" }
 
 ## --- Workspace Dependencies
 serde = { workspace = true }

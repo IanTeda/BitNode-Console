@@ -11,10 +11,10 @@ mod tracing;
 mod web;
 
 /// Re-export Settings error type
-pub use error::SettingsError;
+pub use error::Error;
 
 /// Result type alias used across the settings module.
-pub type SettingsResult<T> = std::result::Result<T, SettingsError>;
+pub type SettingsResult<T> = std::result::Result<T, Error>;
 
 /// Re-export settings types.
 pub use application::ApplicationSettings;
