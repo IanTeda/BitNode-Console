@@ -13,7 +13,9 @@ use crate::services::{UtilitiesServiceImpl, UtilitiesServiceServer};
 /// Construction and serving are split so that integration tests can bind to
 /// port `0`, read back the assigned port via [`address`](Self::address),
 /// and then spawn [`run`](Self::run) in a background task.
+#[derive(Debug)]
 pub struct Server {
+    /// The TCP listener that serves incoming gRPC requests.
     listener: tokio::net::TcpListener,
 }
 
@@ -61,5 +63,89 @@ impl Server {
             .map_err(|e| crate::Error::Transport(e.to_string()))?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn localhost(port: u16) -> SocketAddr {
+        SocketAddr::from(([127, 0, 0, 1], port))
+    }
+
+    #[tokio::test]
+    async fn new_binds_to_ephemeral_port() {
+        let server = Server::new(localhost(0)).await;
+
+        assert!(server.is_ok());
+    }
+
+    #[tokio::test]
+    async fn address_returns_bound_address() {
+        let server = Server::new(localhost(0)).await.unwrap();
+        let addr = server.address().unwrap();
+
+        assert_eq!(addr.ip(), std::net::Ipv4Addr::LOCALHOST);
+        assert_ne!(addr.port(), 0, "OS should assign a real port");
+    }
+
+    #[tokio::test]
+    async fn new_fails_on_invalid_address() {
+        let result = Server::new(SocketAddr::from(([255, 255, 255, 255], 1))).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn new_error_is_transport_variant() {
+        let err = Server::new(SocketAddr::from(([255, 255, 255, 255], 1))).await.unwrap_err();
+
+        assert!(
+            matches!(err, crate::Error::Transport(_)),
+            "expected Transport variant, got: {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn two_servers_bind_to_different_ports() {
+        let server_a = Server::new(localhost(0)).await.unwrap();
+        let server_b = Server::new(localhost(0)).await.unwrap();
+
+        assert_ne!(
+            server_a.address().unwrap().port(),
+            server_b.address().unwrap().port(),
+        );
+    }
+
+    #[tokio::test]
+    async fn duplicate_port_bind_fails() {
+        let first = Server::new(localhost(0)).await.unwrap();
+        let taken_port = first.address().unwrap().port();
+
+        let second = Server::new(localhost(taken_port)).await;
+
+        assert!(
+            second.is_err(),
+            "binding to an already-taken port should fail"
+        );
+    }
+
+    #[tokio::test]
+    async fn run_serves_and_responds_to_ping() {
+        let server = Server::new(localhost(0)).await.unwrap();
+        let addr = server.address().unwrap();
+
+        tokio::spawn(server.run());
+
+        let mut client =
+            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+
+        let response = client
+            .ping(tonic::Request::new(crate::generated_protos::PingRequest {}))
+            .await
+            .unwrap();
+
+        assert_eq!(response.into_inner().pong, "Pong...");
     }
 }
