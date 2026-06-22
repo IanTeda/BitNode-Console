@@ -6,7 +6,7 @@ use config::Config;
 use directories as Directories;
 use std::path::{Path, PathBuf};
 
-use crate::{ApplicationSettings, Error, SettingsResult, TracingSettings, WebSettings};
+// use crate::{ApplicationSettings, Error, Result, TracingSettings, WebSettings};
 
 /// Application name used for configuration directories and environment variables.
 /// This should match the binary name and be used consistently across the application.
@@ -51,7 +51,7 @@ impl Settings {
     /// Returns an error if the current directory or executable path cannot be
     /// determined, if any configuration source fails to parse, or if the
     /// merged configuration cannot be deserialized into `Settings<S>`.
-    pub fn parse(config_file: Option<&Path>) -> SettingsResult<Self> {
+    pub fn parse(config_file: Option<&Path>) -> crate::Result<Self> {
         //--- 01. Build-in defaults
         // Seed the config builder with the default configuration so that
         // any fields not supplied by later sources default back to this.
@@ -59,7 +59,7 @@ impl Settings {
         let mut config_builder =
             Config::builder().add_source(Config::try_from(&defaults).map_err(|err| {
                 let msg = format!("Error parsing default settings: {err}");
-                Error::Parsing(msg)
+                crate::Error::Parsing(msg)
             })?);
 
         //--- 02. System config directory
@@ -138,11 +138,10 @@ impl Settings {
         // return the `Settings` struct.
 
         let config =
-            config_builder.build().map_err(|err| Error::Generic(err.to_string()))?;
+            config_builder.build().map_err(|err| crate::Error::Generic(err.to_string()))?;
 
-        let settings: Self = config
-            .try_deserialize()
-            .map_err(|err| Error::Generic(err.to_string()))?;
+        let settings: Self =
+            config.try_deserialize().map_err(|err| crate::Error::Generic(err.to_string()))?;
 
         Ok(settings)
     }

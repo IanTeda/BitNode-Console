@@ -14,7 +14,7 @@ mod web;
 pub use error::Error;
 
 /// Result type alias used across the settings module.
-pub type SettingsResult<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Re-export settings types.
 pub use application::ApplicationSettings;
