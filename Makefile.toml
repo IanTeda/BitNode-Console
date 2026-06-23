@@ -18,6 +18,12 @@ args = ["serve", "--port", "8001"]
 
 ## --- [FRONTEND + SERVER WORKFLOW]--------------------------------------------
 
+[tasks.frontend-dev]
+workspace = false
+description = "Run Vite dev server with hot reload for frontend development"
+command = "sh"
+args = ["-c", "cd frontend && npm run dev"]
+
 [tasks.frontend-build]
 workspace = false
 description = "Build frontend assets into embedded server assets directory"
