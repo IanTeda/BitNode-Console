@@ -1,0 +1,22 @@
+{
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    "**/routeTree.gen.ts",
+  ],
+  "read_only_files": [
+    "**/.rustup/**",
+    "**/.cargo/registry/**",
+    "**/.cargo/git/**",
+    "target/**/*.rs",
+    "**/*.lock",
+    "**/frontend/routeTree.gen.ts",
+  ],
+}
