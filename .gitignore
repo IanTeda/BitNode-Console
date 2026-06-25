@@ -24,6 +24,7 @@
 # ---------------------------[ UNDERSCORE FILES ]--------------------------------
 # By default, ignore all underscore files `_*`, except for those with `!`
 _*
+!frontend/src/routes/_*
 
 
 # ----------------------------[ LOG FILES ]------------------------------------
