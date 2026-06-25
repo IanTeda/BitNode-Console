@@ -12,7 +12,8 @@ export default defineConfig({
     },
   },
   plugins: [
-    // tanstack Router needs to be at the begining of the plugins list
+    // Tanstack Router needs to be before the react plugin call, so it can intercept the react elements.
+    // Let's put it at the start of the plugins array.
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
