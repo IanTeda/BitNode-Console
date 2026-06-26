@@ -3,7 +3,7 @@ import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "DashboardRoute" });
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
+export const Route = createFileRoute("/_restricted/dashboard")({
   component: RouteComponent,
 });
 

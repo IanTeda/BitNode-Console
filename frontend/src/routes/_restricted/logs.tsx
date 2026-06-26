@@ -3,7 +3,7 @@ import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "LogsRoute" });
 
-export const Route = createFileRoute("/_authenticated/logs")({
+export const Route = createFileRoute("/_restricted/logs")({
   component: RouteComponent,
 });
 

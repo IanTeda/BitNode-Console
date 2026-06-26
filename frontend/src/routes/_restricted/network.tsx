@@ -3,7 +3,7 @@ import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "NetworkRoute" });
 
-export const Route = createFileRoute("/_authenticated/network")({
+export const Route = createFileRoute("/_restricted/network")({
   component: RouteComponent,
 });
 
