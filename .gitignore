@@ -155,3 +155,9 @@ dist-ssr
 
 docs/.rustdoc
 docs/.book
+
+
+# -----------------------------[ GENERATED CODE ]------------------------------
+
+# TanStack Router generated route tree
+frontend/src/routeTree.gen.ts
