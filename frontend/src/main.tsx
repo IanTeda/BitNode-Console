@@ -3,7 +3,10 @@ import { createRoot } from "react-dom/client";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { initTheme } from "./hooks/use-theme";
 import "./index.css";
+
+initTheme();
 
 const router = createRouter({ routeTree });
 
