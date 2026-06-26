@@ -6,8 +6,7 @@
   "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "vite",
-    "build:protoc": "protoc --experimental_allow_proto3_optional --proto_path=protos --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --ts_out=src/generated protos/*.proto",
-    "build": "pnpm run build:protoc && tsc -b && vite build",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
