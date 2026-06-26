@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn default_applies_all_section_defaults() {
         let settings = Settings::default();
-        assert!(!settings.application.setting);
+        assert_eq!(settings.application.password(), "");
         assert!(settings.tracing.enabled);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.tracing.show_settings_startup);
@@ -233,7 +233,7 @@ mod tests {
         let settings: Settings = serde_json::from_str("{}").expect("deserialize Settings");
         assert_eq!(settings.web.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
-        assert!(!settings.application.setting);
+        assert_eq!(settings.application.password(), "");
     }
 
     #[test]
@@ -260,7 +260,7 @@ mod tests {
         let settings = Settings::parse(None).expect("parse should succeed");
         assert_eq!(settings.web.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
-        assert!(!settings.application.setting);
+        assert_eq!(settings.application.password(), "");
     }
 
     #[test]
@@ -302,11 +302,11 @@ mod tests {
     fn parse_overrides_application_section_from_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
         writeln!(file, "[application]").unwrap();
-        writeln!(file, "setting = true").unwrap();
+        writeln!(file, "password = hunter2").unwrap();
 
         let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
 
-        assert!(settings.application.setting);
+        assert_eq!(settings.application.password(), "hunter2");
     }
 
     #[test]

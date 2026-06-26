@@ -4,30 +4,36 @@
 //!
 //! This module contains the application settings struct and related functions.
 
-/// Default value for the `log_settings` flag.
-const DEFAULT_SETTINGS: bool = false;
+/// Default value for the `password` field.
+const DEFAULT_PASSWORD: &str = "";
 
 /// Application-level settings.
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 pub struct ApplicationSettings {
-    /// Log the active settings to the tracing output at startup.
-    pub setting: bool,
+    /// The password used for application authentication.
+    pub password: String,
 }
 
 // Default implementation for ApplicationSettings.
 impl Default for ApplicationSettings {
     fn default() -> Self {
         Self {
-            setting: DEFAULT_SETTINGS,
+            password: DEFAULT_PASSWORD.to_string(),
         }
     }
 }
 
 impl ApplicationSettings {
-    /// Returns `true` if the active settings should be logged at startup.
+    /// Creates a new [`ApplicationSettings`] with the default password.
     #[must_use]
-    pub const fn setting(&self) -> bool {
-        self.setting
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the configured password.
+    #[must_use]
+    pub fn password(&self) -> &str {
+        &self.password
     }
 }
 
@@ -36,20 +42,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_disables_log_settings() {
+    fn default_has_empty_password() {
         let settings = ApplicationSettings::default();
-        assert!(!settings.setting());
+        assert_eq!(settings.password(), DEFAULT_PASSWORD);
     }
 
     #[test]
-    fn setting_accessor_returns_field_value() {
-        let settings = ApplicationSettings { setting: true };
-        assert!(settings.setting());
+    fn password_accessor_returns_field_value() {
+        let settings = ApplicationSettings {
+            password: "hunter2".to_string(),
+        };
+        assert_eq!(settings.password(), "hunter2");
     }
 
     #[test]
     fn clone_produces_equal_value() {
-        let settings = ApplicationSettings { setting: true };
+        let settings = ApplicationSettings {
+            password: "secret".to_string(),
+        };
         let cloned = settings.clone();
         assert_eq!(settings, cloned);
     }
@@ -63,7 +73,9 @@ mod tests {
 
     #[test]
     fn serialize_deserialize_roundtrip() {
-        let settings = ApplicationSettings { setting: true };
+        let settings = ApplicationSettings {
+            password: "my_password".to_string(),
+        };
         let json = serde_json::to_string(&settings).expect("serialize ApplicationSettings");
         let deserialized: ApplicationSettings =
             serde_json::from_str(&json).expect("deserialize ApplicationSettings");
@@ -71,8 +83,36 @@ mod tests {
     }
 
     #[test]
+    fn serialize_produces_expected_json_field_names() {
+        let settings = ApplicationSettings::default();
+        let json = serde_json::to_string(&settings).expect("serialize ApplicationSettings");
+        assert!(
+            json.contains("\"password\""),
+            "missing 'password' field: {json}"
+        );
+    }
+
+    #[test]
     fn deserialize_missing_field_fails() {
         let result: Result<ApplicationSettings, _> = serde_json::from_str("{}");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn different_passwords_compare_unequal() {
+        let a = ApplicationSettings {
+            password: "alpha".to_string(),
+        };
+        let b = ApplicationSettings {
+            password: "bravo".to_string(),
+        };
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn equal_settings_compare_equal() {
+        let a = ApplicationSettings::default();
+        let b = ApplicationSettings::default();
+        assert_eq!(a, b);
     }
 }
