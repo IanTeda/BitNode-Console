@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 
 const log = logger.getSubLogger({ name: "AuthenticatingRoute" });
 
-export const Route = createFileRoute("/_public/auth/authenticating")({
+export const Route = createFileRoute("/_public/auth/verifying")({
   component: RouteComponent,
 });
 
