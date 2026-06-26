@@ -9,7 +9,7 @@
 # ----------------------------[ DOT FILES ]------------------------------------
 # By Default, ignore all dot files `.*`, except for those with `!`
 .*
-!.ai
+!.agents
 !.devcontainer
 !.envrc
 !.editorconfig
