@@ -5,8 +5,8 @@ import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "RPC Client" });
 
-const DEFAULT_BASE_URL = "http://127.0.0.1:50051";
-const DEFAULT_DEADLINE_MS = 30_000;
+const RPC_BASE_URL = import.meta.env.VITE_RPC_BASE_URL;
+const RPC_DEADLINE_MS = Number(import.meta.env.VITE_RPC_DEADLINE_MS);
 
 function authInterceptor(accessToken?: string): RpcInterceptor {
   return {
@@ -43,16 +43,14 @@ export class RpcClient {
   }
 
   public static async create(accessToken?: string): Promise<RpcClient> {
-    const baseUrl = DEFAULT_BASE_URL;
-
     const transport = new GrpcWebFetchTransport({
-      baseUrl,
-      deadline: DEFAULT_DEADLINE_MS,
+      baseUrl: RPC_BASE_URL,
+      deadline: RPC_DEADLINE_MS,
       interceptors: [authInterceptor(accessToken)],
       fetchInit: {},
     });
 
-    log.debug("gRPC-web transport created for", baseUrl);
+    log.debug("gRPC-web transport created for", RPC_BASE_URL);
 
     const utilities = new UtilitiesServiceClient(transport);
 

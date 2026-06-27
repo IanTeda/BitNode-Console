@@ -52,8 +52,10 @@ impl Server {
         let addr = self.address()?;
         let incoming = TcpListenerStream::new(self.listener);
 
-        let utilities = UtilitiesServiceServer::new(UtilitiesServiceImpl::default());
+        // Register the utilities service with the gRPC server.
+        let utilities_service = UtilitiesServiceServer::new(UtilitiesServiceImpl::default());
 
+        // Setup CORS for gRPC-Web requests.
         let cors = CorsLayer::new()
             .allow_origin(AllowOrigin::mirror_request())
             .allow_methods([http::Method::POST])
@@ -68,11 +70,12 @@ impl Server {
 
         tracing::info!("RPC server listening on rpc://{addr}");
 
+        // Build and serve the gRPC server.
         tonic::transport::Server::builder()
             .accept_http1(true)
             .layer(cors)
             .layer(tonic_web::GrpcWebLayer::new())
-            .add_service(utilities)
+            .add_service(utilities_service)
             .serve_with_incoming(incoming)
             .await
             .map_err(|e| crate::Error::Transport(e.to_string()))?;
@@ -248,13 +251,8 @@ mod tests {
             response.status()
         );
 
-        let content_type = response
-            .headers()
-            .get("content-type")
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
+        let content_type =
+            response.headers().get("content-type").unwrap().to_str().unwrap().to_string();
         assert!(
             content_type.starts_with("application/grpc-web"),
             "expected grpc-web content type, got: {content_type}"
