@@ -21,11 +21,15 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
+tonic-web = { workspace = true }
 tracing = { workspace = true }
 
 ## --- Library Dependencies
+http = "1"
+tower-http = { version = "0.6", features = ["cors"] }
 
 [build-dependencies]
 tonic-build = { workspace = true }
 
 [dev-dependencies]
+reqwest = { version = "0.12", default-features = false }

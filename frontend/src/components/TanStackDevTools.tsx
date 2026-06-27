@@ -10,10 +10,19 @@ const TanStackRouterDevtools = import.meta.env.DEV
     )
   : () => null;
 
+const TanStackQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-query-devtools").then((res) => ({
+        default: res.ReactQueryDevtools,
+      })),
+    )
+  : () => null;
+
 export default function TanStackDevTools() {
   return (
     <Suspense>
       <TanStackRouterDevtools position="bottom-right" />
+      <TanStackQueryDevtools buttonPosition="bottom-left" />
     </Suspense>
   );
 }

@@ -49,9 +49,7 @@ export class RpcClient {
       baseUrl,
       deadline: DEFAULT_DEADLINE_MS,
       interceptors: [authInterceptor(accessToken)],
-      fetchInit: {
-        credentials: "include",
-      },
+      fetchInit: {},
     });
 
     log.debug("gRPC-web transport created for", baseUrl);
