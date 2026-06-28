@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { RpcClient } from "@/lib/rpc-client";
-import type { PingResponse } from "@/lib/generated_protos/bitnode_console/v1/utilities";
+import { utilitiesClient } from "@/lib/rpc/utilities";
+import type { PingResponse } from "@/lib/generated_protos/bitnode_console/v1/utilities/utilities";
 
 const PING_QUERY_KEY = ["ping"] as const;
 
 async function ping(): Promise<PingResponse> {
-  const client = await RpcClient.getInstance();
-  const { response } = await client.utilitiesClient().ping({});
+  const { response } = await utilitiesClient().ping({});
   return response;
 }
 

@@ -29,7 +29,7 @@ command = "npm"
 args = ["run", "build"]
 cwd = "frontend"
 
-[tasks.frontend-dev]
+[tasks.dev-frontend]
 workspace = false
 description = "Run Vite dev server with hot reload"
 command = "npm"
@@ -61,6 +61,12 @@ cp -r frontend/dist backend/libs/lib_web/assets
 workspace = false
 description = "Build frontend, copy assets, then run the app"
 dependencies = ["assets-copy"]
+command = "cargo"
+args = ["run", "-p", "app"]
+
+[tasks.dev-app]
+workspace = false
+description = "Run the app"
 command = "cargo"
 args = ["run", "-p", "app"]
 
