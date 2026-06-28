@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import logger from "@/lib/logger";
-import { useAuthenticationMutation } from "@/queries/authentication";
+import { useAuthentication } from "@/components/AuthenticationProvider";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -31,15 +31,17 @@ export function LoginForm({ className, ...props }: ComponentProps<"form">) {
 
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isPending, setIsPending] = useState(false);
   const navigate = useNavigate();
-  const mutation = useAuthenticationMutation();
+  const { handleLogin } = useAuthentication();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage("");
+    setIsPending(true);
 
     try {
-      await mutation.mutateAsync({ password });
+      await handleLogin(password);
       await navigate({ to: "/dashboard" });
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
@@ -49,6 +51,8 @@ export function LoginForm({ className, ...props }: ComponentProps<"form">) {
           : decodeURI(raw) || "Login failed. Please try again.";
       setErrorMessage(message);
       log.error("Login error:", message);
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -80,16 +84,12 @@ export function LoginForm({ className, ...props }: ComponentProps<"form">) {
             className="bg-background"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={mutation.isPending}
+            disabled={isPending}
           />
         </Field>
         <Field>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? (
               <>
                 <Loader2 className="animate-spin" />
                 Logging in…

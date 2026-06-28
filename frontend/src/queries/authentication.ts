@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import logger from "@/lib/logger";
 import type { LoginResponse } from "@/lib/generated_protos/bitnode_console/v1/authentication/authentication";
 import { authenticationClient } from "@/lib/rpc/authentication";
-import { setAccessToken } from "@/lib/rpc/utilities";
 
 const log = logger.getSubLogger({ name: "Authentication Query" });
 
@@ -20,10 +19,6 @@ export function useAuthenticationMutation() {
       return response;
     },
     onSuccess: (data) => {
-      log.debug("Login successful; storing tokens");
-      setAccessToken(data.accessToken);
-      sessionStorage.setItem("accessToken", data.accessToken);
-      sessionStorage.setItem("refreshToken", data.refreshToken);
       queryClient.setQueryData([AUTHENTICATION_QUERY_KEY], data);
     },
   });
