@@ -2,8 +2,8 @@
     "recommendations": [
         "fill-labs.dependi",
         "gruntfuggly.todo-tree",
-        "masterustacean.leptos-fmt",
         "mhutchie.git-graph",
+        "mkhl.direnv",
         "rust-lang.rust-analyzer",
         "streetsidesoftware.code-spell-checker-australian-english",
         "streetsidesoftware.code-spell-checker",

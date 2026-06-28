@@ -15,6 +15,14 @@ pub enum Error {
     /// Error encountered while hashing or verifying a password.
     #[error("Password hash error: {0}")]
     PasswordHash(String),
+
+    /// Error encoding or decoding a JSON Web Token.
+    #[error("Token error: {0}")]
+    Token(#[from] jsonwebtoken::errors::Error),
+
+    /// A token of the wrong type was supplied (e.g. refresh token used as access token).
+    #[error("invalid token type: expected {expected}, got {got}")]
+    InvalidTokenType { expected: String, got: String },
 }
 
 

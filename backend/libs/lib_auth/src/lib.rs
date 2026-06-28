@@ -8,7 +8,7 @@ mod domains;
 mod error;
 
 /// Re-export Auth domain types.
-pub use domains::PasswordHash;
+pub use domains::{AccessToken, PasswordHash, RefreshToken, TokenClaim, TokenType};
 
 /// Re-export Auth error type.
 pub use error::Error;

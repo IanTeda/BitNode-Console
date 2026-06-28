@@ -46,7 +46,7 @@ pkgs.mkShell {
 
     # Frontend tooling
     nodejs_22
-    nodePackages.pnpm
+    pnpm
 
     # Build dependencies
     pkg-config
