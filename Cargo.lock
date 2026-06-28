@@ -73,6 +73,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "clap",
+ "lib_auth",
  "lib_rpc",
  "lib_settings",
  "lib_tracing",
@@ -1193,14 +1194,18 @@ name = "lib_rpc"
 version = "0.1.0"
 dependencies = [
  "http",
+ "lib_auth",
+ "lib_settings",
  "lib_tracing",
  "prost",
  "reqwest",
+ "secrecy",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
  "tonic-build",
+ "tonic-reflection",
  "tonic-web",
  "tower-http 0.6.11",
  "tracing",
@@ -2454,6 +2459,19 @@ dependencies = [
  "prost-types",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "878d81f52e7fcfd80026b7fdb6a9b578b3c3653ba987f87f0dce4b64043cba27"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tokio",
+ "tokio-stream",
+ "tonic",
 ]
 
 [[package]]

@@ -59,6 +59,9 @@ pkgs.mkShell {
 
     # Development tools
     grpcurl
+
+    # Password hashing
+    libargon2
   ];
 
   # Environment defaults applied whenever entering the shell.

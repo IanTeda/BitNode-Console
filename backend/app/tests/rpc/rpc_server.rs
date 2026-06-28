@@ -1,11 +1,6 @@
 //! Integration tests for the gRPC RPC server.
 
 use crate::support::TestRpcServer;
-use std::net::SocketAddr;
-
-fn localhost(port: u16) -> SocketAddr {
-    SocketAddr::from(([127, 0, 0, 1], port))
-}
 
 #[tokio::test]
 async fn rpc_server_starts_and_responds_to_ping() {
@@ -55,10 +50,14 @@ async fn rpc_server_handles_concurrent_clients() {
 
 #[tokio::test]
 async fn rpc_server_bind_failure_returns_error() {
-    let first = lib_rpc::Server::new(localhost(0)).await.unwrap();
+    let first = lib_rpc::Server::new(crate::support::test_settings()).await.unwrap();
     let taken_port = first.address().unwrap().port();
 
-    let result = lib_rpc::Server::new(localhost(taken_port)).await;
+    let conflict_settings = lib_settings::RpcSettings {
+        port: taken_port,
+        ..crate::support::test_settings()
+    };
+    let result = lib_rpc::Server::new(conflict_settings).await;
 
     assert!(result.is_err(), "binding to a taken port should fail");
 }

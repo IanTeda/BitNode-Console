@@ -13,9 +13,30 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     }
 });
 
+/// A well-formed Argon2id PHC hash used across integration tests.
+///
+/// The plaintext password is `"test_password"`.
+pub const TEST_PASSWORD_HASH: &str =
+    "$argon2id$v=19$m=4096,t=3,p=1$Mzk3NGQ1NDBiZmZiYjhhNDY0YWY3MmRjYjIwNDI2YmE\
+     $Bzo73djW0DkCVR4prXhqvWB4ViEdJ54h91mU0LCgqPY";
+
+/// Returns [`lib_settings::RpcSettings`] suitable for integration tests.
+///
+/// Uses port `0` so the OS assigns an ephemeral port, preventing conflicts
+/// when tests run in parallel.
+#[allow(dead_code)]
+pub fn test_settings() -> lib_settings::RpcSettings {
+    lib_settings::RpcSettings {
+        host: "127.0.0.1".to_string(),
+        port: 0,
+        password_hash: TEST_PASSWORD_HASH.to_string(),
+        token_secret: "test_secret".to_string(),
+    }
+}
+
 /// A running test instance of the RPC server.
 ///
-/// Created via [`TestApp::spawn`], which binds to an ephemeral port and runs
+/// Created via [`TestRpcServer::spawn`], which binds to an ephemeral port and runs
 /// the server in a background tokio task. The bound address is exposed so
 /// tests can connect a gRPC client.
 #[allow(dead_code)]
@@ -24,21 +45,20 @@ pub struct TestRpcServer {
 }
 
 impl TestRpcServer {
-    /// Spawn a test RPC server on a random port and return the [`TestApp`].
+    /// Spawn a test RPC server on a random port and return the [`TestRpcServer`].
     #[allow(dead_code)]
     pub async fn spawn() -> Self {
         Lazy::force(&TRACING);
 
-        let address = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
-        let server = lib_rpc::Server::new(address).await.expect("failed to bind test RPC server");
+        let server = lib_rpc::Server::new(test_settings())
+            .await
+            .expect("failed to bind test RPC server");
 
         let bound_address = server.address().expect("failed to get bound address");
 
         tokio::spawn(server.run());
 
-        Self {
-            address: bound_address,
-        }
+        Self { address: bound_address }
     }
 
     /// Connect a [`UtilitiesServiceClient`] to this test server.

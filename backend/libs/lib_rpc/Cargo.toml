@@ -13,10 +13,13 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
+lib_auth = { path = "../../libs/lib_auth" }
+lib_settings = { path = "../../libs/lib_settings" }
 lib_tracing = { path = "../../libs/lib_tracing" }
 
 ## --- Workspace Dependencies
 prost = { workspace = true }
+secrecy = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
@@ -27,6 +30,7 @@ tracing = { workspace = true }
 ## --- Library Dependencies
 http = "1"
 tower-http = { version = "0.6", features = ["cors"] }
+tonic-reflection = "0.12"
 
 [build-dependencies]
 tonic-build = { workspace = true }

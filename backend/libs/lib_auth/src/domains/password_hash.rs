@@ -1,15 +1,15 @@
 //! Argon2id password hashing and verification.
 
-use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, PasswordVerifier, Version};
 use secrecy::{ExposeSecret, SecretString};
 
 /// A hashed password stored in PHC string format.
 ///
 /// Wraps an Argon2id password hash. Construct from a plain-text password
-/// via [`PasswordHash::from_password`], or from an existing PHC hash
-/// string (e.g. loaded from settings) via [`TryFrom<String>`].
+/// via [`PasswordHash::from_password`], or wrap an existing PHC hash string
+/// (e.g. loaded from settings) via [`PasswordHash::from_hash`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PasswordHash(String);
 
@@ -44,6 +44,20 @@ impl PasswordHash {
             .map_err(|e| crate::Error::PasswordHash(e.to_string()))?;
         tracing::debug!("password hashed");
         Ok(Self(hash.to_string()))
+    }
+
+    /// Wrap an existing Argon2id PHC hash string in a [`PasswordHash`].
+    ///
+    /// Validates that `hash` is a well-formed PHC string before wrapping it.
+    /// Use this when loading a pre-computed hash from configuration or storage.
+    /// To hash a plain-text password instead, use [`PasswordHash::from_password`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::PasswordHash`] if `hash` is not a valid PHC string.
+    #[tracing::instrument()]
+    pub fn from_hash(hash: &str) -> crate::Result<Self> {
+        Self::try_from(hash)
     }
 
     /// Verify a plain-text password against this stored hash.
@@ -82,8 +96,7 @@ impl TryFrom<String> for PasswordHash {
 
     /// Validate that `value` is a well-formed PHC string before wrapping it.
     fn try_from(value: String) -> crate::Result<Self> {
-        argon2::PasswordHash::new(&value)
-            .map_err(|e| crate::Error::PasswordHash(e.to_string()))?;
+        argon2::PasswordHash::new(&value).map_err(|e| crate::Error::PasswordHash(e.to_string()))?;
         Ok(Self(value))
     }
 }
@@ -91,6 +104,7 @@ impl TryFrom<String> for PasswordHash {
 impl TryFrom<&str> for PasswordHash {
     type Error = crate::Error;
 
+    /// Validate that `value` is a well-formed PHC string before wrapping it.
     fn try_from(value: &str) -> crate::Result<Self> {
         Self::try_from(value.to_string())
     }

@@ -3,7 +3,7 @@
 mod error;
 
 //-- Re-exports to flatten the code structure
-
+//
 // Re-exports he error types for use in the application.
 pub use error::Error;
 
@@ -29,8 +29,7 @@ pub async fn run() -> Result<()> {
     let web_future = async { web_server.run().await.map_err(Error::from) };
 
     //--- Create RPC server for serving gRPC requests
-    let rpc_address = settings.rpc.socket_address()?;
-    let rpc_server = lib_rpc::Server::new(rpc_address).await?;
+    let rpc_server = lib_rpc::Server::new(settings.rpc.clone()).await?;
     let rpc_future = async { rpc_server.run().await.map_err(Error::from) };
 
     //--- Join the web and RPC server futures to run them concurrently

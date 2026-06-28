@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
+lib_auth = { path = "../libs/lib_auth" }
 lib_rpc = { path = "../libs/lib_rpc" }
 lib_settings = { path = "../libs/lib_settings" }
 lib_tracing = { path = "../libs/lib_tracing" }
