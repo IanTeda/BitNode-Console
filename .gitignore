@@ -10,6 +10,7 @@
 # By Default, ignore all dot files `.*`, except for those with `!`
 .*
 !.agents
+!.claude
 !.devcontainer
 !.envrc
 !.editorconfig
