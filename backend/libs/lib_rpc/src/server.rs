@@ -168,10 +168,7 @@ mod tests {
         let mut client =
             crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
 
-        let response = client
-            .ping(tonic::Request::new(crate::generated_protos::PingRequest {}))
-            .await
-            .unwrap();
+        let response = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap();
 
         assert_eq!(response.into_inner().pong, "Pong...");
     }
@@ -187,10 +184,7 @@ mod tests {
             crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
 
         for _ in 0..3 {
-            let response = client
-                .ping(tonic::Request::new(crate::generated_protos::PingRequest {}))
-                .await
-                .unwrap();
+            let response = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap();
 
             assert_eq!(response.into_inner().pong, "Pong...");
         }
@@ -207,7 +201,7 @@ mod tests {
         let response = client
             .request(
                 reqwest::Method::OPTIONS,
-                format!("http://{addr}/bitnode_console.v1.UtilitiesService/Ping"),
+                format!("http://{addr}/bitnode_console.v1.utilities.UtilitiesService/Ping"),
             )
             .header("Origin", "http://localhost:8086")
             .header("Access-Control-Request-Method", "POST")
@@ -236,7 +230,7 @@ mod tests {
         let client = reqwest::Client::new();
         let response = client
             .post(format!(
-                "http://{addr}/bitnode_console.v1.UtilitiesService/Ping"
+                "http://{addr}/bitnode_console.v1.utilities.UtilitiesService/Ping"
             ))
             .header("Content-Type", "application/grpc-web")
             .header("x-grpc-web", "1")

@@ -52,6 +52,7 @@ pkgs.mkShell {
     pkg-config
     openssl
     protobuf  # protoc compiler required by tonic-build/prost-build
+    buf       # protobuf linter and breaking-change detector
 
     # direnv Nix shell caching (needed for VS Code extension host)
     nix-direnv

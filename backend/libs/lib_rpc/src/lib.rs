@@ -8,8 +8,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 //--- Re-export to flatten module hierarchy
 pub use error::Error;
-pub use generated_protos::utilities_service_client::UtilitiesServiceClient;
-pub use generated_protos::utilities_service_server::{UtilitiesService, UtilitiesServiceServer};
-pub use generated_protos::{PingRequest, PingResponse};
+pub use generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
+pub use generated_protos::utilities::utilities_service_server::{UtilitiesService, UtilitiesServiceServer};
+pub use generated_protos::utilities::{PingRequest, PingResponse};
 pub use server::Server;
 pub use services::UtilitiesServiceImpl;

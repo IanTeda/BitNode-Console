@@ -1,4 +1,7 @@
 {
+  "edit_predictions": {
+    "allow_data_collection": "no"
+  },
   "file_scan_exclusions": [
     "**/.git",
     "**/.svn",

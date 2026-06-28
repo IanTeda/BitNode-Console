@@ -1,10 +1,10 @@
 //! Implementation of the gRPC Utilities service.
 
-pub use crate::generated_protos::utilities_service_server::{
+pub use crate::generated_protos::utilities::utilities_service_server::{
     UtilitiesService, UtilitiesServiceServer,
 };
 
-pub use crate::generated_protos::{PingRequest, PingResponse};
+pub use crate::generated_protos::utilities::{PingRequest, PingResponse};
 
 /// Concrete implementation of the [`UtilitiesService`] gRPC trait.
 #[derive(Debug, Default)]

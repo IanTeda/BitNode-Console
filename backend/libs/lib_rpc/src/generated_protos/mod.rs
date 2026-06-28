@@ -1,4 +1,5 @@
-#[path = "bitnode_console.v1.rs"]
-mod bitnode_console;
+#[path = "bitnode_console.v1.utilities.v1.rs"]
+pub mod utilities;
 
-pub use bitnode_console::*;
+#[path = "bitnode_console.v1.authentication.v1.rs"]
+pub mod authentication;
