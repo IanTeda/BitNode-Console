@@ -4,6 +4,7 @@ import babel from "@rolldown/plugin-babel";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { protocBuild } from "./vite-plugins/protoc-build";
 
 export default defineConfig({
   resolve: {
@@ -17,6 +18,10 @@ export default defineConfig({
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
+    }),
+    protocBuild({
+      protoDir: path.resolve(__dirname, "protos"),
+      outputDir: path.resolve(__dirname, "src/lib/generated_protos"),
     }),
     tailwindcss(),
     react(),
