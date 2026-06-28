@@ -21,7 +21,10 @@ impl AuthenticationServiceImpl {
     /// Create a new [`AuthenticationServiceImpl`] that verifies login passwords
     /// against `password_hash` and signs tokens with `token_secret`.
     pub fn new(password_hash: lib_auth::PasswordHash, token_secret: SecretString) -> Self {
-        Self { password_hash, token_secret }
+        Self {
+            password_hash,
+            token_secret,
+        }
     }
 }
 
@@ -84,10 +87,43 @@ impl AuthenticationService for AuthenticationServiceImpl {
         request: tonic::Request<RefreshRequest>,
     ) -> std::result::Result<tonic::Response<RefreshResponse>, tonic::Status> {
         tracing::debug!("Refresh request received from {:?}", request.remote_addr());
-        tracing::info!("Token refresh not yet implemented");
-        Err(tonic::Status::unimplemented(
-            "refresh is not yet implemented",
-        ))
+
+        let refresh_request = request.into_inner();
+
+        //-- Guard against an empty token field
+        if refresh_request.refresh_token.is_empty() {
+            tracing::warn!("Refresh rejected: token field is empty");
+            return Err(tonic::Status::invalid_argument(
+                "refresh token must not be empty",
+            ));
+        }
+
+        //-- Wrap and validate the refresh token (checks signature, expiry, and token type)
+        let refresh_token = lib_auth::RefreshToken::from(refresh_request.refresh_token);
+        refresh_token.validate(&self.token_secret).map_err(|e| {
+            tracing::warn!("Refresh token validation failed: {e}");
+            tonic::Status::unauthenticated("invalid or expired refresh token")
+        })?;
+
+        //-- Issue a new access token
+        let access_token = lib_auth::AccessToken::new(&self.token_secret).map_err(|e| {
+            tracing::error!("Failed to generate access token: {e}");
+            tonic::Status::internal("authentication error")
+        })?;
+
+        //-- Issue a new refresh token (token rotation — extends the session window and limits
+        //-- replay exposure if the old token is ever intercepted)
+        let new_refresh_token = lib_auth::RefreshToken::new(&self.token_secret).map_err(|e| {
+            tracing::error!("Failed to generate refresh token: {e}");
+            tonic::Status::internal("authentication error")
+        })?;
+
+        tracing::info!("Token refresh successful; new token pair issued");
+
+        Ok(tonic::Response::new(RefreshResponse {
+            access_token: access_token.to_string(),
+            refresh_token: new_refresh_token.to_string(),
+        }))
     }
 
     async fn logout(
@@ -122,10 +158,7 @@ mod tests {
     }
 
     fn service() -> AuthenticationServiceImpl {
-        AuthenticationServiceImpl::new(
-            test_hash().clone(),
-            SecretString::from(TEST_SECRET),
-        )
+        AuthenticationServiceImpl::new(test_hash().clone(), SecretString::from(TEST_SECRET))
     }
 
     fn login_request(password: &str) -> tonic::Request<LoginRequest> {
@@ -134,8 +167,10 @@ mod tests {
         })
     }
 
-    fn refresh_request() -> tonic::Request<RefreshRequest> {
-        tonic::Request::new(RefreshRequest {})
+    fn refresh_request(token: &str) -> tonic::Request<RefreshRequest> {
+        tonic::Request::new(RefreshRequest {
+            refresh_token: token.to_string(),
+        })
     }
 
     fn logout_request() -> tonic::Request<LogoutRequest> {
@@ -218,16 +253,84 @@ mod tests {
 
     // --- refresh ---
 
-    #[tokio::test]
-    async fn refresh_returns_unimplemented() {
-        let status = service().refresh(refresh_request()).await.unwrap_err();
-        assert_eq!(status.code(), tonic::Code::Unimplemented);
+    fn valid_refresh_token() -> String {
+        lib_auth::RefreshToken::new(&SecretString::from(TEST_SECRET))
+            .expect("test refresh token must generate")
+            .to_string()
     }
 
     #[tokio::test]
-    async fn refresh_unimplemented_error_message() {
-        let status = service().refresh(refresh_request()).await.unwrap_err();
-        assert_eq!(status.message(), "refresh is not yet implemented");
+    async fn refresh_rejects_empty_token() {
+        let status = service().refresh(refresh_request("")).await.unwrap_err();
+        assert_eq!(status.code(), tonic::Code::InvalidArgument);
+    }
+
+    #[tokio::test]
+    async fn refresh_empty_token_error_message() {
+        let status = service().refresh(refresh_request("")).await.unwrap_err();
+        assert_eq!(status.message(), "refresh token must not be empty");
+    }
+
+    #[tokio::test]
+    async fn refresh_rejects_invalid_token() {
+        let status = service().refresh(refresh_request("not.a.real.jwt")).await.unwrap_err();
+        assert_eq!(status.code(), tonic::Code::Unauthenticated);
+    }
+
+    #[tokio::test]
+    async fn refresh_invalid_token_error_message() {
+        let status = service().refresh(refresh_request("not.a.real.jwt")).await.unwrap_err();
+        assert_eq!(status.message(), "invalid or expired refresh token");
+    }
+
+    #[tokio::test]
+    async fn refresh_valid_token_returns_ok() {
+        let result = service().refresh(refresh_request(&valid_refresh_token())).await;
+        assert!(result.is_ok(), "expected Ok, got: {result:?}");
+    }
+
+    #[tokio::test]
+    async fn refresh_returns_non_empty_access_token() {
+        let response = service().refresh(refresh_request(&valid_refresh_token())).await.unwrap();
+        assert!(!response.into_inner().access_token.is_empty());
+    }
+
+    #[tokio::test]
+    async fn refresh_returns_non_empty_refresh_token() {
+        let response = service().refresh(refresh_request(&valid_refresh_token())).await.unwrap();
+        assert!(!response.into_inner().refresh_token.is_empty());
+    }
+
+    #[tokio::test]
+    async fn refresh_returns_three_part_jwt_access_token() {
+        let response = service().refresh(refresh_request(&valid_refresh_token())).await.unwrap();
+        let token = response.into_inner().access_token;
+        assert_eq!(token.split('.').count(), 3, "access token must be a JWT");
+    }
+
+    #[tokio::test]
+    async fn refresh_returns_three_part_jwt_refresh_token() {
+        let response = service().refresh(refresh_request(&valid_refresh_token())).await.unwrap();
+        let token = response.into_inner().refresh_token;
+        assert_eq!(token.split('.').count(), 3, "refresh token must be a JWT");
+    }
+
+    #[tokio::test]
+    async fn refresh_issues_new_refresh_token_each_time() {
+        let token = valid_refresh_token();
+        let first = service()
+            .refresh(refresh_request(&token))
+            .await
+            .unwrap()
+            .into_inner()
+            .refresh_token;
+        let second = service()
+            .refresh(refresh_request(&token))
+            .await
+            .unwrap()
+            .into_inner()
+            .refresh_token;
+        assert_ne!(first, second, "each refresh should produce a unique token");
     }
 
     // --- logout ---
@@ -270,16 +373,23 @@ mod tests {
     }
 
     #[test]
-    fn refresh_response_stores_access_token() {
+    fn refresh_response_stores_tokens() {
         let resp = RefreshResponse {
             access_token: "new_access".to_string(),
+            refresh_token: "new_refresh".to_string(),
         };
         assert_eq!(resp.access_token, "new_access");
+        assert_eq!(resp.refresh_token, "new_refresh");
     }
 
     #[test]
     fn refresh_request_default_is_empty() {
-        assert_eq!(RefreshRequest::default(), RefreshRequest {});
+        assert_eq!(
+            RefreshRequest::default(),
+            RefreshRequest {
+                refresh_token: String::new()
+            }
+        );
     }
 
     #[test]

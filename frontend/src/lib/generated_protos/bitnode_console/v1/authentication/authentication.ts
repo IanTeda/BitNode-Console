@@ -56,19 +56,30 @@ export interface LoginResponse {
  * @generated from protobuf message bitnode_console.v1.authentication.v1.RefreshRequest
  */
 export interface RefreshRequest {
+    /**
+     * @generated from protobuf field: string refresh_token = 1
+     */
+    refreshToken: string;
 }
 /**
- * RefreshResponse returns a new access token.
+ * RefreshResponse returns a new token pair (token rotation).
  *
  * @generated from protobuf message bitnode_console.v1.authentication.v1.RefreshResponse
  */
 export interface RefreshResponse {
     /**
-     * Newly issued access token.
+     * Newly issued short-lived access token.
      *
      * @generated from protobuf field: string access_token = 1
      */
     accessToken: string;
+    /**
+     * Newly issued refresh token, replacing the one that was redeemed.
+     * Clients must store this and discard the previous refresh token.
+     *
+     * @generated from protobuf field: string refresh_token = 2
+     */
+    refreshToken: string;
 }
 /**
  * LogoutRequest is intentionally empty; the session is identified via request metadata.
@@ -189,10 +200,13 @@ export const LoginResponse = new LoginResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class RefreshRequest$Type extends MessageType<RefreshRequest> {
     constructor() {
-        super("bitnode_console.v1.authentication.v1.RefreshRequest", []);
+        super("bitnode_console.v1.authentication.v1.RefreshRequest", [
+            { no: 1, name: "refresh_token", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
     }
     create(value?: PartialMessage<RefreshRequest>): RefreshRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
+        message.refreshToken = "";
         if (value !== undefined)
             reflectionMergePartial<RefreshRequest>(this, message, value);
         return message;
@@ -202,6 +216,9 @@ class RefreshRequest$Type extends MessageType<RefreshRequest> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
+                case /* string refresh_token */ 1:
+                    message.refreshToken = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -214,6 +231,9 @@ class RefreshRequest$Type extends MessageType<RefreshRequest> {
         return message;
     }
     internalBinaryWrite(message: RefreshRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string refresh_token = 1; */
+        if (message.refreshToken !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.refreshToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -228,12 +248,14 @@ export const RefreshRequest = new RefreshRequest$Type();
 class RefreshResponse$Type extends MessageType<RefreshResponse> {
     constructor() {
         super("bitnode_console.v1.authentication.v1.RefreshResponse", [
-            { no: 1, name: "access_token", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "access_token", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "refresh_token", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<RefreshResponse>): RefreshResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.accessToken = "";
+        message.refreshToken = "";
         if (value !== undefined)
             reflectionMergePartial<RefreshResponse>(this, message, value);
         return message;
@@ -245,6 +267,9 @@ class RefreshResponse$Type extends MessageType<RefreshResponse> {
             switch (fieldNo) {
                 case /* string access_token */ 1:
                     message.accessToken = reader.string();
+                    break;
+                case /* string refresh_token */ 2:
+                    message.refreshToken = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -261,6 +286,9 @@ class RefreshResponse$Type extends MessageType<RefreshResponse> {
         /* string access_token = 1; */
         if (message.accessToken !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.accessToken);
+        /* string refresh_token = 2; */
+        if (message.refreshToken !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.refreshToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

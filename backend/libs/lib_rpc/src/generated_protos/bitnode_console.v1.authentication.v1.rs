@@ -17,14 +17,21 @@ pub struct LoginResponse {
     pub refresh_token: ::prost::alloc::string::String,
 }
 /// RefreshRequest is intentionally empty; the refresh token is sent via request metadata.
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct RefreshRequest {}
-/// RefreshResponse returns a new access token.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RefreshRequest {
+    #[prost(string, tag = "1")]
+    pub refresh_token: ::prost::alloc::string::String,
+}
+/// RefreshResponse returns a new token pair (token rotation).
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RefreshResponse {
-    /// Newly issued access token.
+    /// Newly issued short-lived access token.
     #[prost(string, tag = "1")]
     pub access_token: ::prost::alloc::string::String,
+    /// Newly issued refresh token, replacing the one that was redeemed.
+    /// Clients must store this and discard the previous refresh token.
+    #[prost(string, tag = "2")]
+    pub refresh_token: ::prost::alloc::string::String,
 }
 /// LogoutRequest is intentionally empty; the session is identified via request metadata.
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]

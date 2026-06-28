@@ -41,6 +41,14 @@ impl From<String> for RefreshToken {
     }
 }
 
+/// Wrap a borrowed token string slice (e.g. extracted from a request header or
+/// cookie) as a typed [`RefreshToken`] without performing any validation.
+impl From<&str> for RefreshToken {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
+    }
+}
+
 impl RefreshToken {
     /// Generate a new refresh token signed with `secret`.
     ///
@@ -71,6 +79,17 @@ impl RefreshToken {
         }
 
         Ok(claim)
+    }
+
+    /// Decode and verify this refresh token, returning its embedded claim.
+    ///
+    /// Equivalent to [`RefreshToken::from_token`] called with `self` as the
+    /// token string — use this when you already hold a typed [`RefreshToken`]
+    /// instance and want to verify it without extracting the inner string
+    /// manually.
+    #[tracing::instrument(skip(self, secret))]
+    pub fn validate(&self, secret: &SecretString) -> crate::Result<TokenClaim> {
+        Self::from_token(self.as_ref(), secret)
     }
 }
 
@@ -131,9 +150,48 @@ mod tests {
     }
 
     #[test]
+    fn validate_returns_refresh_claim() -> Result<()> {
+        let token = RefreshToken::new(&secret())?;
+        let claim = token.validate(&secret())?;
+
+        assert_eq!(claim.jty, TokenType::Refresh.to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn validate_rejects_wrong_secret() -> Result<()> {
+        let token = RefreshToken::new(&secret())?;
+        assert!(token.validate(&wrong_secret()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn validate_rejects_empty_token() {
+        let token = RefreshToken::default();
+        assert!(token.validate(&secret()).is_err());
+    }
+
+    #[test]
+    fn validate_rejects_access_token_as_refresh() -> Result<()> {
+        let claim = TokenClaim::new(&TokenType::Access, 300);
+        let raw = claim.encode(&secret())?;
+        let token = RefreshToken::from(raw);
+        let err = token.validate(&secret()).unwrap_err();
+        assert!(matches!(err, crate::Error::InvalidTokenType { .. }));
+        Ok(())
+    }
+
+    #[test]
     fn from_string_wraps_without_validation() {
         let raw = "not.a.real.jwt".to_string();
         let token = RefreshToken::from(raw.clone());
+        assert_eq!(token.as_ref(), raw);
+    }
+
+    #[test]
+    fn from_str_wraps_without_validation() {
+        let raw = "not.a.real.jwt";
+        let token = RefreshToken::from(raw);
         assert_eq!(token.as_ref(), raw);
     }
 

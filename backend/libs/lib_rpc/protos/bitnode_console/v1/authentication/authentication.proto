@@ -35,12 +35,18 @@ message LoginResponse {
 }
 
 // RefreshRequest is intentionally empty; the refresh token is sent via request metadata.
-message RefreshRequest {}
+message RefreshRequest {
+  string refresh_token = 1;
+}
 
-// RefreshResponse returns a new access token.
+// RefreshResponse returns a new token pair (token rotation).
 message RefreshResponse {
-  // Newly issued access token.
+  // Newly issued short-lived access token.
   string access_token = 1;
+
+  // Newly issued refresh token, replacing the one that was redeemed.
+  // Clients must store this and discard the previous refresh token.
+  string refresh_token = 2;
 }
 
 // LogoutRequest is intentionally empty; the session is identified via request metadata.
