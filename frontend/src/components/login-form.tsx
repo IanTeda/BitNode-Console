@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import logger from "@/lib/logger";
-import { useAuthentication } from "@/components/AuthenticationProvider";
+import { useAuthentication } from "@/lib/auth-context";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 

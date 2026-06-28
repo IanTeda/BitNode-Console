@@ -1,4 +1,4 @@
-//! BitNode Console backend application library.
+//! BitNode Console full server — serves both the web frontend and gRPC backend.
 
 mod error;
 

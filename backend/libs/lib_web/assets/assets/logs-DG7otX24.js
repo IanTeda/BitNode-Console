@@ -1,1 +1,0 @@
-import{n as e,q as t}from"./preload-helper-bAMVcpSa.js";import{n}from"./index-BvZNawTC.js";var r=e(),i=t(),a=n.getSubLogger({name:`LogsRoute`});function o(){let e=(0,r.c)(1);a.info(`Logs page rendered`);let t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,i.jsx)(`div`,{children:`Hello "/_authenticated/logs"!`}),e[0]=t):t=e[0],t}export{o as component};

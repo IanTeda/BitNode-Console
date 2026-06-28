@@ -1,0 +1,25 @@
+[package]
+name = "bin_rpc"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+# Inherit lint configuration from the workspace Cargo.toml
+workspace = true
+
+[dependencies]
+## --- Internal Dependencies
+lib_rpc = { path = "../../libs/lib_rpc" }
+lib_settings = { path = "../../libs/lib_settings" }
+lib_tracing = { path = "../../libs/lib_tracing" }
+
+## --- Workspace Dependencies
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tonic = { workspace = true }
+tokio = { workspace = true }

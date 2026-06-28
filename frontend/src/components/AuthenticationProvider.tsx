@@ -1,31 +1,26 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useContext,
-  useState,
-} from "react";
+import { type PropsWithChildren, useState } from "react";
 import { authenticationClient } from "@/lib/rpc/authentication";
 import { setAccessToken as setRpcToken } from "@/lib/rpc/utilities";
-import { getCookie, setCookie, deleteCookie, jwtExpiry } from "@/lib/cookies";
+import { setCookie, deleteCookie, jwtExpiry } from "@/lib/cookies";
+import { AuthenticationContext } from "@/lib/auth-context";
 import logger from "@/lib/logger";
+
+export type { AuthContext } from "@/lib/auth-context";
 
 const log = logger.getSubLogger({ name: "AuthProvider" });
 
-export type AuthContext = {
-  isAuthenticated: boolean;
-  accessToken: string | undefined;
-  handleLogin: (password: string) => Promise<void>;
-  handleLogout: () => Promise<void>;
-};
+// Token storage strategy:
+//  - Access token  → React state (memory) only. Never written to a cookie so
+//    it is not readable via document.cookie by injected scripts.
+//  - Refresh token → cookie (persistent). Used to reissue the access token on
+//    page load once the backend implements the Refresh RPC.
+//
+// TODO: on mount, call authenticationClient().refresh() with the refresh_token
+//       cookie to silently restore the session. Until the backend implements
+//       Refresh, the user must log in again after every page reload.
 
-const AuthenticationContext = createContext<AuthContext | undefined>(undefined);
-
-export default function AuthenticationProvider({
-  children,
-}: PropsWithChildren) {
-  const [accessToken, setAccessTokenState] = useState<string | undefined>(() =>
-    getCookie("access_token"),
-  );
+export default function AuthenticationProvider({ children }: PropsWithChildren) {
+  const [accessToken, setAccessTokenState] = useState<string | undefined>(undefined);
 
   const isAuthenticated = !!accessToken;
 
@@ -33,16 +28,7 @@ export default function AuthenticationProvider({
     log.debug("Attempting login");
     try {
       const { response } = await authenticationClient().login({ password });
-      setCookie(
-        "access_token",
-        response.accessToken,
-        jwtExpiry(response.accessToken),
-      );
-      setCookie(
-        "refresh_token",
-        response.refreshToken,
-        jwtExpiry(response.refreshToken),
-      );
+      setCookie("refresh_token", response.refreshToken, jwtExpiry(response.refreshToken));
       setRpcToken(response.accessToken);
       setAccessTokenState(response.accessToken);
       log.info("Login successful");
@@ -54,7 +40,6 @@ export default function AuthenticationProvider({
 
   async function handleLogout(): Promise<void> {
     log.debug("Logging out");
-    deleteCookie("access_token");
     deleteCookie("refresh_token");
     setRpcToken(undefined);
     setAccessTokenState(undefined);
@@ -68,14 +53,4 @@ export default function AuthenticationProvider({
       {children}
     </AuthenticationContext.Provider>
   );
-}
-
-export function useAuthentication(): AuthContext {
-  const context = useContext(AuthenticationContext);
-  if (!context) {
-    throw new Error(
-      "useAuthentication must be used inside AuthenticationProvider",
-    );
-  }
-  return context;
 }

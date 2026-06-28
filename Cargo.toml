@@ -20,7 +20,7 @@ resolver = "3"
 # pattern to include all crates under the `crates/` directory. Each crate should
 # have its own Cargo.toml file with its specific configuration and dependencies.
 members = [
-    "backend/app",
+    "backend/bins/*",
     "backend/libs/*",
 ]
 

@@ -1,4 +1,5 @@
-## --- [DOCUMENTATION] ---------------------------------------------------------
+## --- [ DOCUMENTATION ] ---------------------------------------------------------
+# Tasks related to building and serving documentation.
 
 [tasks.docs-build]
 workspace = false
@@ -12,7 +13,8 @@ description = "Serve mdBook documentation on port 8001"
 command = "mdbook"
 args = ["serve", "--port", "8001"]
 
-## --- [FRONTEND] --------------------------------------------------------------
+## --- [ FRONTEND ] --------------------------------------------------------------
+# Tasks related to building and serving the frontend.
 
 [tasks.frontend-install]
 workspace = false
@@ -29,7 +31,7 @@ command = "npm"
 args = ["run", "build"]
 cwd = "frontend"
 
-[tasks.dev-frontend]
+[tasks.frontend-dev]
 workspace = false
 description = "Run Vite dev server with hot reload"
 command = "npm"
@@ -43,9 +45,10 @@ command = "npm"
 args = ["run", "lint"]
 cwd = "frontend"
 
-## --- [ASSETS] ----------------------------------------------------------------
+## --- [ BIN_CONSOLE ] -----------------------------------------------------------
+## Full server: serves the React web frontend (HTTP) and gRPC backend together.
 
-[tasks.assets-copy]
+[tasks.console-assets-copy]
 workspace = false
 description = "Copy frontend build output to lib_web/assets"
 dependencies = ["frontend-build"]
@@ -55,31 +58,44 @@ rm -rf backend/libs/lib_web/assets
 cp -r frontend/dist backend/libs/lib_web/assets
 '''
 
-## --- [APP] -------------------------------------------------------------------
-
-[tasks.dev]
+[tasks.console-dev]
 workspace = false
-description = "Build frontend, copy assets, then run the app"
-dependencies = ["assets-copy"]
+description = "Build frontend, copy assets, then watch and reload the full console server (web + RPC)"
+dependencies = ["console-assets-copy"]
 command = "cargo"
-args = ["run", "-p", "app"]
+args = ["watch", "-w", "backend", "-x", "run -p bin_console"]
 
-[tasks.dev-app]
+[tasks.console-release]
 workspace = false
-description = "Run the app"
+description = "Build frontend, copy assets, then compile a release binary for the full console server"
+dependencies = ["console-assets-copy"]
 command = "cargo"
-args = ["run", "-p", "app"]
+args = ["build", "-p", "bin_console", "--release"]
 
-[tasks.release]
+[tasks.console-run-release]
 workspace = false
-description = "Build frontend and compile a release binary"
-dependencies = ["assets-copy"]
+description = "Build frontend, copy assets, then run the release console server binary"
+dependencies = ["console-assets-copy"]
 command = "cargo"
-args = ["build", "-p", "app", "--release"]
+args = ["run", "-p", "bin_console", "--release"]
 
-[tasks.run-release]
+## --- [BIN_RPC] ---------------------------------------------------------------
+## RPC-only server: serves only the gRPC backend — no web frontend.
+
+[tasks.rpc-dev]
 workspace = false
-description = "Build frontend and run the release binary"
-dependencies = ["assets-copy"]
+description = "Watch and reload the RPC-only server on backend changes"
 command = "cargo"
-args = ["run", "-p", "app", "--release"]
+args = ["watch", "-w", "backend", "-x", "run -p bin_rpc"]
+
+[tasks.rpc-release]
+workspace = false
+description = "Compile a release binary for the RPC-only server"
+command = "cargo"
+args = ["build", "-p", "bin_rpc", "--release"]
+
+[tasks.rpc-run-release]
+workspace = false
+description = "Run the release RPC-only server binary"
+command = "cargo"
+args = ["run", "-p", "bin_rpc", "--release"]
