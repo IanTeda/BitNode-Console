@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LoggedOutCard } from "@/components/logged-out-card";
+import { LoggedOutCard } from "@/components/LoggedOutCard";
 import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "LoggedOutRoute" });

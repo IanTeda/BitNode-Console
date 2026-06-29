@@ -1,4 +1,4 @@
-//-- ./src/lib/authInterceptor.ts
+//-- ./src/lib/auth-interceptor.ts
 
 /**
  * # Auth Interceptor
