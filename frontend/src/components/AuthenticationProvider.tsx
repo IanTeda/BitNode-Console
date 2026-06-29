@@ -1,7 +1,7 @@
 import { type PropsWithChildren, useState } from "react";
 import { authenticationClient } from "@/lib/rpc/authentication";
 import { setAccessToken as setRpcToken } from "@/lib/rpc/utilities";
-import { setCookie, deleteCookie, jwtExpiry } from "@/lib/cookies";
+import { getCookie, setCookie, deleteCookie, jwtExpiry } from "@/lib/cookies";
 import { AuthenticationContext } from "@/lib/auth-context";
 import logger from "@/lib/logger";
 
@@ -12,12 +12,8 @@ const log = logger.getSubLogger({ name: "AuthProvider" });
 // Token storage strategy:
 //  - Access token  → React state (memory) only. Never written to a cookie so
 //    it is not readable via document.cookie by injected scripts.
-//  - Refresh token → cookie (persistent). Used to reissue the access token on
-//    page load once the backend implements the Refresh RPC.
-//
-// TODO: on mount, call authenticationClient().refresh() with the refresh_token
-//       cookie to silently restore the session. Until the backend implements
-//       Refresh, the user must log in again after every page reload.
+//  - Refresh token → cookie (persistent). Reissues the access token on page
+//    load via handleRefresh(), called from the login route's beforeLoad.
 
 export default function AuthenticationProvider({ children }: PropsWithChildren) {
   const [accessToken, setAccessTokenState] = useState<string | undefined>(undefined);
@@ -46,9 +42,30 @@ export default function AuthenticationProvider({ children }: PropsWithChildren) 
     log.info("Logged out");
   }
 
+  async function handleRefresh(): Promise<boolean> {
+    const refreshToken = getCookie("refresh_token");
+    if (!refreshToken) {
+      log.debug("No refresh token cookie found");
+      return false;
+    }
+    log.debug("Attempting token refresh");
+    try {
+      const { response } = await authenticationClient().refresh({ refreshToken });
+      setCookie("refresh_token", response.refreshToken, jwtExpiry(response.refreshToken));
+      setRpcToken(response.accessToken);
+      setAccessTokenState(response.accessToken);
+      log.info("Token refresh successful");
+      return true;
+    } catch (error) {
+      log.warn("Token refresh failed, clearing stale cookie:", error);
+      deleteCookie("refresh_token");
+      return false;
+    }
+  }
+
   return (
     <AuthenticationContext.Provider
-      value={{ isAuthenticated, accessToken, handleLogin, handleLogout }}
+      value={{ isAuthenticated, accessToken, handleLogin, handleLogout, handleRefresh }}
     >
       {children}
     </AuthenticationContext.Provider>

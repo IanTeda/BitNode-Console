@@ -5,6 +5,7 @@ export type AuthContext = {
   accessToken: string | undefined;
   handleLogin: (password: string) => Promise<void>;
   handleLogout: () => Promise<void>;
+  handleRefresh: () => Promise<boolean>;
 };
 
 export const AuthenticationContext = createContext<AuthContext | undefined>(undefined);
