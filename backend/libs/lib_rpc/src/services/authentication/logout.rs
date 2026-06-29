@@ -6,6 +6,7 @@ use super::{LogoutRequest, LogoutResponse};
 ///
 /// Token invalidation requires a server-side token store (to persist revoked JTIs)
 /// which is not yet implemented.
+#[tracing::instrument(skip(request))]
 pub(super) async fn handle(
     request: tonic::Request<LogoutRequest>,
 ) -> std::result::Result<tonic::Response<LogoutResponse>, tonic::Status> {

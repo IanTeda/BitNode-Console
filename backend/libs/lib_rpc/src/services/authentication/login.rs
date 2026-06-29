@@ -5,12 +5,13 @@ use secrecy::SecretString;
 use super::{LoginRequest, LoginResponse};
 
 /// Handle a login request — verify the password and issue an access/refresh token pair.
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle(
     password_hash: &lib_auth::PasswordHash,
     token_secret: &SecretString,
     request: tonic::Request<LoginRequest>,
 ) -> std::result::Result<tonic::Response<LoginResponse>, tonic::Status> {
-    tracing::debug!("Login request received");
+    tracing::debug!("Login request received from {:?}", request.remote_addr());
 
     let login_request = request.into_inner();
 

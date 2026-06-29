@@ -3,14 +3,17 @@
 use super::{PingRequest, PingResponse};
 
 /// Handle a ping request — return a static pong response.
+#[tracing::instrument(skip(request))]
 pub(super) async fn handle(
     request: tonic::Request<PingRequest>,
 ) -> std::result::Result<tonic::Response<PingResponse>, tonic::Status> {
-    tracing::info!("Ping request from {:?}", request.remote_addr());
+    tracing::debug!("Ping request from {:?}", request.remote_addr());
 
     let reply = PingResponse {
         pong: "Pong...".to_string(),
     };
+
+    tracing::info!("Ping successful");
 
     Ok(tonic::Response::new(reply))
 }
@@ -54,7 +57,9 @@ mod tests {
 
     #[test]
     fn ping_response_can_be_constructed_with_custom_message() {
-        let response = PingResponse { pong: "custom".to_string() };
+        let response = PingResponse {
+            pong: "custom".to_string(),
+        };
         assert_eq!(response.pong, "custom");
     }
 }

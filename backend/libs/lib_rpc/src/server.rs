@@ -117,6 +117,7 @@ impl Server {
             .allow_origin(AllowOrigin::mirror_request())
             .allow_methods([http::Method::POST])
             .allow_headers([
+                HeaderName::from_static("authorization"),
                 HeaderName::from_static("content-type"),
                 HeaderName::from_static("x-grpc-web"),
             ])
@@ -347,6 +348,10 @@ mod tests {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
 
+        assert!(
+            allowed.contains("authorization"),
+            "authorization not in allowed headers: {allowed}"
+        );
         assert!(
             allowed.contains("content-type"),
             "content-type not in allowed headers: {allowed}"

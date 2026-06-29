@@ -10,6 +10,7 @@ use super::{RefreshRequest, RefreshResponse};
 /// redemption produces a unique pair, limiting the replay window if an old token is
 /// ever intercepted. Note: without a token store, the redeemed token remains valid
 /// until its own expiry — full revocation requires persisting issued JTIs.
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle(
     token_secret: &SecretString,
     request: tonic::Request<RefreshRequest>,
