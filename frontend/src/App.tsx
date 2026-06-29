@@ -7,6 +7,7 @@ import { useAuthentication } from "@/lib/auth-context";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // How long to keep data in TanStack Query cache before refetching
       staleTime: 1000 * 10,
     },
   },

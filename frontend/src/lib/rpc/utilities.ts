@@ -15,6 +15,11 @@ export function setAccessToken(token: string | undefined): void {
   currentAccessToken = token;
 }
 
+/// Returns the current access token without going through React state.
+export function getAccessToken(): string | undefined {
+  return currentAccessToken;
+}
+
 function accessTokenInterceptor(): RpcInterceptor {
   return {
     interceptUnary(next, method, input, options) {

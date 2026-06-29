@@ -1,4 +1,4 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   ScrollText,
@@ -23,6 +23,11 @@ const navItems = [
 
 export default function RestrictedLayout() {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
+  function onLogout() {
+    navigate({ to: "/auth/logged-out" });
+  }
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -53,11 +58,9 @@ export default function RestrictedLayout() {
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === "dark" ? <Sun /> : <Moon />}
             </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/auth/logged-out">
-                <LogOut data-icon="inline-start" />
-                Logout
-              </Link>
+            <Button variant="ghost" size="sm" onClick={onLogout}>
+              <LogOut data-icon="inline-start" />
+              Logout
             </Button>
           </div>
         </div>

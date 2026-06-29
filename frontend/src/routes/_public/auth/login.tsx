@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { LoginForm } from "@/components/LoginForm";
 import logger from "@/lib/logger";
+import { getAccessToken } from "@/lib/rpc/utilities";
 
 const log = logger.getSubLogger({ name: "LoginRoute" });
 
@@ -12,6 +13,9 @@ export const Route = createFileRoute("/_public/auth/login")({
 
   // Check for refresh token on load, and redirect to dashboard if it succeeds
   beforeLoad: async ({ context, search }) => {
+    if (context.auth.isAuthenticated || getAccessToken()) {
+      throw redirect({ to: search.redirect ?? "/dashboard" });
+    }
     log.debug("Login route: checking for refresh token");
     const refreshed = await context.auth.handleRefresh();
     if (refreshed) {
