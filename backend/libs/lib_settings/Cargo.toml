@@ -17,6 +17,7 @@ lib_tracing = { path = "../../libs/lib_tracing" }
 
 ## --- Workspace Dependencies
 clap = { workspace = true }
+secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

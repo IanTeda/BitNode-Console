@@ -6,6 +6,8 @@
 //! covering both the systemd unit name used for log access and the JSON-RPC
 //! credentials used for daemon communication.
 
+use secrecy::{ExposeSecret, SecretString};
+
 /// Default systemd unit name for the Bitcoin daemon.
 const DEFAULT_UNIT_NAME: &str = "bitcoind.service";
 
@@ -21,17 +23,31 @@ const DEFAULT_RPC_USER: &str = "";
 /// Default RPC password — empty; the server will reject RPC calls until configured.
 const DEFAULT_RPC_PASSWORD: &str = "";
 
+/// Serialises a [`SecretString`] as a plain string.
+///
+/// Required because [`SecretString`] intentionally omits a blanket [`serde::Serialize`]
+/// impl to prevent accidental exposure. Used via `#[serde(serialize_with = …)]` so
+/// that [`Settings`] can be serialised when seeding the [`config`] builder with
+/// defaults.
+fn serialize_secret_string<S>(secret: &SecretString, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(secret.expose_secret())
+}
+
 /// Bitcoin daemon configuration.
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
+///
+/// `Debug` output redacts `rpc_password` automatically (shows `[REDACTED]`).
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct BitcoinDaemonSettings {
     /// The systemd unit name of the Bitcoin daemon.
     ///
     /// Used to filter journal entries when serving logs over gRPC. Must match
     /// the `_SYSTEMD_UNIT` field written by the daemon's service unit, e.g.
-    /// `"bitcoind.service"` for a system service or `"bitcoind.service"` for a
-    /// user service. In development, when the daemon is launched via
-    /// `systemd-cat -t bitcoind`, set this to `"bitcoind"` to match the
-    /// `SYSLOG_IDENTIFIER` field instead.
+    /// `"bitcoind.service"`. In development, when the daemon is launched via
+    /// `systemd-cat -t bitcoind`, lib_journald also matches the
+    /// `SYSLOG_IDENTIFIER` field derived by stripping the `.service` suffix.
     pub unit_name: String,
 
     /// The JSON-RPC host of the Bitcoin daemon.
@@ -50,11 +66,29 @@ pub struct BitcoinDaemonSettings {
 
     /// The JSON-RPC password of the Bitcoin daemon.
     ///
-    /// Must match the `rpcpassword` value in `bitcoin.conf`. The default is
-    /// empty, which causes all RPC calls to be rejected until a value is
-    /// configured.
-    pub rpc_password: String,
+    /// Must match the `rpcpassword` value in `bitcoin.conf`. Stored as a
+    /// [`SecretString`] so the value is redacted in `Debug` output and zeroed
+    /// in memory on drop.
+    #[serde(serialize_with = "serialize_secret_string")]
+    pub rpc_password: SecretString,
 }
+
+/// Manual [`PartialEq`] because [`SecretString`] intentionally omits it.
+///
+/// Compares the exposed password bytes directly; timing is not a concern here
+/// since this is used only in tests and config comparisons, not for
+/// authentication.
+impl PartialEq for BitcoinDaemonSettings {
+    fn eq(&self, other: &Self) -> bool {
+        self.unit_name == other.unit_name
+            && self.rpc_host == other.rpc_host
+            && self.rpc_port == other.rpc_port
+            && self.rpc_user == other.rpc_user
+            && self.rpc_password.expose_secret() == other.rpc_password.expose_secret()
+    }
+}
+
+impl Eq for BitcoinDaemonSettings {}
 
 impl Default for BitcoinDaemonSettings {
     fn default() -> Self {
@@ -63,7 +97,7 @@ impl Default for BitcoinDaemonSettings {
             rpc_host: DEFAULT_RPC_HOST.to_string(),
             rpc_port: DEFAULT_RPC_PORT,
             rpc_user: DEFAULT_RPC_USER.to_string(),
-            rpc_password: DEFAULT_RPC_PASSWORD.to_string(),
+            rpc_password: SecretString::from(DEFAULT_RPC_PASSWORD),
         }
     }
 }
@@ -99,9 +133,12 @@ impl BitcoinDaemonSettings {
         &self.rpc_user
     }
 
-    /// Returns the RPC password.
+    /// Returns the RPC password as a [`SecretString`].
+    ///
+    /// Call [`ExposeSecret::expose_secret`] on the returned value to access the
+    /// raw string, e.g. `settings.rpc_password().expose_secret()`.
     #[must_use]
-    pub fn rpc_password(&self) -> &str {
+    pub fn rpc_password(&self) -> &SecretString {
         &self.rpc_password
     }
 
@@ -128,7 +165,7 @@ mod tests {
             rpc_host: "192.168.1.10".to_string(),
             rpc_port: 18443,
             rpc_user: "alice".to_string(),
-            rpc_password: "s3cr3t".to_string(),
+            rpc_password: SecretString::from("s3cr3t"),
         }
     }
 
@@ -166,7 +203,7 @@ mod tests {
     #[test]
     fn default_rpc_password_is_empty() {
         assert_eq!(
-            BitcoinDaemonSettings::default().rpc_password(),
+            BitcoinDaemonSettings::default().rpc_password().expose_secret(),
             DEFAULT_RPC_PASSWORD
         );
     }
@@ -203,8 +240,16 @@ mod tests {
     }
 
     #[test]
-    fn rpc_password_accessor_returns_field_value() {
-        assert_eq!(settings().rpc_password(), "s3cr3t");
+    fn rpc_password_accessor_returns_secret_string() {
+        assert_eq!(settings().rpc_password().expose_secret(), "s3cr3t");
+    }
+
+    #[test]
+    fn rpc_password_debug_is_redacted() {
+        let s = settings();
+        let debug = format!("{s:?}");
+        assert!(!debug.contains("s3cr3t"), "password leaked in Debug: {debug}");
+        assert!(debug.contains("[REDACTED]"), "expected [REDACTED] in: {debug}");
     }
 
     // --- rpc_address ---
@@ -291,8 +336,18 @@ mod tests {
     }
 
     #[test]
+    fn debug_format_does_not_expose_default_password() {
+        let debug = format!("{:?}", BitcoinDaemonSettings::default());
+        // Even the empty default should not appear as a bare string value.
+        assert!(debug.contains("[REDACTED]"));
+    }
+
+    #[test]
     fn equal_settings_compare_equal() {
-        assert_eq!(BitcoinDaemonSettings::default(), BitcoinDaemonSettings::default());
+        assert_eq!(
+            BitcoinDaemonSettings::default(),
+            BitcoinDaemonSettings::default()
+        );
     }
 
     #[test]
@@ -321,6 +376,19 @@ mod tests {
         assert_ne!(a, b);
     }
 
+    #[test]
+    fn different_passwords_compare_unequal() {
+        let a = BitcoinDaemonSettings {
+            rpc_password: SecretString::from("alpha"),
+            ..BitcoinDaemonSettings::default()
+        };
+        let b = BitcoinDaemonSettings {
+            rpc_password: SecretString::from("bravo"),
+            ..BitcoinDaemonSettings::default()
+        };
+        assert_ne!(a, b);
+    }
+
     // --- serialisation ---
 
     #[test]
@@ -344,6 +412,13 @@ mod tests {
             json.contains("\"rpc_password\""),
             "missing 'rpc_password': {json}"
         );
+    }
+
+    #[test]
+    fn serialize_exposes_password_in_json() {
+        // Serialisation must write the real value so the config round-trip works.
+        let json = serde_json::to_string(&settings()).expect("serialize");
+        assert!(json.contains("s3cr3t"), "password missing from JSON: {json}");
     }
 
     #[test]
@@ -396,7 +471,16 @@ mod tests {
         assert_eq!(s.rpc_host(), "127.0.0.1");
         assert_eq!(s.rpc_port(), 8332);
         assert_eq!(s.rpc_user(), "bitcoinrpc");
-        assert_eq!(s.rpc_password(), "devpassword");
+        assert_eq!(s.rpc_password().expose_secret(), "devpassword");
+    }
+
+    #[test]
+    fn deserialize_password_is_wrapped_as_secret() {
+        let json = r#"{"unit_name":"u","rpc_host":"h","rpc_port":1,"rpc_user":"u","rpc_password":"hunter2"}"#;
+        let s: BitcoinDaemonSettings = serde_json::from_str(json).expect("deserialize");
+        // Value is accessible via expose_secret, not a plain String.
+        assert_eq!(s.rpc_password().expose_secret(), "hunter2");
+        assert!(!format!("{s:?}").contains("hunter2"));
     }
 
     #[test]

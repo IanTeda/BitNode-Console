@@ -106,8 +106,8 @@ pub mod journald;
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinDaemonSettings {
-    #[serde(default = "default_unit_name")]
-    pub unit_name: String,
+    #[serde(serialize_with = "serialize_secret_string")]
+    pub unit_name: SecretString,
 }
 fn default_unit_name() -> String { "bitcoind.service".to_string() }
 impl Default for BitcoinDaemonSettings { ... }
