@@ -137,6 +137,19 @@ filtering by both `_SYSTEMD_UNIT` and `SYSLOG_IDENTIFIER` in one query. `systemd
 is already in `shell.nix` (added in Part 1) and provides the `libsystemd` shared
 library the crate links against.
 
+**File structure:**
+
+```
+backend/libs/lib_journald/
+├── Cargo.toml          — add systemd, tokio (rt+sync), async-stream dependencies
+└── src/
+    ├── lib.rs          — public re-exports: fetch, stream, JournalEntry, Error, Result
+    ├── error.rs        — Error enum (exists — extend with systemd + tokio variants)
+    ├── domains.rs        — JournalEntry struct, from_record(), priority_name() mapping
+    ├── fetch.rs        — fetch() async fn — spawn_blocking wrapper for GetLogs RPC
+    └── stream.rs       — stream() fn — OS thread + mpsc channel bridge for StreamLogs RPC
+```
+
 **Key constraints:**
 
 - `Journal` is explicitly `!Send + !Sync` (documented in the crate). It must be
@@ -152,7 +165,7 @@ tokio = { workspace = true }   # needs rt + sync features for spawn_blocking + m
 async-stream = "0.3"           # stream! macro for the async wrapper
 ```
 
-**Key types (`lib_journald/src/lib.rs`):**
+**Key types (`lib_journald/src/entry.rs`):**
 ```rust
 pub struct JournalEntry {
     pub message: String,

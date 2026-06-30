@@ -1,0 +1,55 @@
+// BitNode-Console Common Pagination Definition
+//
+// Reusable cursor/keyset pagination messages shared across services.
+// Embed PageRequest in RPC request messages and PageResponse in RPC
+// response messages to add consistent bidirectional page navigation.
+
+syntax = "proto3";
+
+package bitnode_console.v1.common.v1;
+
+// PageRequest carries cursor-based pagination parameters for a single page.
+message PageRequest {
+  // Maximum number of items to return. The server may return fewer.
+  // Zero lets the server choose a default.
+  uint32 page_size = 1;
+
+  // Opaque page token from a previous PageResponse marking the page boundary.
+  // Omit to start at the natural beginning (DIRECTION_FORWARD) or end
+  // (DIRECTION_BACKWARD) of the result set.
+  optional string page_token = 2;
+
+  // Direction controls which side of the page token to read from.
+  // Defaults to DIRECTION_FORWARD when unspecified.
+  Direction direction = 3;
+}
+
+// PageResponse carries the page tokens and boundary flags needed to navigate
+// between pages. Embed this in RPC response messages alongside the result list.
+message PageResponse {
+  // Pass as page_token in the next request to fetch the page after this one
+  // (chronologically newer for logs). Absent when has_next_page is false.
+  optional string next_page_token = 1;
+
+  // Pass as page_token in the next request to fetch the page before this one
+  // (chronologically older for logs). Absent when has_prev_page is false.
+  optional string prev_page_token = 2;
+
+  // True when at least one more page exists in the DIRECTION_FORWARD direction.
+  bool has_next_page = 3;
+
+  // True when at least one more page exists in the DIRECTION_BACKWARD direction.
+  bool has_prev_page = 4;
+}
+
+// Direction controls which side of the pagination cursor to read from.
+enum Direction {
+  // Unspecified defaults to DIRECTION_FORWARD.
+  DIRECTION_UNSPECIFIED = 0;
+
+  // DIRECTION_FORWARD reads items after the cursor (chronologically newer for logs).
+  DIRECTION_FORWARD = 1;
+
+  // DIRECTION_BACKWARD reads items before the cursor (chronologically older for logs).
+  DIRECTION_BACKWARD = 2;
+}

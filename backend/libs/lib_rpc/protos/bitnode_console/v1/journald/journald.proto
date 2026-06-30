@@ -7,28 +7,34 @@ syntax = "proto3";
 
 package bitnode_console.v1.journald.v1;
 
+// Common definitions.
+import "bitnode_console/v1/common/pagination.proto";
+
 // JournaldService exposes Bitcoin daemon log entries from the systemd journal.
 //
 // The unit name read is fixed by server configuration; clients cannot select
 // an arbitrary unit, preventing authenticated users from reading unrelated logs.
 service JournaldService {
-  // GetLogs returns the last N log lines (unary, for initial page load).
+  // GetLogs returns a page of log lines (unary, for initial page load and pagination).
   rpc GetLogs (GetLogsRequest) returns (GetLogsResponse);
 
   // StreamLogs streams new log entries in real time (server-streaming, for live tail).
   rpc StreamLogs (StreamLogsRequest) returns (stream LogEntry);
 }
 
-// GetLogsRequest specifies how many recent log lines to fetch.
+// GetLogsRequest specifies the page of log entries to fetch.
 message GetLogsRequest {
-  // Number of most-recent lines to return. Defaults to 100 when zero.
-  uint32 lines = 1;
+  // Pagination parameters: page size, page token, and direction.
+  bitnode_console.v1.common.v1.PageRequest pagination = 1;
 }
 
-// GetLogsResponse carries the fetched log entries.
+// GetLogsResponse carries the fetched log entries and the next page token.
 message GetLogsResponse {
   // Log entries in chronological order (oldest first).
   repeated LogEntry entries = 1;
+
+  // Pagination cursors and boundary flags for navigating between pages.
+  bitnode_console.v1.common.v1.PageResponse pagination = 2;
 }
 
 // StreamLogsRequest initiates a live log tail.
@@ -51,4 +57,10 @@ message LogEntry {
 
   // Systemd unit or syslog identifier that produced the entry.
   string unit = 4;
+
+  // Journal cursor for seeking and pagination; absent when not recorded.
+  optional string cursor = 5;
+
+  // All remaining journal fields not captured by the fields above.
+  map<string, string> extra_fields = 6;
 }

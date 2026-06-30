@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "proto:gen": "protoc --ts_out src/lib/generated_protos --ts_opt long_type_string --proto_path protos protos/bitnode_console/v1/utilities.proto && find src/lib/generated_protos -name '*.ts' -exec sed -i '1i\\// @ts-nocheck' {} +"
+    "proto:gen": "protoc --ts_out src/lib/generated_protos --ts_opt long_type_string --proto_path protos protos/bitnode_console/v1/utilities/utilities.proto protos/bitnode_console/v1/journald/journald.proto && find src/lib/generated_protos -name '*.ts' -exec sed -i '1i\\// @ts-nocheck' {} +"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
