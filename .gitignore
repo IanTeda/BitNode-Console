@@ -162,3 +162,9 @@ docs/.book
 
 # TanStack Router generated route tree
 frontend/src/routeTree.gen.ts
+
+
+# -----------------------------[ DEV DATA ]------------------------------
+
+# Bitcoin regtest datadir — runtime data, not committed
+dev/data/

@@ -1,0 +1,25 @@
+[package]
+name = "lib_journald"
+description.workspace = true
+repository.workspace = true
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+# Inherit lint configuration from the workspace Cargo.toml
+workspace = true
+
+[dependencies]
+## --- Internal Dependencies
+
+## --- Workspace Dependencies
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+## --- Library Dependencies
+
+[build-dependencies]
+
+[dev-dependencies]

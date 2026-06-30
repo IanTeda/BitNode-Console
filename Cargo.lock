@@ -1206,6 +1206,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "lib_journald"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "lib_rpc"
 version = "0.1.0"
 dependencies = [

@@ -45,6 +45,15 @@ command = "npm"
 args = ["run", "lint"]
 cwd = "frontend"
 
+## --- [ BITCOIN ] ---------------------------------------------------------------
+# Tasks related to the Bitcoin Knots daemon.
+
+[tasks.bitcoind]
+workspace = false
+description = "Start bitcoind-knots in regtest mode, piping logs to the journal (foreground)"
+command = "bash"
+args = ["./dev/run-bitcoind.sh"]
+
 ## --- [ BIN_CONSOLE ] -----------------------------------------------------------
 ## Full server: serves the React web frontend (HTTP) and gRPC backend together.
 
@@ -60,10 +69,15 @@ cp -r frontend/dist backend/libs/lib_web/assets
 
 [tasks.console-dev]
 workspace = false
-description = "Build frontend, copy assets, then watch and reload the full console server (web + RPC)"
+description = "Build frontend, copy assets, start bitcoind in background, then watch and reload the full console server (web + RPC)"
 dependencies = ["console-assets-copy"]
-command = "cargo"
-args = ["watch", "-q", "-c", "-w", "backend", "-x", "run -p bin_console"]
+script_runner = "@shell"
+script = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -q -c -w backend -x "run -p bin_console"
+'''
 
 [tasks.console-release]
 workspace = false
@@ -84,9 +98,14 @@ args = ["run", "-p", "bin_console", "--release"]
 
 [tasks.rpc-dev]
 workspace = false
-description = "Watch and reload the RPC-only server on backend changes"
-command = "cargo"
-args = ["watch", "-q", "-c", "-w", "backend", "-x", "run -p bin_rpc"]
+description = "Start bitcoind in background, then watch and reload the RPC-only server on backend changes"
+script_runner = "@shell"
+script = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -q -c -w backend -x "run -p bin_rpc"
+'''
 
 [tasks.rpc-release]
 workspace = false

@@ -60,6 +60,10 @@ pkgs.mkShell {
     # Development tools
     grpcurl
 
+    # Bitcoin daemon + journal integration for local dev
+    bitcoin-knots
+    systemd
+
     # Password hashing
     libargon2
   ];
