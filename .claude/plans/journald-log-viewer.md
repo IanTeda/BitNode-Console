@@ -16,8 +16,8 @@ implementation → frontend streaming log viewer.
 
 Add to `shell.nix` packages:
 ```nix
-bitcoin    # provides bitcoind binary (or bitcoinknots if available in nixpkgs)
-systemd    # provides journalctl + systemd-cat
+bitcoin-knots     # provides bitcoind binary (or bitcoinknots if available in nixpkgs)
+systemd           # provides journalctl + systemd-cat
 ```
 
 Create `dev/` directory (data/ gitignored, scripts committed):

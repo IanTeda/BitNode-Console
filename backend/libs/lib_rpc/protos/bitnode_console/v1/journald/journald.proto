@@ -1,0 +1,54 @@
+// BitNode-Console Journald Service Protocol Buffer Definition
+//
+// Defines the RPC service and messages for reading Bitcoin daemon
+// log entries from the systemd journal.
+
+syntax = "proto3";
+
+package bitnode_console.v1.journald.v1;
+
+// JournaldService exposes Bitcoin daemon log entries from the systemd journal.
+//
+// The unit name read is fixed by server configuration; clients cannot select
+// an arbitrary unit, preventing authenticated users from reading unrelated logs.
+service JournaldService {
+  // GetLogs returns the last N log lines (unary, for initial page load).
+  rpc GetLogs (GetLogsRequest) returns (GetLogsResponse);
+
+  // StreamLogs streams new log entries in real time (server-streaming, for live tail).
+  rpc StreamLogs (StreamLogsRequest) returns (stream LogEntry);
+}
+
+// GetLogsRequest specifies how many recent log lines to fetch.
+message GetLogsRequest {
+  // Number of most-recent lines to return. Defaults to 100 when zero.
+  uint32 lines = 1;
+}
+
+// GetLogsResponse carries the fetched log entries.
+message GetLogsResponse {
+  // Log entries in chronological order (oldest first).
+  repeated LogEntry entries = 1;
+}
+
+// StreamLogsRequest initiates a live log tail.
+message StreamLogsRequest {
+  // Number of existing lines to emit before streaming new entries.
+  uint32 tail_lines = 1;
+}
+
+// LogEntry represents a single journal log line from the Bitcoin daemon.
+message LogEntry {
+  // Log message text.
+  string message = 1;
+
+  // Wall-clock time of the entry in microseconds since the Unix epoch.
+  int64 timestamp_us = 2;
+
+  // Severity level: one of "emerg", "alert", "crit", "err",
+  // "warning", "notice", "info", or "debug".
+  string priority = 3;
+
+  // Systemd unit or syslog identifier that produced the entry.
+  string unit = 4;
+}
