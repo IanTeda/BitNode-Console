@@ -7,7 +7,6 @@ use secrecy::SecretString;
 use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::interceptors::GrpcPathLayer;
 use crate::services::{
     AuthenticationServiceImpl, AuthenticationServiceServer, UtilitiesServiceImpl,
     UtilitiesServiceServer,

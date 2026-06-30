@@ -1,1 +1,0 @@
-import{E as e,i as t,u as n}from"./index-Dzxi8P1a.js";var r=e(),i=n(),a=t.getSubLogger({name:`SettingsRoute`});function o(){let e=(0,r.c)(1);a.info(`Settings page rendered`);let t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,i.jsx)(`div`,{children:`Hello "/_authenticated/settings"!`}),e[0]=t):t=e[0],t}export{o as component};

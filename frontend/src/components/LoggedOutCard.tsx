@@ -16,7 +16,7 @@ export function LoggedOutCard({
           You have been logged out. You can close this window or log back in.
         </p>
       </div>
-      <Button onClick={() => navigate({ to: "/auth/login" })}>
+      <Button onClick={() => navigate({ to: "/auth/login", search: { redirect: undefined } })}>
         Log Back In
       </Button>
     </div>
