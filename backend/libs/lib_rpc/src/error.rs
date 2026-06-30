@@ -23,9 +23,28 @@ pub enum Error {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    /// The request was rejected because a token was missing, malformed, expired,
+    /// or of the wrong type.
+    #[error("Authentication error: {0}")]
+    Authentication(String),
+
+    /// The caller's identity is known but they are not permitted to access the resource.
+    #[error("Permission denied: {0}")]
+    PermissionDenied(String),
+
     /// Catch-all for errors that do not fit a more specific variant.
     #[error("RPC error: {0}")]
     Generic(String),
+}
+
+impl From<Error> for tonic::Status {
+    fn from(e: Error) -> Self {
+        match e {
+            Error::Authentication(msg) => tonic::Status::unauthenticated(msg),
+            Error::PermissionDenied(msg) => tonic::Status::permission_denied(msg),
+            other => tonic::Status::internal(other.to_string()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -62,6 +81,18 @@ mod tests {
     }
 
     #[test]
+    fn authentication_error_displays_message() {
+        let error = Error::Authentication("token expired".to_string());
+        assert_eq!(error.to_string(), "Authentication error: token expired");
+    }
+
+    #[test]
+    fn permission_denied_error_displays_message() {
+        let error = Error::PermissionDenied("ip not allowed".to_string());
+        assert_eq!(error.to_string(), "Permission denied: ip not allowed");
+    }
+
+    #[test]
     fn generic_error_displays_message() {
         let error = Error::Generic("something went wrong".to_string());
         assert_eq!(error.to_string(), "RPC error: something went wrong");
@@ -94,6 +125,8 @@ mod tests {
             Error::Timeout,
             Error::Serialisation("s".to_string()),
             Error::Config("c".to_string()),
+            Error::Authentication("a".to_string()),
+            Error::PermissionDenied("p".to_string()),
             Error::Generic("g".to_string()),
         ];
         for error in cases {
@@ -129,5 +162,49 @@ mod tests {
 
         let result = fallible();
         assert!(result.is_err());
+    }
+
+    // --- From<Error> for tonic::Status ---
+
+    #[test]
+    fn authentication_error_converts_to_unauthenticated_status() {
+        let status = tonic::Status::from(Error::Authentication("bad token".to_string()));
+        assert_eq!(status.code(), tonic::Code::Unauthenticated);
+    }
+
+    #[test]
+    fn authentication_error_preserves_message_in_status() {
+        let status = tonic::Status::from(Error::Authentication("bad token".to_string()));
+        assert_eq!(status.message(), "bad token");
+    }
+
+    #[test]
+    fn permission_denied_error_converts_to_permission_denied_status() {
+        let status = tonic::Status::from(Error::PermissionDenied("ip not allowed".to_string()));
+        assert_eq!(status.code(), tonic::Code::PermissionDenied);
+    }
+
+    #[test]
+    fn permission_denied_error_preserves_message_in_status() {
+        let status = tonic::Status::from(Error::PermissionDenied("ip not allowed".to_string()));
+        assert_eq!(status.message(), "ip not allowed");
+    }
+
+    #[test]
+    fn non_authentication_errors_convert_to_internal_status() {
+        let cases = [
+            Error::Transport("t".to_string()),
+            Error::Timeout,
+            Error::Config("c".to_string()),
+            Error::Generic("g".to_string()),
+        ];
+        for error in cases {
+            let status = tonic::Status::from(error);
+            assert_eq!(
+                status.code(),
+                tonic::Code::Internal,
+                "expected Internal for {status:?}"
+            );
+        }
     }
 }

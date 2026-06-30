@@ -13,6 +13,7 @@ fn rpc_settings(password_hash: &str) -> lib_settings::RpcSettings {
         port: 0,
         password_hash: password_hash.to_string(),
         token_secret: "test_secret".to_string(),
+        ..Default::default()
     }
 }
 

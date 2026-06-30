@@ -15,6 +15,16 @@ const DEFAULT_PASSWORD_HASH: &str = "";
 /// Default token secret — empty; server will fail to sign tokens until configured.
 const DEFAULT_TOKEN_SECRET: &str = "";
 
+/// Default allowed IPs — localhost only.
+const DEFAULT_ALLOWED_IPS: &[&str] = &["127.0.0.1/32"];
+
+fn default_allowed_ips() -> Vec<ipnet::IpNet> {
+    DEFAULT_ALLOWED_IPS
+        .iter()
+        .map(|s| s.parse().expect("DEFAULT_ALLOWED_IPS contains a valid CIDR address"))
+        .collect()
+}
+
 /// RPC server configuration.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct RpcSettings {
@@ -43,6 +53,14 @@ pub struct RpcSettings {
     /// Must be a strong random value in production. The default is empty and
     /// will cause token signing to fail until a real value is configured.
     pub token_secret: String,
+
+    /// List of IP addresses and CIDR subnets permitted to connect to the RPC server.
+    ///
+    /// Each entry is an [`ipnet::IpNet`], which accepts both host addresses
+    /// (`"192.168.1.10/32"`) and subnet ranges (`"192.168.1.0/24"`).
+    /// Defaults to `["127.0.0.1/32"]` (localhost only).
+    #[serde(default = "default_allowed_ips")]
+    pub allowed_ips: Vec<ipnet::IpNet>,
 }
 
 impl Default for RpcSettings {
@@ -52,6 +70,7 @@ impl Default for RpcSettings {
             host: DEFAULT_HOST.to_string(),
             password_hash: DEFAULT_PASSWORD_HASH.to_string(),
             token_secret: DEFAULT_TOKEN_SECRET.to_string(),
+            allowed_ips: default_allowed_ips(),
         }
     }
 }
@@ -93,6 +112,18 @@ impl RpcSettings {
             .map_err(|e: std::net::AddrParseError| crate::Error::Parsing(e.to_string()))?;
         Ok(std::net::SocketAddr::new(ip, self.port))
     }
+
+    /// Returns the list of allowed IP networks.
+    #[must_use]
+    pub fn allowed_ips(&self) -> &[ipnet::IpNet] {
+        &self.allowed_ips
+    }
+
+    /// Returns `true` if `ip` falls within any of the configured allowed networks.
+    #[must_use]
+    pub fn is_ip_allowed(&self, ip: std::net::IpAddr) -> bool {
+        self.allowed_ips.iter().any(|net| net.contains(&ip))
+    }
 }
 
 #[cfg(test)]
@@ -108,6 +139,7 @@ mod tests {
             host: "127.0.0.1".to_string(),
             password_hash: SAMPLE_HASH.to_string(),
             token_secret: "supersecret".to_string(),
+            ..RpcSettings::default()
         }
     }
 
@@ -120,6 +152,7 @@ mod tests {
             host: "localhost".to_string(),
             password_hash: String::new(),
             token_secret: String::new(),
+            ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "localhost:8080");
     }
@@ -137,6 +170,7 @@ mod tests {
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
             token_secret: String::new(),
+            ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "127.0.0.1:0");
     }
@@ -148,6 +182,7 @@ mod tests {
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
             token_secret: String::new(),
+            ..RpcSettings::default()
         };
         assert_eq!(settings.address(), format!("127.0.0.1:{}", u16::MAX));
     }
@@ -159,6 +194,7 @@ mod tests {
             host: "::1".to_string(),
             password_hash: String::new(),
             token_secret: String::new(),
+            ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "::1:8080");
     }
@@ -273,6 +309,10 @@ mod tests {
             json.contains("\"token_secret\""),
             "missing 'token_secret': {json}"
         );
+        assert!(
+            json.contains("\"allowed_ips\""),
+            "missing 'allowed_ips': {json}"
+        );
     }
 
     #[test]
@@ -302,5 +342,81 @@ mod tests {
     fn deserialize_missing_token_secret_fails() {
         let json = r#"{"host": "127.0.0.1", "port": 50051, "password_hash": ""}"#;
         assert!(serde_json::from_str::<RpcSettings>(json).is_err());
+    }
+
+    #[test]
+    fn deserialize_without_allowed_ips_uses_default() {
+        let json = r#"{"host": "127.0.0.1", "port": 50051, "password_hash": "", "token_secret": "s"}"#;
+        let s: RpcSettings = serde_json::from_str(json).expect("deserialise without allowed_ips");
+        assert_eq!(s.allowed_ips(), RpcSettings::default().allowed_ips());
+    }
+
+    // --- allowed_ips ---
+
+    #[test]
+    fn default_allowed_ips_contains_localhost() {
+        let s = RpcSettings::default();
+        let localhost: ipnet::IpNet = "127.0.0.1/32".parse().unwrap();
+        assert!(s.allowed_ips().contains(&localhost));
+    }
+
+    #[test]
+    fn allowed_ips_accessor_returns_field_value() {
+        let net: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
+        let s = RpcSettings {
+            allowed_ips: vec![net.clone()],
+            ..RpcSettings::default()
+        };
+        assert_eq!(s.allowed_ips(), &[net]);
+    }
+
+    // --- is_ip_allowed ---
+
+    #[test]
+    fn localhost_is_allowed_by_default() {
+        let s = RpcSettings::default();
+        assert!(s.is_ip_allowed("127.0.0.1".parse().unwrap()));
+    }
+
+    #[test]
+    fn non_localhost_is_denied_by_default() {
+        let s = RpcSettings::default();
+        assert!(!s.is_ip_allowed("192.168.1.1".parse().unwrap()));
+    }
+
+    #[test]
+    fn ip_within_cidr_subnet_is_allowed() {
+        let s = RpcSettings {
+            allowed_ips: vec!["192.168.1.0/24".parse().unwrap()],
+            ..RpcSettings::default()
+        };
+        assert!(s.is_ip_allowed("192.168.1.42".parse().unwrap()));
+    }
+
+    #[test]
+    fn ip_outside_cidr_subnet_is_denied() {
+        let s = RpcSettings {
+            allowed_ips: vec!["192.168.1.0/24".parse().unwrap()],
+            ..RpcSettings::default()
+        };
+        assert!(!s.is_ip_allowed("192.168.2.1".parse().unwrap()));
+    }
+
+    #[test]
+    fn ipv6_loopback_allowed_when_listed() {
+        let s = RpcSettings {
+            allowed_ips: vec!["::1/128".parse().unwrap()],
+            ..RpcSettings::default()
+        };
+        assert!(s.is_ip_allowed("::1".parse().unwrap()));
+    }
+
+    #[test]
+    fn empty_allowed_ips_denies_all() {
+        let s = RpcSettings {
+            allowed_ips: vec![],
+            ..RpcSettings::default()
+        };
+        assert!(!s.is_ip_allowed("127.0.0.1".parse().unwrap()));
     }
 }

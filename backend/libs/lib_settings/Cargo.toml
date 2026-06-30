@@ -23,6 +23,7 @@ thiserror = { workspace = true }
 ## --- Library Dependencies
 config = { version = "0.15.19" }
 directories = { version = "6.0.0" }
+ipnet = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0" }

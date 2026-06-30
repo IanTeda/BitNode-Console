@@ -7,6 +7,7 @@ use secrecy::SecretString;
 use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
+use crate::interceptors::GrpcPathLayer;
 use crate::services::{
     AuthenticationServiceImpl, AuthenticationServiceServer, UtilitiesServiceImpl,
     UtilitiesServiceServer,
@@ -46,7 +47,7 @@ impl Server {
     ///
     /// Returns [`crate::Error::Config`] if `settings.host` is not a valid IP address.
     /// Returns [`crate::Error::Transport`] if the TCP listener cannot bind to the address.
-    #[tracing::instrument()]
+    #[tracing::instrument(skip(settings))]
     pub async fn new(settings: lib_settings::RpcSettings) -> crate::Result<Self> {
         let address = settings.socket_address().map_err(|e| crate::Error::Config(e.to_string()))?;
 
@@ -87,11 +88,17 @@ impl Server {
             ));
         }
 
-        //--- Set up the server address and incoming stream
-        let addr = self.address()?;
-        let incoming_stream = TcpListenerStream::new(self.listener);
+        //--- Build interceptors
+        let allowed_ips_interceptor =
+            crate::AllowedIpsInterceptor::new(self.settings.allowed_ips().to_vec());
+        let allowed_ips_interceptor = tonic::service::interceptor(allowed_ips_interceptor);
 
-        // Build a new authentication service.
+        let access_token_interceptor =
+            crate::interceptors::AccessTokenInterceptor::new(self.settings.token_secret().into());
+
+        //--- Build rpc services
+
+        // Build a new authentication service (no access-token required to log in).
         let password_hash = lib_auth::PasswordHash::try_from(self.settings.password_hash())
             .map_err(|e| crate::Error::Config(e.to_string()))?;
         let token_secret = SecretString::from(self.settings.token_secret());
@@ -101,8 +108,11 @@ impl Server {
         ));
         tracing::debug!("Authentication service registered");
 
-        // Build a new utilities service.
-        let utilities_service = UtilitiesServiceServer::new(UtilitiesServiceImpl::default());
+        // Build a new utilities service, protected by the access-token interceptor.
+        let utilities_service = UtilitiesServiceServer::with_interceptor(
+            UtilitiesServiceImpl::default(),
+            access_token_interceptor,
+        );
         tracing::debug!("Utilities service registered");
 
         // Build the reflection service to serve schema information to reflection-capable clients.
@@ -113,10 +123,11 @@ impl Server {
         tracing::debug!("Reflection service registered");
 
         // Create a new CORS layer for gRPC-Web browser clients.
-        let cors = CorsLayer::new()
+        let cors_layer = CorsLayer::new()
             .allow_origin(AllowOrigin::mirror_request())
             .allow_methods([http::Method::POST])
             .allow_headers([
+                HeaderName::from_static("access_token"),
                 HeaderName::from_static("authorization"),
                 HeaderName::from_static("content-type"),
                 HeaderName::from_static("x-grpc-web"),
@@ -126,12 +137,17 @@ impl Server {
                 HeaderName::from_static("grpc-message"),
             ]);
 
+        //--- Set up the server address and incoming stream
+        let addr = self.address()?;
+        let incoming_stream = TcpListenerStream::new(self.listener);
+
         tracing::info!("RPC server listening on rpc://{addr}");
 
         // Build and serve the gRPC server.
         tonic::transport::Server::builder()
             .accept_http1(true)
-            .layer(cors)
+            .layer(allowed_ips_interceptor)
+            .layer(cors_layer)
             .layer(tonic_web::GrpcWebLayer::new())
             .add_service(auth_service)
             .add_service(utilities_service)
@@ -167,6 +183,7 @@ mod tests {
             port: 0,
             password_hash: test_hash().as_ref().to_string(),
             token_secret: "test_secret".to_string(),
+            ..Default::default()
         }
     }
 
@@ -179,6 +196,13 @@ mod tests {
 
     fn settings_with_port(port: u16) -> lib_settings::RpcSettings {
         lib_settings::RpcSettings { port, ..settings() }
+    }
+
+    /// Generate a valid access token signed with the test secret.
+    fn valid_access_token() -> String {
+        lib_auth::AccessToken::new(&SecretString::from("test_secret"))
+            .expect("test access token must generate")
+            .to_string()
     }
 
     // --- new ---
@@ -275,7 +299,11 @@ mod tests {
 
         let mut client =
             crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let response = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap();
+        let mut request = tonic::Request::new(crate::PingRequest {});
+        request
+            .metadata_mut()
+            .insert("access_token", valid_access_token().parse().unwrap());
+        let response = client.ping(request).await.unwrap();
 
         assert_eq!(response.into_inner().pong, "Pong...");
     }
@@ -290,9 +318,43 @@ mod tests {
             crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
 
         for _ in 0..3 {
-            let response = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap();
+            let mut request = tonic::Request::new(crate::PingRequest {});
+            request
+                .metadata_mut()
+                .insert("access_token", valid_access_token().parse().unwrap());
+            let response = client.ping(request).await.unwrap();
             assert_eq!(response.into_inner().pong, "Pong...");
         }
+    }
+
+    #[tokio::test]
+    async fn run_ping_without_access_token_returns_unauthenticated() {
+        let server = Server::new(settings()).await.unwrap();
+        let addr = server.address().unwrap();
+        tokio::spawn(server.run());
+
+        let mut client =
+            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let err = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap_err();
+
+        assert_eq!(err.code(), tonic::Code::Unauthenticated);
+    }
+
+    #[tokio::test]
+    async fn run_ping_with_invalid_access_token_returns_unauthenticated() {
+        let server = Server::new(settings()).await.unwrap();
+        let addr = server.address().unwrap();
+        tokio::spawn(server.run());
+
+        let mut client =
+            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut request = tonic::Request::new(crate::PingRequest {});
+        request
+            .metadata_mut()
+            .insert("access_token", "not.a.valid.jwt".parse().unwrap());
+        let err = client.ping(request).await.unwrap_err();
+
+        assert_eq!(err.code(), tonic::Code::Unauthenticated);
     }
 
     // --- run: CORS ---
@@ -334,7 +396,10 @@ mod tests {
             )
             .header("Origin", "http://localhost:8086")
             .header("Access-Control-Request-Method", "POST")
-            .header("Access-Control-Request-Headers", "content-type,x-grpc-web")
+            .header(
+                "Access-Control-Request-Headers",
+                "content-type,x-grpc-web,access_token",
+            )
             .send()
             .await
             .unwrap();
@@ -348,6 +413,10 @@ mod tests {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
 
+        assert!(
+            allowed.contains("access_token"),
+            "access_token not in allowed headers: {allowed}"
+        );
         assert!(
             allowed.contains("authorization"),
             "authorization not in allowed headers: {allowed}"
@@ -380,6 +449,7 @@ mod tests {
             ))
             .header("Content-Type", "application/grpc-web")
             .header("x-grpc-web", "1")
+            .header("access_token", valid_access_token())
             .body(frame)
             .send()
             .await

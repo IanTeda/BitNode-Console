@@ -31,6 +31,7 @@ pub fn test_settings() -> lib_settings::RpcSettings {
         port: 0,
         password_hash: TEST_PASSWORD_HASH.to_string(),
         token_secret: "test_secret".to_string(),
+        ..Default::default()
     }
 }
 
