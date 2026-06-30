@@ -96,32 +96,7 @@ impl Server {
         let access_token_interceptor =
             crate::interceptors::AccessTokenInterceptor::new(self.settings.token_secret().into());
 
-        //--- Build rpc services
-
-        // Build a new authentication service (no access-token required to log in).
-        let password_hash = lib_auth::PasswordHash::try_from(self.settings.password_hash())
-            .map_err(|e| crate::Error::Config(e.to_string()))?;
-        let token_secret = SecretString::from(self.settings.token_secret());
-        let auth_service = AuthenticationServiceServer::new(AuthenticationServiceImpl::new(
-            password_hash,
-            token_secret,
-        ));
-        tracing::debug!("Authentication service registered");
-
-        // Build a new utilities service, protected by the access-token interceptor.
-        let utilities_service = UtilitiesServiceServer::with_interceptor(
-            UtilitiesServiceImpl::default(),
-            access_token_interceptor,
-        );
-        tracing::debug!("Utilities service registered");
-
-        // Build the reflection service to serve schema information to reflection-capable clients.
-        let reflection_service = tonic_reflection::server::Builder::configure()
-            .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
-            .build_v1()
-            .map_err(|e| crate::Error::Config(e.to_string()))?;
-        tracing::debug!("Reflection service registered");
-
+        // --- CORS Layer
         // Create a new CORS layer for gRPC-Web browser clients.
         let cors_layer = CorsLayer::new()
             .allow_origin(AllowOrigin::mirror_request())
@@ -137,6 +112,37 @@ impl Server {
                 HeaderName::from_static("grpc-message"),
             ]);
 
+        // --- gRPC-Web Layer
+        // This layer is used to serve gRPC-Web browser clients.
+        let grpc_web_layer = tonic_web::GrpcWebLayer::new();
+
+        // --- Authentication RPC Service
+        // Build a new authentication service (no access-token required to log in).
+        let password_hash = lib_auth::PasswordHash::try_from(self.settings.password_hash())
+            .map_err(|e| crate::Error::Config(e.to_string()))?;
+        let token_secret = SecretString::from(self.settings.token_secret());
+        let auth_service = AuthenticationServiceServer::new(AuthenticationServiceImpl::new(
+            password_hash,
+            token_secret,
+        ));
+        tracing::debug!("Authentication service registered");
+
+        // --- Utilities RPC Service
+        // Build a new utilities service, protected by the access-token interceptor.
+        let utilities_service = UtilitiesServiceServer::with_interceptor(
+            UtilitiesServiceImpl::default(),
+            access_token_interceptor,
+        );
+        tracing::debug!("Utilities service registered");
+
+        // --- Reflection RPC Service
+        // Build the reflection service to serve schema information to reflection-capable clients.
+        let reflection_service = tonic_reflection::server::Builder::configure()
+            .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+            .build_v1()
+            .map_err(|e| crate::Error::Config(e.to_string()))?;
+        tracing::debug!("Reflection service registered");
+
         //--- Set up the server address and incoming stream
         let addr = self.address()?;
         let incoming_stream = TcpListenerStream::new(self.listener);
@@ -148,7 +154,7 @@ impl Server {
             .accept_http1(true)
             .layer(allowed_ips_interceptor)
             .layer(cors_layer)
-            .layer(tonic_web::GrpcWebLayer::new())
+            .layer(grpc_web_layer)
             .add_service(auth_service)
             .add_service(utilities_service)
             .add_service(reflection_service)
