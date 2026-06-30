@@ -6,6 +6,8 @@
 //! covering both the systemd unit name used for log access and the JSON-RPC
 //! credentials used for daemon communication.
 
+use std::path::{Path, PathBuf};
+
 use secrecy::{ExposeSecret, SecretString};
 
 /// Default systemd unit name for the Bitcoin daemon.
@@ -71,6 +73,14 @@ pub struct BitcoinDaemonSettings {
     /// in memory on drop.
     #[serde(serialize_with = "serialize_secret_string")]
     pub rpc_password: SecretString,
+
+    /// Path to the Bitcoin daemon's `.cookie` file for cookie-based authentication.
+    ///
+    /// Bitcoin Core/Knots writes this file to `<datadir>/.cookie` on startup when
+    /// `server=1` is set. When present, callers may use its contents as the RPC
+    /// credential instead of `rpc_user`/`rpc_password`. Defaults to `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cookie_file: Option<PathBuf>,
 }
 
 /// Manual [`PartialEq`] because [`SecretString`] intentionally omits it.
@@ -85,6 +95,7 @@ impl PartialEq for BitcoinDaemonSettings {
             && self.rpc_port == other.rpc_port
             && self.rpc_user == other.rpc_user
             && self.rpc_password.expose_secret() == other.rpc_password.expose_secret()
+            && self.cookie_file == other.cookie_file
     }
 }
 
@@ -98,6 +109,7 @@ impl Default for BitcoinDaemonSettings {
             rpc_port: DEFAULT_RPC_PORT,
             rpc_user: DEFAULT_RPC_USER.to_string(),
             rpc_password: SecretString::from(DEFAULT_RPC_PASSWORD),
+            cookie_file: None,
         }
     }
 }
@@ -153,6 +165,12 @@ impl BitcoinDaemonSettings {
     pub fn rpc_url(&self) -> String {
         format!("http://{}:{}", self.rpc_host, self.rpc_port)
     }
+
+    /// Returns the path to the Bitcoin daemon's `.cookie` file, if configured.
+    #[must_use]
+    pub fn cookie_file(&self) -> Option<&Path> {
+        self.cookie_file.as_deref()
+    }
 }
 
 #[cfg(test)]
@@ -166,6 +184,7 @@ mod tests {
             rpc_port: 18443,
             rpc_user: "alice".to_string(),
             rpc_password: SecretString::from("s3cr3t"),
+            cookie_file: None,
         }
     }
 
@@ -491,5 +510,115 @@ mod tests {
         };
         let json = serde_json::to_string(&s).expect("serialize");
         assert!(json.contains("18443"), "regtest port missing: {json}");
+    }
+
+    // --- cookie_file ---
+
+    #[test]
+    fn default_cookie_file_is_none() {
+        assert!(BitcoinDaemonSettings::default().cookie_file().is_none());
+    }
+
+    #[test]
+    fn cookie_file_accessor_returns_configured_path() {
+        let s = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/var/lib/bitcoind/.cookie")),
+            ..BitcoinDaemonSettings::default()
+        };
+        assert_eq!(
+            s.cookie_file(),
+            Some(Path::new("/var/lib/bitcoind/.cookie"))
+        );
+    }
+
+    #[test]
+    fn cookie_file_none_compares_equal() {
+        let a = BitcoinDaemonSettings::default();
+        let b = BitcoinDaemonSettings::default();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn different_cookie_files_compare_unequal() {
+        let a = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/a/.cookie")),
+            ..BitcoinDaemonSettings::default()
+        };
+        let b = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/b/.cookie")),
+            ..BitcoinDaemonSettings::default()
+        };
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn some_and_none_cookie_files_compare_unequal() {
+        let a = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/var/lib/bitcoind/.cookie")),
+            ..BitcoinDaemonSettings::default()
+        };
+        let b = BitcoinDaemonSettings::default();
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn serialize_omits_cookie_file_when_none() {
+        let json = serde_json::to_string(&BitcoinDaemonSettings::default()).expect("serialize");
+        assert!(!json.contains("cookie_file"), "cookie_file should be omitted when None: {json}");
+    }
+
+    #[test]
+    fn serialize_includes_cookie_file_when_some() {
+        let s = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/var/lib/bitcoind/.cookie")),
+            ..BitcoinDaemonSettings::default()
+        };
+        let json = serde_json::to_string(&s).expect("serialize");
+        assert!(json.contains("cookie_file"), "cookie_file missing from JSON: {json}");
+        assert!(
+            json.contains("/var/lib/bitcoind/.cookie"),
+            "cookie path missing from JSON: {json}"
+        );
+    }
+
+    #[test]
+    fn deserialize_without_cookie_file_defaults_to_none() {
+        let json = r#"{
+            "unit_name": "bitcoind.service",
+            "rpc_host": "127.0.0.1",
+            "rpc_port": 8332,
+            "rpc_user": "u",
+            "rpc_password": "p"
+        }"#;
+        let s: BitcoinDaemonSettings = serde_json::from_str(json).expect("deserialize");
+        assert!(s.cookie_file().is_none());
+    }
+
+    #[test]
+    fn deserialize_with_cookie_file_succeeds() {
+        let json = r#"{
+            "unit_name": "bitcoind.service",
+            "rpc_host": "127.0.0.1",
+            "rpc_port": 8332,
+            "rpc_user": "u",
+            "rpc_password": "p",
+            "cookie_file": "/var/lib/bitcoind/.cookie"
+        }"#;
+        let s: BitcoinDaemonSettings = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(
+            s.cookie_file(),
+            Some(Path::new("/var/lib/bitcoind/.cookie"))
+        );
+    }
+
+    #[test]
+    fn serialize_deserialize_roundtrip_with_cookie_file() {
+        let s = BitcoinDaemonSettings {
+            cookie_file: Some(PathBuf::from("/tmp/.cookie")),
+            ..settings()
+        };
+        let json = serde_json::to_string(&s).expect("serialize");
+        let deserialized: BitcoinDaemonSettings = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(s, deserialized);
     }
 }
