@@ -96,58 +96,21 @@ utilities and authentication.
 pub mod journald;
 ```
 
----
-
-## Part 3: lib_journald implementation
-
-**Approach:** subprocess `journalctl --output json` — no libsystemd C bindings,
-works anywhere journalctl is in PATH, avoids adding systemd to shell.nix for the
-library itself.
-
-**Add to `lib_journald/Cargo.toml`:**
-```toml
-tokio = { workspace = true }        # needs process + io features
-serde = { workspace = true }
-serde_json = { workspace = true }
-async-stream = "0.3"                # stream! macro for streaming RPCs
-```
-
-**Key types (`lib_journald/src/lib.rs`):**
-```rust
-pub struct JournalEntry {
-    pub message: String,
-    pub timestamp_us: i64,
-    pub priority: String,
-    pub unit: String,
-}
-```
-
-Map `journalctl` JSON fields: `MESSAGE` → message, `__REALTIME_TIMESTAMP` → timestamp_us
-(string µs since epoch), `PRIORITY` → "0"–"7" mapped to name, `_SYSTEMD_UNIT` → unit.
-
-**Public API:**
-- `pub async fn fetch(unit: &str, lines: u32) -> Result<Vec<JournalEntry>, Error>`
-  Spawns: `journalctl -u {unit} -n {lines} --output json --no-pager`
-  Reads stdout to completion, parses each line as JSON.
-
-- `pub fn stream(unit: &str, tail: u32) -> impl Stream<Item = Result<JournalEntry, Error>>`
-  Spawns: `journalctl -u {unit} -n {tail} -f --output json`
-  Yields entries via `async_stream::stream!` reading `tokio::io::BufReader` line-by-line.
 
 ---
 
-## Part 4: lib_settings — DaemonSettings
+## Part 3: lib_settings — DaemonSettings
 
-**New file:** `backend/libs/lib_settings/src/daemon.rs`
+**New file:** `backend/libs/lib_settings/src/bitcoind.rs`
 
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DaemonSettings {
+pub struct BitcoinDaemonSettings {
     #[serde(default = "default_unit_name")]
     pub unit_name: String,
 }
 fn default_unit_name() -> String { "bitcoind.service".to_string() }
-impl Default for DaemonSettings { ... }
+impl Default for BitcoinDaemonSettings { ... }
 ```
 
 Follow the exact pattern of `RpcSettings` / `WebSettings` (accessor methods, `Default`
@@ -158,9 +121,144 @@ impl, unit tests for parse + default).
 
 **Update `bitnode_console.conf`:**
 ```ini
-[daemon]
+[bitcoind]
 unit_name = bitcoind.service
 ```
+
+
+---
+
+## Part 4: lib_journald implementation
+
+**Approach:** `systemd` crate (v0.10) — C FFI bindings to libsystemd. More complete
+than `journald-query`: exposes all journal fields (including `PRIORITY`), supports
+exact "last N lines" via `seek_tail` + `previous_skip`, and `match_or` allows
+filtering by both `_SYSTEMD_UNIT` and `SYSLOG_IDENTIFIER` in one query. `systemd`
+is already in `shell.nix` (added in Part 1) and provides the `libsystemd` shared
+library the crate links against.
+
+**Key constraints:**
+
+- `Journal` is explicitly `!Send + !Sync` (documented in the crate). It must be
+  created and used on a single thread. Creating it *inside* a `spawn_blocking`
+  closure is fine — the closure itself captures only `Send` data (e.g. `String`).
+- Streaming uses a blocking `await_next_entry()` loop, so it needs a dedicated OS
+  thread with an `mpsc` channel bridge (same as `journald-query`).
+
+**Add to `lib_journald/Cargo.toml`:**
+```toml
+systemd = "0.10"
+tokio = { workspace = true }   # needs rt + sync features for spawn_blocking + mpsc
+async-stream = "0.3"           # stream! macro for the async wrapper
+```
+
+**Key types (`lib_journald/src/lib.rs`):**
+```rust
+pub struct JournalEntry {
+    pub message: String,
+    pub timestamp_us: i64,   // from journal.timestamp_usec() cast to i64
+    pub priority: String,    // mapped from PRIORITY field ("0"–"7" → name)
+    pub unit: String,        // from _SYSTEMD_UNIT or SYSLOG_IDENTIFIER field
+}
+```
+
+Map `PRIORITY` values: `"0"` → `"emerg"`, `"1"` → `"alert"`, `"2"` → `"crit"`,
+`"3"` → `"err"`, `"4"` → `"warning"`, `"5"` → `"notice"`, `"6"` → `"info"`,
+`"7"` → `"debug"`. Anything else → `"info"`.
+
+`next_entry()` / `next_entry_field()` returns `JournalRecord` (`BTreeMap<String, String>`)
+containing all fields for the current entry. Read `MESSAGE`, `PRIORITY`,
+`_SYSTEMD_UNIT` directly from the map.
+
+**Opening the journal**
+
+Use `OpenOptions` (no path required — libsystemd locates journal files itself):
+```rust
+// System journal (production: bitcoind.service)
+let mut j = OpenOptions::default().system(true).open()?;
+
+// Or user journal (if bitcoind runs as a user service)
+let mut j = OpenOptions::default().current_user(true).open()?;
+```
+
+**Filtering**
+
+Add a unit match and, in dev, an OR with the syslog identifier so both sources
+are covered with one `Journal` handle:
+```rust
+j.match_add("_SYSTEMD_UNIT", unit)?;
+j.match_or()?;
+j.match_add("SYSLOG_IDENTIFIER", unit_without_service_suffix)?;
+```
+
+**Public API:**
+
+- `pub async fn fetch(unit: &str, lines: u32) -> Result<Vec<JournalEntry>, Error>`
+
+  Creates `Journal` inside `spawn_blocking` so it stays on one thread:
+  ```rust
+  tokio::task::spawn_blocking(move || {
+      let mut j = OpenOptions::default().system(true).open()?;
+      j.match_add("_SYSTEMD_UNIT", &unit)?;
+      // Exact "last N lines": seek to tail, walk back N, collect forward
+      j.seek(JournalSeek::Tail)?;
+      j.previous_skip(lines as u64)?;
+      let mut entries = Vec::new();
+      while let Some(record) = j.next_entry()? {
+          let ts = j.timestamp_usec()? as i64;
+          entries.push(JournalEntry::from_record(&record, ts));
+      }
+      Ok(entries)
+  }).await?
+  ```
+
+- `pub fn stream(unit: &str, tail_lines: u32) -> impl Stream<Item = Result<JournalEntry, Error>>`
+
+  Spawns a plain OS thread so `Journal` never crosses a thread boundary. The thread
+  emits `tail_lines` historical entries then follows new ones, sending all over an
+  `mpsc` channel:
+  ```rust
+  let (tx, mut rx) = tokio::sync::mpsc::channel(64);
+  std::thread::spawn(move || {
+      let mut j = OpenOptions::default().system(true).open()?;
+      j.match_add("_SYSTEMD_UNIT", &unit)?;
+      // Historical tail
+      j.seek(JournalSeek::Tail)?;
+      j.previous_skip(tail_lines as u64)?;
+      while let Some(record) = j.next_entry()? {
+          let ts = j.timestamp_usec()? as i64;
+          if tx.blocking_send(Ok(JournalEntry::from_record(&record, ts))).is_err() { return; }
+      }
+      // Follow new entries (blocks via sd_journal_wait internally)
+      loop {
+          match j.await_next_entry(None) {
+              Ok(Some(record)) => {
+                  let ts = j.timestamp_usec()? as i64;
+                  if tx.blocking_send(Ok(JournalEntry::from_record(&record, ts))).is_err() { break; }
+              }
+              Ok(None) => {}
+              Err(e) => { let _ = tx.blocking_send(Err(e)); break; }
+          }
+      }
+  });
+  async_stream::stream! {
+      while let Some(item) = rx.recv().await { yield item; }
+  }
+  ```
+
+**Dev note — `_SYSLOG_IDENTIFIER` vs `_SYSTEMD_UNIT`**
+
+`systemd-cat -t bitcoind` writes `SYSLOG_IDENTIFIER=bitcoind`, not
+`_SYSTEMD_UNIT`. Use `match_or()` to match both in one journal handle — no code
+path duplication needed:
+```rust
+j.match_add("_SYSTEMD_UNIT", "bitcoind.service")?;
+j.match_or()?;
+j.match_add("SYSLOG_IDENTIFIER", "bitcoind")?;
+```
+This means `daemon.unit_name = "bitcoind.service"` in settings, and lib_journald
+derives the bare identifier (`"bitcoind"`) by stripping the `.service` suffix for
+the `SYSLOG_IDENTIFIER` match.
 
 ---
 

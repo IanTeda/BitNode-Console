@@ -16,9 +16,12 @@ workspace = true
 
 ## --- Workspace Dependencies
 thiserror = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 
 ## --- Library Dependencies
+async-stream = { version = "0.3.6" }
+systemd = { version = "0.10.1" }
 
 [build-dependencies]
 

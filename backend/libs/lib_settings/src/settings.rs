@@ -26,6 +26,9 @@ pub struct Settings {
     pub application: crate::ApplicationSettings,
 
     #[serde(default)]
+    pub bitcoind: crate::BitcoinDaemonSettings,
+
+    #[serde(default)]
     pub rpc: crate::RpcSettings,
 
     #[serde(default)]
