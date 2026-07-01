@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &[
                 proto_dir.join("bitnode_console/authentication/authentication.proto"),
                 proto_dir.join("bitnode_console/common/pagination.proto"),
-                proto_dir.join("bitnode_console/journal/journald.proto"),
+                proto_dir.join("bitnode_console/journald/journald.proto"),
                 proto_dir.join("bitnode_console/utilities/utilities.proto"),
             ],
             &[&proto_dir],

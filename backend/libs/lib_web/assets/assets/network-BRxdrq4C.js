@@ -1,1 +1,0 @@
-import{K as e,q as t}from"./preload-helper-CLgzoTyC.js";import{a as n}from"./index-CyFWr-iP.js";var r=t(),i=e(),a=n.getSubLogger({name:`NetworkRoute`});function o(){let e=(0,r.c)(1);a.info(`Network page rendered`);let t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,i.jsx)(`div`,{children:`Hello "/_authenticated/network"!`}),e[0]=t):t=e[0],t}export{o as component};
