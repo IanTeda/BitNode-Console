@@ -1,10 +1,9 @@
 //! gRPC Authentication service — delegates each RPC to its own handler module.
 
-use secrecy::SecretString;
-
 mod login;
 mod logout;
 mod refresh;
+mod service_impl;
 
 pub use crate::generated_protos::authentication::authentication_service_server::{
     AuthenticationService, AuthenticationServiceServer,
@@ -12,45 +11,7 @@ pub use crate::generated_protos::authentication::authentication_service_server::
 pub use crate::generated_protos::authentication::{
     LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RefreshRequest, RefreshResponse,
 };
-
-/// Concrete implementation of the [`AuthenticationService`] gRPC trait.
-#[derive(Debug, Clone)]
-pub struct AuthenticationServiceImpl {
-    password_hash: lib_auth::PasswordHash,
-    token_secret: SecretString,
-}
-
-impl AuthenticationServiceImpl {
-    /// Create a new [`AuthenticationServiceImpl`] that verifies login passwords
-    /// against `password_hash` and signs tokens with `token_secret`.
-    pub fn new(password_hash: lib_auth::PasswordHash, token_secret: SecretString) -> Self {
-        Self { password_hash, token_secret }
-    }
-}
-
-#[tonic::async_trait]
-impl AuthenticationService for AuthenticationServiceImpl {
-    async fn login(
-        &self,
-        request: tonic::Request<LoginRequest>,
-    ) -> std::result::Result<tonic::Response<LoginResponse>, tonic::Status> {
-        login::handle(&self.password_hash, &self.token_secret, request).await
-    }
-
-    async fn refresh(
-        &self,
-        request: tonic::Request<RefreshRequest>,
-    ) -> std::result::Result<tonic::Response<RefreshResponse>, tonic::Status> {
-        refresh::handle(&self.token_secret, request).await
-    }
-
-    async fn logout(
-        &self,
-        request: tonic::Request<LogoutRequest>,
-    ) -> std::result::Result<tonic::Response<LogoutResponse>, tonic::Status> {
-        logout::handle(request).await
-    }
-}
+pub use service_impl::AuthenticationServiceImpl;
 
 #[cfg(test)]
 mod tests {

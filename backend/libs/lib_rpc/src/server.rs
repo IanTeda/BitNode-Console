@@ -8,8 +8,8 @@ use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::services::{
-    AuthenticationServiceImpl, AuthenticationServiceServer, UtilitiesServiceImpl,
-    UtilitiesServiceServer,
+    AuthenticationServiceImpl, AuthenticationServiceServer, JournaldServiceImpl,
+    JournaldServiceServer, UtilitiesServiceImpl, UtilitiesServiceServer,
 };
 
 /// Combined file descriptor set for all protobuf services in this crate.
@@ -134,6 +134,16 @@ impl Server {
         );
         tracing::debug!("Utilities service registered");
 
+        // --- Journald RPC Service
+        // Build a new journald service, protected by a separate access-token interceptor.
+        let journald_access_token_interceptor =
+            crate::interceptors::AccessTokenInterceptor::new(self.settings.token_secret().into());
+        let journald_service = JournaldServiceServer::with_interceptor(
+            JournaldServiceImpl::default(),
+            journald_access_token_interceptor,
+        );
+        tracing::debug!("Journald service registered");
+
         // --- Reflection RPC Service
         // Build the reflection service to serve schema information to reflection-capable clients.
         let reflection_service = tonic_reflection::server::Builder::configure()
@@ -156,6 +166,7 @@ impl Server {
             .layer(grpc_web_layer)
             .add_service(auth_service)
             .add_service(utilities_service)
+            .add_service(journald_service)
             .add_service(reflection_service)
             .serve_with_incoming(incoming_stream)
             .await

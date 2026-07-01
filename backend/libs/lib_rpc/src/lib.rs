@@ -19,6 +19,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 //--- Re-export to flatten module hierarchy
 pub use error::Error;
+pub use generated_protos::journald::journald_service_client::JournaldServiceClient;
+pub use generated_protos::journald::journald_service_server::{
+    JournaldService, JournaldServiceServer,
+};
+pub use generated_protos::journald::{GetLogsRequest, GetLogsResponse, LogEntry, StreamLogsRequest};
 pub use generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
 pub use generated_protos::utilities::utilities_service_server::{
     UtilitiesService, UtilitiesServiceServer,
@@ -27,4 +32,4 @@ pub use generated_protos::utilities::{PingRequest, PingResponse};
 pub use interceptors::AccessTokenInterceptor;
 pub use interceptors::AllowedIpsInterceptor;
 pub use server::Server;
-pub use services::UtilitiesServiceImpl;
+pub use services::{JournaldServiceImpl, UtilitiesServiceImpl};
