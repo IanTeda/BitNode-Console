@@ -5,7 +5,7 @@
 
 syntax = "proto3";
 
-package bitnode_console.v1.authentication.v1;
+package bitnode_console.authentication.v1;
 
 // AuthenticationService handles user authentication and token management.
 service AuthenticationService {

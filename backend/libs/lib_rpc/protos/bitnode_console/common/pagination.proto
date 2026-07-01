@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-package bitnode_console.v1.common.v1;
+package bitnode_console.common.v1;
 
 // PageRequest carries cursor-based pagination parameters for a single page.
 message PageRequest {

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { utilitiesClient } from "@/lib/rpc/utilities";
-import type { PingResponse } from "@/lib/generated_protos/bitnode_console/v1/utilities/utilities";
+import type { PingResponse } from "@/lib/generated_protos/bitnode_console/utilities/utilities";
 
 const PING_QUERY_KEY = ["ping"] as const;
 

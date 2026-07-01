@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Re-run the build script if any of the files below change
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=protos/bitnode_console/v1/");
+    println!("cargo:rerun-if-changed=protos/bitnode_console/");
 
     tonic_build::configure()
         .out_dir(manifest_dir.join("src/generated_protos"))
@@ -28,9 +28,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file_descriptor_set_path(out_dir.join("bitnode_console_v1_descriptor.bin"))
         .compile_protos(
             &[
-                proto_dir.join("bitnode_console/v1/utilities/utilities.proto"),
-                proto_dir.join("bitnode_console/v1/authentication/authentication.proto"),
-                proto_dir.join("bitnode_console/v1/journald/journald.proto"),
+                proto_dir.join("bitnode_console/authentication/authentication.proto"),
+                proto_dir.join("bitnode_console/common/pagination.proto"),
+                proto_dir.join("bitnode_console/journal/journald.proto"),
+                proto_dir.join("bitnode_console/utilities/utilities.proto"),
             ],
             &[&proto_dir],
         )?;

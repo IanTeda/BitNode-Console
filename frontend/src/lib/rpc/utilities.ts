@@ -1,6 +1,6 @@
 import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
 import type { RpcInterceptor } from "@protobuf-ts/runtime-rpc";
-import { UtilitiesServiceClient } from "@/lib/generated_protos/bitnode_console/v1/utilities/utilities.client";
+import { UtilitiesServiceClient } from "@/lib/generated_protos/bitnode_console/utilities/utilities.client";
 import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "Utilities RPC" });

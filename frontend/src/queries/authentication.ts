@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import logger from "@/lib/logger";
-import type { LoginResponse } from "@/lib/generated_protos/bitnode_console/v1/authentication/authentication";
+import type { LoginResponse } from "@/lib/generated_protos/bitnode_console/authentication/authentication";
 import { authenticationClient } from "@/lib/rpc/authentication";
 
 const log = logger.getSubLogger({ name: "Authentication Query" });

@@ -146,13 +146,13 @@ pub mod authentication_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Login",
+                "/bitnode_console.authentication.v1.AuthenticationService/Login",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "bitnode_console.v1.authentication.v1.AuthenticationService",
+                        "bitnode_console.authentication.v1.AuthenticationService",
                         "Login",
                     ),
                 );
@@ -176,13 +176,13 @@ pub mod authentication_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Refresh",
+                "/bitnode_console.authentication.v1.AuthenticationService/Refresh",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "bitnode_console.v1.authentication.v1.AuthenticationService",
+                        "bitnode_console.authentication.v1.AuthenticationService",
                         "Refresh",
                     ),
                 );
@@ -203,13 +203,13 @@ pub mod authentication_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Logout",
+                "/bitnode_console.authentication.v1.AuthenticationService/Logout",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "bitnode_console.v1.authentication.v1.AuthenticationService",
+                        "bitnode_console.authentication.v1.AuthenticationService",
                         "Logout",
                     ),
                 );
@@ -324,7 +324,7 @@ pub mod authentication_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Login" => {
+                "/bitnode_console.authentication.v1.AuthenticationService/Login" => {
                     #[allow(non_camel_case_types)]
                     struct LoginSvc<T: AuthenticationService>(pub Arc<T>);
                     impl<
@@ -368,7 +368,7 @@ pub mod authentication_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Refresh" => {
+                "/bitnode_console.authentication.v1.AuthenticationService/Refresh" => {
                     #[allow(non_camel_case_types)]
                     struct RefreshSvc<T: AuthenticationService>(pub Arc<T>);
                     impl<
@@ -413,7 +413,7 @@ pub mod authentication_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/bitnode_console.v1.authentication.v1.AuthenticationService/Logout" => {
+                "/bitnode_console.authentication.v1.AuthenticationService/Logout" => {
                     #[allow(non_camel_case_types)]
                     struct LogoutSvc<T: AuthenticationService>(pub Arc<T>);
                     impl<
@@ -491,7 +491,7 @@ pub mod authentication_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "bitnode_console.v1.authentication.v1.AuthenticationService";
+    pub const SERVICE_NAME: &str = "bitnode_console.authentication.v1.AuthenticationService";
     impl<T> tonic::server::NamedService for AuthenticationServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }

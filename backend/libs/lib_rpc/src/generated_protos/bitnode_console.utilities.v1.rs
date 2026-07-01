@@ -116,13 +116,13 @@ pub mod utilities_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/bitnode_console.v1.utilities.v1.UtilitiesService/Ping",
+                "/bitnode_console.utilities.v1.UtilitiesService/Ping",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "bitnode_console.v1.utilities.v1.UtilitiesService",
+                        "bitnode_console.utilities.v1.UtilitiesService",
                         "Ping",
                     ),
                 );
@@ -226,7 +226,7 @@ pub mod utilities_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/bitnode_console.v1.utilities.v1.UtilitiesService/Ping" => {
+                "/bitnode_console.utilities.v1.UtilitiesService/Ping" => {
                     #[allow(non_camel_case_types)]
                     struct PingSvc<T: UtilitiesService>(pub Arc<T>);
                     impl<
@@ -303,7 +303,7 @@ pub mod utilities_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "bitnode_console.v1.utilities.v1.UtilitiesService";
+    pub const SERVICE_NAME: &str = "bitnode_console.utilities.v1.UtilitiesService";
     impl<T> tonic::server::NamedService for UtilitiesServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }

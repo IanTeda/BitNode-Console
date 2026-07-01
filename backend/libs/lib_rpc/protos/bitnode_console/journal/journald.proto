@@ -5,10 +5,10 @@
 
 syntax = "proto3";
 
-package bitnode_console.v1.journald.v1;
+package bitnode_console.journald.v1;
 
 // Common definitions.
-import "bitnode_console/v1/common/pagination.proto";
+import "bitnode_console/common/pagination.proto";
 
 // JournaldService exposes Bitcoin daemon log entries from the systemd journal.
 //
@@ -25,7 +25,7 @@ service JournaldService {
 // GetLogsRequest specifies the page of log entries to fetch.
 message GetLogsRequest {
   // Pagination parameters: page size, page token, and direction.
-  bitnode_console.v1.common.v1.PageRequest pagination = 1;
+  bitnode_console.common.v1.PageRequest pagination = 1;
 }
 
 // GetLogsResponse carries the fetched log entries and the next page token.
@@ -34,7 +34,7 @@ message GetLogsResponse {
   repeated LogEntry entries = 1;
 
   // Pagination cursors and boundary flags for navigating between pages.
-  bitnode_console.v1.common.v1.PageResponse pagination = 2;
+  bitnode_console.common.v1.PageResponse pagination = 2;
 }
 
 // StreamLogsRequest initiates a live log tail.

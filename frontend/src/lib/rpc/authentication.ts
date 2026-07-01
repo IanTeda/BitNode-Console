@@ -1,5 +1,5 @@
 import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
-import { AuthenticationServiceClient } from "@/lib/generated_protos/bitnode_console/v1/authentication/authentication.client";
+import { AuthenticationServiceClient } from "@/lib/generated_protos/bitnode_console/authentication/authentication.client";
 import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "Authentication RPC" });

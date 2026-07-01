@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-package bitnode_console.v1.utilities.v1;
+package bitnode_console.utilities.v1;
 
 // UtilitiesService exposes miscellaneous utility RPCs.
 service UtilitiesService {
