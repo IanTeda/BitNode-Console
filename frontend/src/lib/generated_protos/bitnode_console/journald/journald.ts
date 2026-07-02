@@ -27,9 +27,15 @@ import { PageRequest } from "../common/pagination";
  */
 export interface GetLogsRequest {
     /**
+     * Minimum severity level to return; defaults to INFO when unspecified.
+     *
+     * @generated from protobuf field: bitnode_console.journald.v1.Priority priority = 1
+     */
+    priority: Priority;
+    /**
      * Pagination parameters: page size, page token, and direction.
      *
-     * @generated from protobuf field: bitnode_console.common.v1.PageRequest pagination = 1
+     * @generated from protobuf field: bitnode_console.common.v1.PageRequest pagination = 3
      */
     pagination?: PageRequest;
 }
@@ -84,12 +90,11 @@ export interface LogEntry {
      */
     timestampUs: string;
     /**
-     * Severity level: one of "emerg", "alert", "crit", "err",
-     * "warning", "notice", "info", or "debug".
+     * Severity level of this entry.
      *
-     * @generated from protobuf field: string priority = 3
+     * @generated from protobuf field: bitnode_console.journald.v1.Priority priority = 3
      */
-    priority: string;
+    priority: Priority;
     /**
      * Systemd unit or syslog identifier that produced the entry.
      *
@@ -111,15 +116,63 @@ export interface LogEntry {
         [key: string]: string;
     };
 }
+/**
+ * Priority mirrors the syslog severity levels from RFC 5424.
+ *
+ * PRIORITY_UNSPECIFIED is the proto3 default and is treated as
+ * PRIORITY_INFO by the server.
+ *
+ * @generated from protobuf enum bitnode_console.journald.v1.Priority
+ */
+export enum Priority {
+    /**
+     * @generated from protobuf enum value: PRIORITY_UNSPECIFIED = 0;
+     */
+    UNSPECIFIED = 0,
+    /**
+     * @generated from protobuf enum value: PRIORITY_EMERGENCY = 1;
+     */
+    EMERGENCY = 1,
+    /**
+     * @generated from protobuf enum value: PRIORITY_ALERT = 2;
+     */
+    ALERT = 2,
+    /**
+     * @generated from protobuf enum value: PRIORITY_CRITICAL = 3;
+     */
+    CRITICAL = 3,
+    /**
+     * @generated from protobuf enum value: PRIORITY_ERROR = 4;
+     */
+    ERROR = 4,
+    /**
+     * @generated from protobuf enum value: PRIORITY_WARNING = 5;
+     */
+    WARNING = 5,
+    /**
+     * @generated from protobuf enum value: PRIORITY_NOTICE = 6;
+     */
+    NOTICE = 6,
+    /**
+     * @generated from protobuf enum value: PRIORITY_INFO = 7;
+     */
+    INFO = 7,
+    /**
+     * @generated from protobuf enum value: PRIORITY_DEBUG = 8;
+     */
+    DEBUG = 8
+}
 // @generated message type with reflection information, may provide speed optimized methods
 class GetLogsRequest$Type extends MessageType<GetLogsRequest> {
     constructor() {
         super("bitnode_console.journald.v1.GetLogsRequest", [
-            { no: 1, name: "pagination", kind: "message", T: () => PageRequest }
+            { no: 1, name: "priority", kind: "enum", T: () => ["bitnode_console.journald.v1.Priority", Priority, "PRIORITY_"] },
+            { no: 3, name: "pagination", kind: "message", T: () => PageRequest }
         ]);
     }
     create(value?: PartialMessage<GetLogsRequest>): GetLogsRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
+        message.priority = 0;
         if (value !== undefined)
             reflectionMergePartial<GetLogsRequest>(this, message, value);
         return message;
@@ -129,7 +182,10 @@ class GetLogsRequest$Type extends MessageType<GetLogsRequest> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* bitnode_console.common.v1.PageRequest pagination */ 1:
+                case /* bitnode_console.journald.v1.Priority priority */ 1:
+                    message.priority = reader.int32();
+                    break;
+                case /* bitnode_console.common.v1.PageRequest pagination */ 3:
                     message.pagination = PageRequest.internalBinaryRead(reader, reader.uint32(), options, message.pagination);
                     break;
                 default:
@@ -144,9 +200,12 @@ class GetLogsRequest$Type extends MessageType<GetLogsRequest> {
         return message;
     }
     internalBinaryWrite(message: GetLogsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* bitnode_console.common.v1.PageRequest pagination = 1; */
+        /* bitnode_console.journald.v1.Priority priority = 1; */
+        if (message.priority !== 0)
+            writer.tag(1, WireType.Varint).int32(message.priority);
+        /* bitnode_console.common.v1.PageRequest pagination = 3; */
         if (message.pagination)
-            PageRequest.internalBinaryWrite(message.pagination, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+            PageRequest.internalBinaryWrite(message.pagination, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -264,7 +323,7 @@ class LogEntry$Type extends MessageType<LogEntry> {
         super("bitnode_console.journald.v1.LogEntry", [
             { no: 1, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "timestamp_us", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 3, name: "priority", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journald.v1.Priority", Priority, "PRIORITY_"] },
             { no: 4, name: "unit", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "cursor", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "extra_fields", kind: "map", K: 9 /*ScalarType.STRING*/, V: { kind: "scalar", T: 9 /*ScalarType.STRING*/ } }
@@ -274,7 +333,7 @@ class LogEntry$Type extends MessageType<LogEntry> {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.message = "";
         message.timestampUs = "0";
-        message.priority = "";
+        message.priority = 0;
         message.unit = "";
         message.extraFields = {};
         if (value !== undefined)
@@ -292,8 +351,8 @@ class LogEntry$Type extends MessageType<LogEntry> {
                 case /* int64 timestamp_us */ 2:
                     message.timestampUs = reader.int64().toString();
                     break;
-                case /* string priority */ 3:
-                    message.priority = reader.string();
+                case /* bitnode_console.journald.v1.Priority priority */ 3:
+                    message.priority = reader.int32();
                     break;
                 case /* string unit */ 4:
                     message.unit = reader.string();
@@ -338,9 +397,9 @@ class LogEntry$Type extends MessageType<LogEntry> {
         /* int64 timestamp_us = 2; */
         if (message.timestampUs !== "0")
             writer.tag(2, WireType.Varint).int64(message.timestampUs);
-        /* string priority = 3; */
-        if (message.priority !== "")
-            writer.tag(3, WireType.LengthDelimited).string(message.priority);
+        /* bitnode_console.journald.v1.Priority priority = 3; */
+        if (message.priority !== 0)
+            writer.tag(3, WireType.Varint).int32(message.priority);
         /* string unit = 4; */
         if (message.unit !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.unit);

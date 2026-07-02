@@ -2,8 +2,11 @@
 /// GetLogsRequest specifies the page of log entries to fetch.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLogsRequest {
+    /// Minimum severity level to return; defaults to INFO when unspecified.
+    #[prost(enumeration = "Priority", tag = "1")]
+    pub priority: i32,
     /// Pagination parameters: page size, page token, and direction.
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag = "3")]
     pub pagination: ::core::option::Option<super::super::common::v1::PageRequest>,
 }
 /// GetLogsResponse carries the fetched log entries and the next page token.
@@ -32,10 +35,9 @@ pub struct LogEntry {
     /// Wall-clock time of the entry in microseconds since the Unix epoch.
     #[prost(int64, tag = "2")]
     pub timestamp_us: i64,
-    /// Severity level: one of "emerg", "alert", "crit", "err",
-    /// "warning", "notice", "info", or "debug".
-    #[prost(string, tag = "3")]
-    pub priority: ::prost::alloc::string::String,
+    /// Severity level of this entry.
+    #[prost(enumeration = "Priority", tag = "3")]
+    pub priority: i32,
     /// Systemd unit or syslog identifier that produced the entry.
     #[prost(string, tag = "4")]
     pub unit: ::prost::alloc::string::String,
@@ -48,6 +50,57 @@ pub struct LogEntry {
         ::prost::alloc::string::String,
         ::prost::alloc::string::String,
     >,
+}
+/// Priority mirrors the syslog severity levels from RFC 5424.
+///
+/// PRIORITY_UNSPECIFIED is the proto3 default and is treated as
+/// PRIORITY_INFO by the server.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum Priority {
+    Unspecified = 0,
+    Emergency = 1,
+    Alert = 2,
+    Critical = 3,
+    Error = 4,
+    Warning = 5,
+    Notice = 6,
+    Info = 7,
+    Debug = 8,
+}
+impl Priority {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "PRIORITY_UNSPECIFIED",
+            Self::Emergency => "PRIORITY_EMERGENCY",
+            Self::Alert => "PRIORITY_ALERT",
+            Self::Critical => "PRIORITY_CRITICAL",
+            Self::Error => "PRIORITY_ERROR",
+            Self::Warning => "PRIORITY_WARNING",
+            Self::Notice => "PRIORITY_NOTICE",
+            Self::Info => "PRIORITY_INFO",
+            Self::Debug => "PRIORITY_DEBUG",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PRIORITY_UNSPECIFIED" => Some(Self::Unspecified),
+            "PRIORITY_EMERGENCY" => Some(Self::Emergency),
+            "PRIORITY_ALERT" => Some(Self::Alert),
+            "PRIORITY_CRITICAL" => Some(Self::Critical),
+            "PRIORITY_ERROR" => Some(Self::Error),
+            "PRIORITY_WARNING" => Some(Self::Warning),
+            "PRIORITY_NOTICE" => Some(Self::Notice),
+            "PRIORITY_INFO" => Some(Self::Info),
+            "PRIORITY_DEBUG" => Some(Self::Debug),
+            _ => None,
+        }
+    }
 }
 /// Generated client implementations.
 pub mod journald_service_client {

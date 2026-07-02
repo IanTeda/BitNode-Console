@@ -1,6 +1,7 @@
 mod error;
 mod generated_protos;
 mod interceptors;
+pub(crate) mod pagination;
 mod server;
 pub(crate) mod services;
 
