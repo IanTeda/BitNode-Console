@@ -2,7 +2,7 @@
 
 use secrecy::SecretString;
 
-use super::{LoginRequest, LoginResponse};
+use crate::services::authentication::{LoginRequest, LoginResponse};
 
 /// Handle a login request — verify the password and issue an access/refresh token pair.
 #[tracing::instrument(skip_all)]
@@ -17,7 +17,9 @@ pub(super) async fn handle(
 
     if login_request.password.is_empty() {
         tracing::warn!("Login rejected: password field is empty");
-        return Err(tonic::Status::invalid_argument("password must not be empty"));
+        return Err(tonic::Status::invalid_argument(
+            "password must not be empty",
+        ));
     }
 
     let password = SecretString::from(login_request.password);
@@ -75,7 +77,9 @@ mod tests {
     }
 
     fn login_request(password: &str) -> tonic::Request<LoginRequest> {
-        tonic::Request::new(LoginRequest { password: password.to_string() })
+        tonic::Request::new(LoginRequest {
+            password: password.to_string(),
+        })
     }
 
     // --- empty password guard ---
@@ -96,13 +100,15 @@ mod tests {
 
     #[tokio::test]
     async fn login_rejects_wrong_password() {
-        let status = handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
+        let status =
+            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
         assert_eq!(status.code(), tonic::Code::Unauthenticated);
     }
 
     #[tokio::test]
     async fn login_wrong_password_error_message() {
-        let status = handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
+        let status =
+            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
         assert_eq!(status.message(), "invalid password");
     }
 
@@ -156,7 +162,9 @@ mod tests {
 
     #[test]
     fn login_request_stores_password() {
-        let req = LoginRequest { password: "hunter2".to_string() };
+        let req = LoginRequest {
+            password: "hunter2".to_string(),
+        };
         assert_eq!(req.password, "hunter2");
     }
 

@@ -1,6 +1,7 @@
 import { type PropsWithChildren, useState } from "react";
 import { authenticationClient } from "@/lib/rpc/authentication";
 import { setAccessToken as setRpcToken } from "@/lib/rpc/utilities";
+import { setAccessToken as setJournalsToken } from "@/lib/rpc/journals";
 import { getCookie, setCookie, deleteCookie, jwtExpiry } from "@/lib/cookies";
 import { AuthenticationContext } from "@/lib/auth-context";
 import logger from "@/lib/logger";
@@ -26,6 +27,7 @@ export default function AuthenticationProvider({ children }: PropsWithChildren) 
       const { response } = await authenticationClient().login({ password });
       setCookie("refresh_token", response.refreshToken, jwtExpiry(response.refreshToken));
       setRpcToken(response.accessToken);
+      setJournalsToken(response.accessToken);
       setAccessTokenState(response.accessToken);
       log.info("Login successful");
     } catch (error) {
@@ -38,6 +40,7 @@ export default function AuthenticationProvider({ children }: PropsWithChildren) 
     log.debug("Logging out");
     deleteCookie("refresh_token");
     setRpcToken(undefined);
+    setJournalsToken(undefined);
     setAccessTokenState(undefined);
     log.info("Logged out");
   }
@@ -53,6 +56,7 @@ export default function AuthenticationProvider({ children }: PropsWithChildren) 
       const { response } = await authenticationClient().refresh({ refreshToken });
       setCookie("refresh_token", response.refreshToken, jwtExpiry(response.refreshToken));
       setRpcToken(response.accessToken);
+      setJournalsToken(response.accessToken);
       setAccessTokenState(response.accessToken);
       log.info("Token refresh successful");
       return true;

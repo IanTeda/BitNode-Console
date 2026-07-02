@@ -228,6 +228,7 @@ dependencies = [
  "lib_web",
  "once_cell",
  "reqwest",
+ "secrecy",
  "serde",
  "serde_json",
  "thiserror",
@@ -1249,10 +1250,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib_journald"
+name = "lib_core"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "lib_journals"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "lib_core",
  "systemd",
  "thiserror",
  "tokio",
@@ -1266,6 +1277,8 @@ dependencies = [
  "http",
  "ipnet",
  "lib_auth",
+ "lib_core",
+ "lib_journals",
  "lib_settings",
  "lib_tracing",
  "prost",

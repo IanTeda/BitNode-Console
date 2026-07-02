@@ -48,7 +48,7 @@ pub struct BitcoinDaemonSettings {
     /// Used to filter journal entries when serving logs over gRPC. Must match
     /// the `_SYSTEMD_UNIT` field written by the daemon's service unit, e.g.
     /// `"bitcoind.service"`. In development, when the daemon is launched via
-    /// `systemd-cat -t bitcoind`, lib_journald also matches the
+    /// `systemd-cat -t bitcoind`, lib_journals also matches the
     /// `SYSLOG_IDENTIFIER` field derived by stripping the `.service` suffix.
     pub unit_name: String,
 
@@ -208,7 +208,10 @@ mod tests {
 
     #[test]
     fn default_rpc_port_is_mainnet_port() {
-        assert_eq!(BitcoinDaemonSettings::default().rpc_port(), DEFAULT_RPC_PORT);
+        assert_eq!(
+            BitcoinDaemonSettings::default().rpc_port(),
+            DEFAULT_RPC_PORT
+        );
     }
 
     #[test]
@@ -229,7 +232,10 @@ mod tests {
 
     #[test]
     fn new_returns_same_values_as_default() {
-        assert_eq!(BitcoinDaemonSettings::new(), BitcoinDaemonSettings::default());
+        assert_eq!(
+            BitcoinDaemonSettings::new(),
+            BitcoinDaemonSettings::default()
+        );
     }
 
     // --- accessors ---
@@ -267,8 +273,14 @@ mod tests {
     fn rpc_password_debug_is_redacted() {
         let s = settings();
         let debug = format!("{s:?}");
-        assert!(!debug.contains("s3cr3t"), "password leaked in Debug: {debug}");
-        assert!(debug.contains("[REDACTED]"), "expected [REDACTED] in: {debug}");
+        assert!(
+            !debug.contains("s3cr3t"),
+            "password leaked in Debug: {debug}"
+        );
+        assert!(
+            debug.contains("[REDACTED]"),
+            "expected [REDACTED] in: {debug}"
+        );
     }
 
     // --- rpc_address ---
@@ -421,9 +433,11 @@ mod tests {
 
     #[test]
     fn serialize_produces_expected_json_field_names() {
-        let json =
-            serde_json::to_string(&settings()).expect("serialize BitcoinDaemonSettings");
-        assert!(json.contains("\"unit_name\""), "missing 'unit_name': {json}");
+        let json = serde_json::to_string(&settings()).expect("serialize BitcoinDaemonSettings");
+        assert!(
+            json.contains("\"unit_name\""),
+            "missing 'unit_name': {json}"
+        );
         assert!(json.contains("\"rpc_host\""), "missing 'rpc_host': {json}");
         assert!(json.contains("\"rpc_port\""), "missing 'rpc_port': {json}");
         assert!(json.contains("\"rpc_user\""), "missing 'rpc_user': {json}");
@@ -437,7 +451,10 @@ mod tests {
     fn serialize_exposes_password_in_json() {
         // Serialisation must write the real value so the config round-trip works.
         let json = serde_json::to_string(&settings()).expect("serialize");
-        assert!(json.contains("s3cr3t"), "password missing from JSON: {json}");
+        assert!(
+            json.contains("s3cr3t"),
+            "password missing from JSON: {json}"
+        );
     }
 
     #[test]
@@ -453,7 +470,8 @@ mod tests {
 
     #[test]
     fn deserialize_missing_rpc_host_fails() {
-        let json = r#"{"unit_name":"bitcoind.service","rpc_port":8332,"rpc_user":"u","rpc_password":"p"}"#;
+        let json =
+            r#"{"unit_name":"bitcoind.service","rpc_port":8332,"rpc_user":"u","rpc_password":"p"}"#;
         assert!(serde_json::from_str::<BitcoinDaemonSettings>(json).is_err());
     }
 
@@ -484,8 +502,7 @@ mod tests {
             "rpc_user": "bitcoinrpc",
             "rpc_password": "devpassword"
         }"#;
-        let s: BitcoinDaemonSettings =
-            serde_json::from_str(json).expect("deserialize full object");
+        let s: BitcoinDaemonSettings = serde_json::from_str(json).expect("deserialize full object");
         assert_eq!(s.unit_name(), "bitcoind.service");
         assert_eq!(s.rpc_host(), "127.0.0.1");
         assert_eq!(s.rpc_port(), 8332);
@@ -564,7 +581,10 @@ mod tests {
     #[test]
     fn serialize_omits_cookie_file_when_none() {
         let json = serde_json::to_string(&BitcoinDaemonSettings::default()).expect("serialize");
-        assert!(!json.contains("cookie_file"), "cookie_file should be omitted when None: {json}");
+        assert!(
+            !json.contains("cookie_file"),
+            "cookie_file should be omitted when None: {json}"
+        );
     }
 
     #[test]
@@ -574,7 +594,10 @@ mod tests {
             ..BitcoinDaemonSettings::default()
         };
         let json = serde_json::to_string(&s).expect("serialize");
-        assert!(json.contains("cookie_file"), "cookie_file missing from JSON: {json}");
+        assert!(
+            json.contains("cookie_file"),
+            "cookie_file missing from JSON: {json}"
+        );
         assert!(
             json.contains("/var/lib/bitcoind/.cookie"),
             "cookie path missing from JSON: {json}"

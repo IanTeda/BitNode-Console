@@ -13,8 +13,8 @@ pub struct PageRequest {
     pub page_token: ::core::option::Option<::prost::alloc::string::String>,
     /// Direction controls which side of the page token to read from.
     /// Defaults to DIRECTION_FORWARD when unspecified.
-    #[prost(enumeration = "Direction", tag = "3")]
-    pub direction: i32,
+    #[prost(enumeration = "PageDirection", tag = "3")]
+    pub page_direction: i32,
 }
 /// PageResponse carries the page tokens and boundary flags needed to navigate
 /// between pages. Embed this in RPC response messages alongside the result list.
@@ -23,22 +23,22 @@ pub struct PageResponse {
     /// Pass as page_token in the next request to fetch the page after this one
     /// (chronologically newer for logs). Absent when has_next_page is false.
     #[prost(string, optional, tag = "1")]
-    pub next_page_token: ::core::option::Option<::prost::alloc::string::String>,
+    pub page_token_next: ::core::option::Option<::prost::alloc::string::String>,
     /// Pass as page_token in the next request to fetch the page before this one
     /// (chronologically older for logs). Absent when has_prev_page is false.
     #[prost(string, optional, tag = "2")]
-    pub prev_page_token: ::core::option::Option<::prost::alloc::string::String>,
+    pub page_token_prev: ::core::option::Option<::prost::alloc::string::String>,
     /// True when at least one more page exists in the DIRECTION_FORWARD direction.
     #[prost(bool, tag = "3")]
-    pub has_next_page: bool,
+    pub has_page_next: bool,
     /// True when at least one more page exists in the DIRECTION_BACKWARD direction.
     #[prost(bool, tag = "4")]
-    pub has_prev_page: bool,
+    pub has_page_prev: bool,
 }
 /// Direction controls which side of the pagination cursor to read from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
-pub enum Direction {
+pub enum PageDirection {
     /// Unspecified defaults to DIRECTION_FORWARD.
     Unspecified = 0,
     /// DIRECTION_FORWARD reads items after the cursor (chronologically newer for logs).
@@ -46,24 +46,24 @@ pub enum Direction {
     /// DIRECTION_BACKWARD reads items before the cursor (chronologically older for logs).
     Backward = 2,
 }
-impl Direction {
+impl PageDirection {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
     /// The values are not transformed in any way and thus are considered stable
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
-            Self::Unspecified => "DIRECTION_UNSPECIFIED",
-            Self::Forward => "DIRECTION_FORWARD",
-            Self::Backward => "DIRECTION_BACKWARD",
+            Self::Unspecified => "PAGE_DIRECTION_UNSPECIFIED",
+            Self::Forward => "PAGE_DIRECTION_FORWARD",
+            Self::Backward => "PAGE_DIRECTION_BACKWARD",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
-            "DIRECTION_UNSPECIFIED" => Some(Self::Unspecified),
-            "DIRECTION_FORWARD" => Some(Self::Forward),
-            "DIRECTION_BACKWARD" => Some(Self::Backward),
+            "PAGE_DIRECTION_UNSPECIFIED" => Some(Self::Unspecified),
+            "PAGE_DIRECTION_FORWARD" => Some(Self::Forward),
+            "PAGE_DIRECTION_BACKWARD" => Some(Self::Backward),
             _ => None,
         }
     }

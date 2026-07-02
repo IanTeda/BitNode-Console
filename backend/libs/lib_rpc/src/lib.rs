@@ -1,12 +1,13 @@
 mod error;
 mod generated_protos;
-mod interceptors;
+pub(crate) mod interceptors;
+mod pagination_from;
 mod server;
-pub(crate) mod services;
+pub mod services;
 
 // Re-expose common types at the crate root so prost-generated cross-package
 // references (super::super::common::v1::*) resolve correctly. Prost navigates
-// two levels up from generated_protos::journald to reach the crate root, then
+// two levels up from generated_protos::journals to reach the crate root, then
 // expects common::v1 to exist there.
 pub(crate) mod common {
     pub mod v1 {
@@ -19,17 +20,5 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 //--- Re-export to flatten module hierarchy
 pub use error::Error;
-pub use generated_protos::journald::journald_service_client::JournaldServiceClient;
-pub use generated_protos::journald::journald_service_server::{
-    JournaldService, JournaldServiceServer,
-};
-pub use generated_protos::journald::{GetLogsRequest, GetLogsResponse, LogEntry, StreamLogsRequest};
-pub use generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
-pub use generated_protos::utilities::utilities_service_server::{
-    UtilitiesService, UtilitiesServiceServer,
-};
-pub use generated_protos::utilities::{PingRequest, PingResponse};
-pub use interceptors::AccessTokenInterceptor;
-pub use interceptors::AllowedIpsInterceptor;
+
 pub use server::Server;
-pub use services::{JournaldServiceImpl, UtilitiesServiceImpl};

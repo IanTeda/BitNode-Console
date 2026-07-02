@@ -29,7 +29,7 @@ pub async fn run() -> Result<()> {
     let web_future = async { web_server.run().await.map_err(Error::from) };
 
     //--- Create RPC server for serving gRPC requests
-    let rpc_server = lib_rpc::Server::new(settings.rpc.clone()).await?;
+    let rpc_server = lib_rpc::Server::new(settings).await?;
     let rpc_future = async { rpc_server.run().await.map_err(Error::from) };
 
     //--- Join the web and RPC server futures to run them concurrently

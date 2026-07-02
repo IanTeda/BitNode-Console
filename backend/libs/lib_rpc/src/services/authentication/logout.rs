@@ -1,6 +1,6 @@
 //! Logout handler for the Authentication gRPC service.
 
-use super::{LogoutRequest, LogoutResponse};
+use crate::services::authentication::{LogoutRequest, LogoutResponse};
 
 /// Handle a logout request.
 ///
@@ -12,7 +12,9 @@ pub(super) async fn handle(
 ) -> std::result::Result<tonic::Response<LogoutResponse>, tonic::Status> {
     tracing::debug!("Logout request received from {:?}", request.remote_addr());
     tracing::info!("Token invalidation not yet implemented");
-    Err(tonic::Status::unimplemented("logout is not yet implemented"))
+    Err(tonic::Status::unimplemented(
+        "logout is not yet implemented",
+    ))
 }
 
 #[cfg(test)]

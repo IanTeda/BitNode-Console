@@ -1,5 +1,5 @@
 [package]
-name = "lib_journald"
+name = "lib_journals"
 description.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
+lib_core = { path = "../../libs/lib_core" }
 
 ## --- Workspace Dependencies
 thiserror = { workspace = true }

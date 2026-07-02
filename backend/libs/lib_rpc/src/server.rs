@@ -7,10 +7,9 @@ use secrecy::SecretString;
 use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::services::{
-    AuthenticationServiceImpl, AuthenticationServiceServer, JournaldServiceImpl,
-    JournaldServiceServer, UtilitiesServiceImpl, UtilitiesServiceServer,
-};
+use crate::services::authentication::{AuthenticationServiceImpl, AuthenticationServiceServer};
+use crate::services::journals::{JournalsServiceImpl, JournalsServiceServer};
+use crate::services::utilities::{UtilitiesServiceImpl, UtilitiesServiceServer};
 
 /// Combined file descriptor set for all protobuf services in this crate.
 ///
@@ -32,7 +31,8 @@ pub struct Server {
     /// The TCP listener that serves incoming gRPC requests.
     listener: tokio::net::TcpListener,
 
-    settings: lib_settings::RpcSettings,
+    /// The resolved settings for the gRPC server.
+    settings: lib_settings::Settings,
 }
 
 impl Server {
@@ -47,8 +47,9 @@ impl Server {
     /// Returns [`crate::Error::Config`] if `settings.host` is not a valid IP address.
     /// Returns [`crate::Error::Transport`] if the TCP listener cannot bind to the address.
     #[tracing::instrument(skip(settings))]
-    pub async fn new(settings: lib_settings::RpcSettings) -> crate::Result<Self> {
-        let address = settings.socket_address().map_err(|e| crate::Error::Config(e.to_string()))?;
+    pub async fn new(settings: lib_settings::Settings) -> crate::Result<Self> {
+        let address =
+            settings.rpc.socket_address().map_err(|e| crate::Error::Config(e.to_string()))?;
 
         let listener = tokio::net::TcpListener::bind(address)
             .await
@@ -81,19 +82,21 @@ impl Server {
     #[tracing::instrument(skip(self))]
     pub async fn run(self) -> crate::Result<()> {
         //--- Check that password_hash is configured, else stop the server
-        if self.settings.password_hash().is_empty() {
+        if self.settings.rpc.password_hash().is_empty() {
             return Err(crate::Error::Config(
                 "rpc.password_hash is not configured".to_string(),
             ));
         }
 
         //--- Build interceptors
-        let allowed_ips_interceptor =
-            crate::AllowedIpsInterceptor::new(self.settings.allowed_ips().to_vec());
+        let allowed_ips_interceptor = crate::interceptors::AllowedIpsInterceptor::new(
+            self.settings.rpc.allowed_ips().to_vec(),
+        );
         let allowed_ips_interceptor = tonic::service::interceptor(allowed_ips_interceptor);
 
-        let access_token_interceptor =
-            crate::interceptors::AccessTokenInterceptor::new(self.settings.token_secret().into());
+        let access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
+            self.settings.rpc.token_secret().into(),
+        );
 
         // --- CORS Layer
         // Create a new CORS layer for gRPC-Web browser clients.
@@ -117,9 +120,9 @@ impl Server {
 
         // --- Authentication RPC Service
         // Build a new authentication service (no access-token required to log in).
-        let password_hash = lib_auth::PasswordHash::try_from(self.settings.password_hash())
+        let password_hash = lib_auth::PasswordHash::try_from(self.settings.rpc.password_hash())
             .map_err(|e| crate::Error::Config(e.to_string()))?;
-        let token_secret = SecretString::from(self.settings.token_secret());
+        let token_secret = SecretString::from(self.settings.rpc.token_secret());
         let auth_service = AuthenticationServiceServer::new(AuthenticationServiceImpl::new(
             password_hash,
             token_secret,
@@ -134,15 +137,16 @@ impl Server {
         );
         tracing::debug!("Utilities service registered");
 
-        // --- Journald RPC Service
-        // Build a new journald service, protected by a separate access-token interceptor.
-        let journald_access_token_interceptor =
-            crate::interceptors::AccessTokenInterceptor::new(self.settings.token_secret().into());
-        let journald_service = JournaldServiceServer::with_interceptor(
-            JournaldServiceImpl::default(),
-            journald_access_token_interceptor,
+        // --- Journals RPC Service
+        // Build a new journals service, protected by a separate access-token interceptor.
+        let journals_access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
+            self.settings.rpc.token_secret().into(),
         );
-        tracing::debug!("Journald service registered");
+        let journals_service = JournalsServiceServer::with_interceptor(
+            JournalsServiceImpl::default(),
+            journals_access_token_interceptor,
+        );
+        tracing::debug!("Journals service registered");
 
         // --- Reflection RPC Service
         // Build the reflection service to serve schema information to reflection-capable clients.
@@ -166,7 +170,7 @@ impl Server {
             .layer(grpc_web_layer)
             .add_service(auth_service)
             .add_service(utilities_service)
-            .add_service(journald_service)
+            .add_service(journals_service)
             .add_service(reflection_service)
             .serve_with_incoming(incoming_stream)
             .await
@@ -179,6 +183,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
     use secrecy::SecretString;
     use std::sync::OnceLock;
 
@@ -193,25 +198,37 @@ mod tests {
     }
 
     /// Base settings: binds to `127.0.0.1:0` so the OS assigns an ephemeral port.
-    fn settings() -> lib_settings::RpcSettings {
-        lib_settings::RpcSettings {
-            host: "127.0.0.1".to_string(),
-            port: 0,
-            password_hash: test_hash().as_ref().to_string(),
-            token_secret: "test_secret".to_string(),
+    fn settings() -> lib_settings::Settings {
+        lib_settings::Settings {
+            rpc: lib_settings::RpcSettings {
+                host: "127.0.0.1".to_string(),
+                port: 0,
+                password_hash: test_hash().as_ref().to_string(),
+                token_secret: "test_secret".to_string(),
+                ..Default::default()
+            },
             ..Default::default()
         }
     }
 
-    fn settings_with_host(host: &str) -> lib_settings::RpcSettings {
-        lib_settings::RpcSettings {
-            host: host.to_string(),
+    fn settings_with_host(host: &str) -> lib_settings::Settings {
+        lib_settings::Settings {
+            rpc: lib_settings::RpcSettings {
+                host: host.to_string(),
+                ..settings().rpc
+            },
             ..settings()
         }
     }
 
-    fn settings_with_port(port: u16) -> lib_settings::RpcSettings {
-        lib_settings::RpcSettings { port, ..settings() }
+    fn settings_with_port(port: u16) -> lib_settings::Settings {
+        lib_settings::Settings {
+            rpc: lib_settings::RpcSettings {
+                port,
+                ..settings().rpc
+            },
+            ..settings()
+        }
     }
 
     /// Generate a valid access token signed with the test secret.
@@ -313,9 +330,8 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let mut request = tonic::Request::new(crate::PingRequest {});
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
         request
             .metadata_mut()
             .insert("access_token", valid_access_token().parse().unwrap());
@@ -330,11 +346,10 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
 
         for _ in 0..3 {
-            let mut request = tonic::Request::new(crate::PingRequest {});
+            let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
             request
                 .metadata_mut()
                 .insert("access_token", valid_access_token().parse().unwrap());
@@ -349,9 +364,13 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let err = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap_err();
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let err = client
+            .ping(tonic::Request::new(
+                crate::services::utilities::PingRequest {},
+            ))
+            .await
+            .unwrap_err();
 
         assert_eq!(err.code(), tonic::Code::Unauthenticated);
     }
@@ -362,9 +381,8 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let mut request = tonic::Request::new(crate::PingRequest {});
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
         request
             .metadata_mut()
             .insert("access_token", "not.a.valid.jwt".parse().unwrap());
@@ -494,8 +512,11 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_empty_password_hash_returns_config_error() {
-        let server = Server::new(lib_settings::RpcSettings {
-            password_hash: String::new(),
+        let server = Server::new(lib_settings::Settings {
+            rpc: lib_settings::RpcSettings {
+                password_hash: String::new(),
+                ..settings().rpc
+            },
             ..settings()
         })
         .await
@@ -511,8 +532,11 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_malformed_password_hash_returns_config_error() {
-        let server = Server::new(lib_settings::RpcSettings {
-            password_hash: "not-a-phc-string".to_string(),
+        let server = Server::new(lib_settings::Settings {
+            rpc: lib_settings::RpcSettings {
+                password_hash: "not-a-phc-string".to_string(),
+                ..settings().rpc
+            },
             ..settings()
         })
         .await

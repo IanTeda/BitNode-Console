@@ -2,7 +2,7 @@
 
 use secrecy::SecretString;
 
-use super::{RefreshRequest, RefreshResponse};
+use crate::services::authentication::{RefreshRequest, RefreshResponse};
 
 /// Handle a refresh request — validate the refresh token and issue a new token pair.
 ///
@@ -21,7 +21,9 @@ pub(super) async fn handle(
 
     if refresh_request.refresh_token.is_empty() {
         tracing::warn!("Refresh rejected: token field is empty");
-        return Err(tonic::Status::invalid_argument("refresh token must not be empty"));
+        return Err(tonic::Status::invalid_argument(
+            "refresh token must not be empty",
+        ));
     }
 
     let refresh_token = lib_auth::RefreshToken::from(refresh_request.refresh_token);
@@ -61,7 +63,9 @@ mod tests {
     }
 
     fn refresh_request(token: &str) -> tonic::Request<RefreshRequest> {
-        tonic::Request::new(RefreshRequest { refresh_token: token.to_string() })
+        tonic::Request::new(RefreshRequest {
+            refresh_token: token.to_string(),
+        })
     }
 
     fn valid_refresh_token() -> String {
@@ -135,8 +139,16 @@ mod tests {
     #[tokio::test]
     async fn refresh_issues_new_refresh_token_each_time() {
         let token = valid_refresh_token();
-        let first = handle(&secret(), refresh_request(&token)).await.unwrap().into_inner().refresh_token;
-        let second = handle(&secret(), refresh_request(&token)).await.unwrap().into_inner().refresh_token;
+        let first = handle(&secret(), refresh_request(&token))
+            .await
+            .unwrap()
+            .into_inner()
+            .refresh_token;
+        let second = handle(&secret(), refresh_request(&token))
+            .await
+            .unwrap()
+            .into_inner()
+            .refresh_token;
         assert_ne!(first, second, "each refresh should produce a unique token");
     }
 
@@ -146,7 +158,9 @@ mod tests {
     fn refresh_request_default_is_empty() {
         assert_eq!(
             RefreshRequest::default(),
-            RefreshRequest { refresh_token: String::new() }
+            RefreshRequest {
+                refresh_token: String::new()
+            }
         );
     }
 
