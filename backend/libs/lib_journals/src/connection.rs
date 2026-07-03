@@ -15,25 +15,40 @@ pub struct JournalConnection {
 }
 
 impl JournalConnection {
-    /// Open the system journal.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Io`] if the journal cannot be opened.
-    pub fn open(unit: &str) -> Result<Self> {
-        let mut journal = OpenOptions::default().open()?;
-        journal.match_add("_SYSTEMD_UNIT", unit)?;
-        Ok(Self { journal })
-    }
+    // /// Open the system journal.
+    // ///
+    // /// # Errors
+    // ///
+    // /// Returns [`Error::Io`] if the journal cannot be opened.
+    // pub fn open(unit: &str) -> Result<Self> {
+    //     let mut journal = OpenOptions::default().open()?;
+    //     journal.match_add("_SYSTEMD_UNIT", unit)?;
+    //     Ok(Self { journal })
+    // }
 
     /// Open only the current user's journal slice.
     ///
     /// # Errors
     ///
     /// Returns [`Error::Io`] if the journal cannot be opened.
-    pub fn open_current_user(unit: &str) -> Result<Self> {
-        let mut journal = OpenOptions::default().current_user(true).open()?;
-        journal.match_add("_SYSTEMD_UNIT", unit)?;
+    pub fn open_current_user() -> Result<Self> {
+        let journal = OpenOptions::default().current_user(true).open()?;
         Ok(Self { journal })
+    }
+
+    /// Add a `_SYSTEMD_UNIT` match filter so only entries for `unit` are returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Io`] if the match cannot be applied.
+    pub fn match_unit(&mut self, unit: &str) -> Result<()> {
+        self.journal.match_add("_SYSTEMD_UNIT", unit)?;
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for JournalConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JournalConnection").finish_non_exhaustive()
     }
 }

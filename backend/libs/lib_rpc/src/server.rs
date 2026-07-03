@@ -143,7 +143,7 @@ impl Server {
             self.settings.rpc.token_secret().into(),
         );
         let journals_service = JournalsServiceServer::with_interceptor(
-            JournalsServiceImpl::default(),
+            JournalsServiceImpl::new(self.settings.bitcoind.unit_name()),
             journals_access_token_interceptor,
         );
         tracing::debug!("Journals service registered");

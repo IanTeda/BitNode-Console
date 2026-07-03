@@ -6,8 +6,17 @@ use crate::services::journals::{
 };
 
 /// Concrete implementation of the [`JournalsService`] gRPC trait.
-#[derive(Debug, Default)]
-pub struct JournalsServiceImpl;
+#[derive(Debug)]
+pub struct JournalsServiceImpl {
+    unit: String,
+}
+
+impl JournalsServiceImpl {
+    /// Create a new service instance scoped to the given systemd unit.
+    pub fn new(unit: impl Into<String>) -> Self {
+        Self { unit: unit.into() }
+    }
+}
 
 #[tonic::async_trait]
 impl JournalsService for JournalsServiceImpl {
