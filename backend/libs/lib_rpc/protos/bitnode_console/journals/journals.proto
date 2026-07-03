@@ -1,20 +1,20 @@
-// BitNode-Console Journald Service Protocol Buffer Definition
+// BitNode-Console Journals Service Protocol Buffer Definition
 //
 // Defines the RPC service and messages for reading Bitcoin daemon
 // log entries from the systemd journal.
 
 syntax = "proto3";
 
-package bitnode_console.journald.v1;
+package bitnode_console.journals.v1;
 
 // Common definitions.
 import "bitnode_console/common/pagination.proto";
 
-// JournaldService exposes Bitcoin daemon log entries from the systemd journal.
+// JournalsService exposes Bitcoin daemon log entries from the systemd journal.
 //
 // The unit name read is fixed by server configuration; clients cannot select
 // an arbitrary unit, preventing authenticated users from reading unrelated logs.
-service JournaldService {
+service JournalsService {
   // GetLogs returns a page of log lines (unary, for initial page load and pagination).
   rpc GetJournals (GetJournalsRequest) returns (GetJournalsResponse);
 
@@ -40,11 +40,18 @@ enum Priority {
 
 // GetLogsRequest specifies the page of log entries to fetch.
 message GetJournalsRequest {
+
+  // Timestamp to start fetching from.
+  int64 timestamp_from = 1;
+
+  // Timestamp to end fetching at.
+  int64 timestamp_to = 2;
+
   // Minimum severity level to return; defaults to INFO when unspecified.
-  Priority priority = 1;
+  Priority priority = 3;
 
   // Pagination parameters: page size, page token, and direction.
-  bitnode_console.common.v1.PageRequest pagination = 3;
+  bitnode_console.common.v1.PageRequest pagination = 4;
 }
 
 // GetLogsResponse carries the fetched log entries and the next page token.

@@ -1266,6 +1266,7 @@ dependencies = [
  "http",
  "ipnet",
  "lib_auth",
+ "lib_journald",
  "lib_settings",
  "lib_tracing",
  "prost",
