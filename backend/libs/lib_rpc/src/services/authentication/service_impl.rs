@@ -1,8 +1,8 @@
 use secrecy::SecretString;
 
-use crate::generated_protos::authentication::{
-    authentication_service_server::AuthenticationService,
-    LoginRequest, LoginResponse, LogoutRequest, LogoutResponse, RefreshRequest, RefreshResponse,
+use crate::services::authentication::{
+    AuthenticationService, LoginRequest, LoginResponse, LogoutRequest, LogoutResponse,
+    RefreshRequest, RefreshResponse,
 };
 
 /// Concrete implementation of the [`AuthenticationService`] gRPC trait.
@@ -16,7 +16,10 @@ impl AuthenticationServiceImpl {
     /// Create a new [`AuthenticationServiceImpl`] that verifies login passwords
     /// against `password_hash` and signs tokens with `token_secret`.
     pub fn new(password_hash: lib_auth::PasswordHash, token_secret: SecretString) -> Self {
-        Self { password_hash, token_secret }
+        Self {
+            password_hash,
+            token_secret,
+        }
     }
 }
 

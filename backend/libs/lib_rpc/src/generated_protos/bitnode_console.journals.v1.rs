@@ -234,6 +234,7 @@ pub mod journals_service_client {
             self.inner.unary(req, path, codec).await
         }
         /// StreamLogs streams new log entries in real time (server-streaming, for live tail).
+        /// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
         pub async fn stream_journals(
             &mut self,
             request: impl tonic::IntoRequest<super::StreamJournalsRequest>,
@@ -293,6 +294,7 @@ pub mod journals_service_server {
             + std::marker::Send
             + 'static;
         /// StreamLogs streams new log entries in real time (server-streaming, for live tail).
+        /// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
         async fn stream_journals(
             &self,
             request: tonic::Request<super::StreamJournalsRequest>,

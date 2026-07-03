@@ -43,9 +43,9 @@ export interface PageRequest {
      * Direction controls which side of the page token to read from.
      * Defaults to DIRECTION_FORWARD when unspecified.
      *
-     * @generated from protobuf field: bitnode_console.common.v1.Direction direction = 3
+     * @generated from protobuf field: bitnode_console.common.v1.PageDirection page_direction = 3
      */
-    direction: Direction;
+    pageDirection: PageDirection;
 }
 /**
  * PageResponse carries the page tokens and boundary flags needed to navigate
@@ -58,51 +58,51 @@ export interface PageResponse {
      * Pass as page_token in the next request to fetch the page after this one
      * (chronologically newer for logs). Absent when has_next_page is false.
      *
-     * @generated from protobuf field: optional string next_page_token = 1
+     * @generated from protobuf field: optional string page_token_next = 1
      */
-    nextPageToken?: string;
+    pageTokenNext?: string;
     /**
      * Pass as page_token in the next request to fetch the page before this one
      * (chronologically older for logs). Absent when has_prev_page is false.
      *
-     * @generated from protobuf field: optional string prev_page_token = 2
+     * @generated from protobuf field: optional string page_token_prev = 2
      */
-    prevPageToken?: string;
+    pageTokenPrev?: string;
     /**
      * True when at least one more page exists in the DIRECTION_FORWARD direction.
      *
-     * @generated from protobuf field: bool has_next_page = 3
+     * @generated from protobuf field: bool has_page_next = 3
      */
-    hasNextPage: boolean;
+    hasPageNext: boolean;
     /**
      * True when at least one more page exists in the DIRECTION_BACKWARD direction.
      *
-     * @generated from protobuf field: bool has_prev_page = 4
+     * @generated from protobuf field: bool has_page_prev = 4
      */
-    hasPrevPage: boolean;
+    hasPagePrev: boolean;
 }
 /**
  * Direction controls which side of the pagination cursor to read from.
  *
- * @generated from protobuf enum bitnode_console.common.v1.Direction
+ * @generated from protobuf enum bitnode_console.common.v1.PageDirection
  */
-export enum Direction {
+export enum PageDirection {
     /**
      * Unspecified defaults to DIRECTION_FORWARD.
      *
-     * @generated from protobuf enum value: DIRECTION_UNSPECIFIED = 0;
+     * @generated from protobuf enum value: PAGE_DIRECTION_UNSPECIFIED = 0;
      */
     UNSPECIFIED = 0,
     /**
      * DIRECTION_FORWARD reads items after the cursor (chronologically newer for logs).
      *
-     * @generated from protobuf enum value: DIRECTION_FORWARD = 1;
+     * @generated from protobuf enum value: PAGE_DIRECTION_FORWARD = 1;
      */
     FORWARD = 1,
     /**
      * DIRECTION_BACKWARD reads items before the cursor (chronologically older for logs).
      *
-     * @generated from protobuf enum value: DIRECTION_BACKWARD = 2;
+     * @generated from protobuf enum value: PAGE_DIRECTION_BACKWARD = 2;
      */
     BACKWARD = 2
 }
@@ -112,13 +112,13 @@ class PageRequest$Type extends MessageType<PageRequest> {
         super("bitnode_console.common.v1.PageRequest", [
             { no: 1, name: "page_size", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
             { no: 2, name: "page_token", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "direction", kind: "enum", T: () => ["bitnode_console.common.v1.Direction", Direction, "DIRECTION_"] }
+            { no: 3, name: "page_direction", kind: "enum", T: () => ["bitnode_console.common.v1.PageDirection", PageDirection, "PAGE_DIRECTION_"] }
         ]);
     }
     create(value?: PartialMessage<PageRequest>): PageRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.pageSize = 0;
-        message.direction = 0;
+        message.pageDirection = 0;
         if (value !== undefined)
             reflectionMergePartial<PageRequest>(this, message, value);
         return message;
@@ -134,8 +134,8 @@ class PageRequest$Type extends MessageType<PageRequest> {
                 case /* optional string page_token */ 2:
                     message.pageToken = reader.string();
                     break;
-                case /* bitnode_console.common.v1.Direction direction */ 3:
-                    message.direction = reader.int32();
+                case /* bitnode_console.common.v1.PageDirection page_direction */ 3:
+                    message.pageDirection = reader.int32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -155,9 +155,9 @@ class PageRequest$Type extends MessageType<PageRequest> {
         /* optional string page_token = 2; */
         if (message.pageToken !== undefined)
             writer.tag(2, WireType.LengthDelimited).string(message.pageToken);
-        /* bitnode_console.common.v1.Direction direction = 3; */
-        if (message.direction !== 0)
-            writer.tag(3, WireType.Varint).int32(message.direction);
+        /* bitnode_console.common.v1.PageDirection page_direction = 3; */
+        if (message.pageDirection !== 0)
+            writer.tag(3, WireType.Varint).int32(message.pageDirection);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -172,16 +172,16 @@ export const PageRequest = new PageRequest$Type();
 class PageResponse$Type extends MessageType<PageResponse> {
     constructor() {
         super("bitnode_console.common.v1.PageResponse", [
-            { no: 1, name: "next_page_token", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "prev_page_token", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "has_next_page", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 4, name: "has_prev_page", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 1, name: "page_token_next", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "page_token_prev", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "has_page_next", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 4, name: "has_page_prev", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<PageResponse>): PageResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.hasNextPage = false;
-        message.hasPrevPage = false;
+        message.hasPageNext = false;
+        message.hasPagePrev = false;
         if (value !== undefined)
             reflectionMergePartial<PageResponse>(this, message, value);
         return message;
@@ -191,17 +191,17 @@ class PageResponse$Type extends MessageType<PageResponse> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* optional string next_page_token */ 1:
-                    message.nextPageToken = reader.string();
+                case /* optional string page_token_next */ 1:
+                    message.pageTokenNext = reader.string();
                     break;
-                case /* optional string prev_page_token */ 2:
-                    message.prevPageToken = reader.string();
+                case /* optional string page_token_prev */ 2:
+                    message.pageTokenPrev = reader.string();
                     break;
-                case /* bool has_next_page */ 3:
-                    message.hasNextPage = reader.bool();
+                case /* bool has_page_next */ 3:
+                    message.hasPageNext = reader.bool();
                     break;
-                case /* bool has_prev_page */ 4:
-                    message.hasPrevPage = reader.bool();
+                case /* bool has_page_prev */ 4:
+                    message.hasPagePrev = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -215,18 +215,18 @@ class PageResponse$Type extends MessageType<PageResponse> {
         return message;
     }
     internalBinaryWrite(message: PageResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* optional string next_page_token = 1; */
-        if (message.nextPageToken !== undefined)
-            writer.tag(1, WireType.LengthDelimited).string(message.nextPageToken);
-        /* optional string prev_page_token = 2; */
-        if (message.prevPageToken !== undefined)
-            writer.tag(2, WireType.LengthDelimited).string(message.prevPageToken);
-        /* bool has_next_page = 3; */
-        if (message.hasNextPage !== false)
-            writer.tag(3, WireType.Varint).bool(message.hasNextPage);
-        /* bool has_prev_page = 4; */
-        if (message.hasPrevPage !== false)
-            writer.tag(4, WireType.Varint).bool(message.hasPrevPage);
+        /* optional string page_token_next = 1; */
+        if (message.pageTokenNext !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.pageTokenNext);
+        /* optional string page_token_prev = 2; */
+        if (message.pageTokenPrev !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.pageTokenPrev);
+        /* bool has_page_next = 3; */
+        if (message.hasPageNext !== false)
+            writer.tag(3, WireType.Varint).bool(message.hasPageNext);
+        /* bool has_page_prev = 4; */
+        if (message.hasPagePrev !== false)
+            writer.tag(4, WireType.Varint).bool(message.hasPagePrev);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

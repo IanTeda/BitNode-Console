@@ -36,6 +36,7 @@ export interface IJournalsServiceClient {
     getJournals(input: GetJournalsRequest, options?: RpcOptions): UnaryCall<GetJournalsRequest, GetJournalsResponse>;
     /**
      * StreamLogs streams new log entries in real time (server-streaming, for live tail).
+     * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
      *
      * @generated from protobuf rpc: StreamJournals
      */
@@ -66,6 +67,7 @@ export class JournalsServiceClient implements IJournalsServiceClient, ServiceInf
     }
     /**
      * StreamLogs streams new log entries in real time (server-streaming, for live tail).
+     * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
      *
      * @generated from protobuf rpc: StreamJournals
      */

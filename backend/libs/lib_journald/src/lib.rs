@@ -22,7 +22,7 @@ pub use domains::{JournalEntry, JournalPage, JournalPriority};
 pub use connection::JournalConnection;
 
 /// Re-export seek types.
-pub use query::Query;
+pub use query::JournalQuery;
 
 // -- Result type alias
 

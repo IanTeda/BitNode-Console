@@ -1,8 +1,8 @@
 use systemd::journal::JournalSeek;
 
-use crate::{JournalConnection, JournalEntry, JournalPage, Query, Result};
+use crate::{JournalConnection, JournalEntry, JournalPage, JournalQuery, Result};
 
-impl<'a> Query<'a> {
+impl<'a> JournalQuery<'a> {
     /// Fetch journal entries and build a [`crate::JournalPage`] from them.
     ///
     /// Seeks to the head for the first page, or just past `after_cursor` for
@@ -14,7 +14,7 @@ impl<'a> Query<'a> {
     /// Returns [`crate::Error::Io`] if any underlying journal operation fails.
     pub fn seek(&self, conn: &mut JournalConnection) -> Result<JournalPage> {
         //--- Seek to the cursor position or head, then read forward to collect entries.
-        match self.after_cursor {
+        match self.pagination.page_token.as_deref() {
             Some(cursor) => {
                 conn.journal.seek(JournalSeek::Cursor {
                     cursor: cursor.to_owned(),
@@ -27,7 +27,7 @@ impl<'a> Query<'a> {
         }
 
         // Convert the limit to usize
-        let limit = usize::try_from(self.page_size)?;
+        let limit = usize::try_from(self.pagination.page_size)?;
 
         // Create a vector to hold the entries
         let mut entries = Vec::new();

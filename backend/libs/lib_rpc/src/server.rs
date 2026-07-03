@@ -7,10 +7,9 @@ use secrecy::SecretString;
 use tokio_stream::wrappers::TcpListenerStream;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::services::{
-    AuthenticationServiceImpl, AuthenticationServiceServer, JournalsServiceImpl,
-    JournalsServiceServer, UtilitiesServiceImpl, UtilitiesServiceServer,
-};
+use crate::services::authentication::{AuthenticationServiceImpl, AuthenticationServiceServer};
+use crate::services::journals::{JournalsServiceImpl, JournalsServiceServer};
+use crate::services::utilities::{UtilitiesServiceImpl, UtilitiesServiceServer};
 
 /// Combined file descriptor set for all protobuf services in this crate.
 ///
@@ -90,8 +89,9 @@ impl Server {
         }
 
         //--- Build interceptors
-        let allowed_ips_interceptor =
-            crate::AllowedIpsInterceptor::new(self.settings.rpc.allowed_ips().to_vec());
+        let allowed_ips_interceptor = crate::interceptors::AllowedIpsInterceptor::new(
+            self.settings.rpc.allowed_ips().to_vec(),
+        );
         let allowed_ips_interceptor = tonic::service::interceptor(allowed_ips_interceptor);
 
         let access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
@@ -183,6 +183,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
     use secrecy::SecretString;
     use std::sync::OnceLock;
 
@@ -329,9 +330,8 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let mut request = tonic::Request::new(crate::PingRequest {});
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
         request
             .metadata_mut()
             .insert("access_token", valid_access_token().parse().unwrap());
@@ -346,11 +346,10 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
 
         for _ in 0..3 {
-            let mut request = tonic::Request::new(crate::PingRequest {});
+            let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
             request
                 .metadata_mut()
                 .insert("access_token", valid_access_token().parse().unwrap());
@@ -365,9 +364,13 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let err = client.ping(tonic::Request::new(crate::PingRequest {})).await.unwrap_err();
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let err = client
+            .ping(tonic::Request::new(
+                crate::services::utilities::PingRequest {},
+            ))
+            .await
+            .unwrap_err();
 
         assert_eq!(err.code(), tonic::Code::Unauthenticated);
     }
@@ -378,9 +381,8 @@ mod tests {
         let addr = server.address().unwrap();
         tokio::spawn(server.run());
 
-        let mut client =
-            crate::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-        let mut request = tonic::Request::new(crate::PingRequest {});
+        let mut client = UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
+        let mut request = tonic::Request::new(crate::services::utilities::PingRequest {});
         request
             .metadata_mut()
             .insert("access_token", "not.a.valid.jwt".parse().unwrap());

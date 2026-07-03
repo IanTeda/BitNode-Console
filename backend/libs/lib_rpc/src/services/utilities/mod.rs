@@ -2,6 +2,7 @@
 
 mod ping;
 
+pub use crate::generated_protos::utilities::utilities_service_client::UtilitiesServiceClient;
 pub use crate::generated_protos::utilities::utilities_service_server::{
     UtilitiesService, UtilitiesServiceServer,
 };

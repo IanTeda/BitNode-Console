@@ -21,7 +21,7 @@ message PageRequest {
 
   // Direction controls which side of the page token to read from.
   // Defaults to DIRECTION_FORWARD when unspecified.
-  Direction direction = 3;
+  PageDirection page_direction = 3;
 }
 
 // PageResponse carries the page tokens and boundary flags needed to navigate
@@ -29,27 +29,27 @@ message PageRequest {
 message PageResponse {
   // Pass as page_token in the next request to fetch the page after this one
   // (chronologically newer for logs). Absent when has_next_page is false.
-  optional string next_page_token = 1;
+  optional string page_token_next = 1;
 
   // Pass as page_token in the next request to fetch the page before this one
   // (chronologically older for logs). Absent when has_prev_page is false.
-  optional string prev_page_token = 2;
+  optional string page_token_prev = 2;
 
   // True when at least one more page exists in the DIRECTION_FORWARD direction.
-  bool has_next_page = 3;
+  bool has_page_next = 3;
 
   // True when at least one more page exists in the DIRECTION_BACKWARD direction.
-  bool has_prev_page = 4;
+  bool has_page_prev = 4;
 }
 
 // Direction controls which side of the pagination cursor to read from.
-enum Direction {
+enum PageDirection {
   // Unspecified defaults to DIRECTION_FORWARD.
-  DIRECTION_UNSPECIFIED = 0;
+  PAGE_DIRECTION_UNSPECIFIED = 0;
 
   // DIRECTION_FORWARD reads items after the cursor (chronologically newer for logs).
-  DIRECTION_FORWARD = 1;
+  PAGE_DIRECTION_FORWARD = 1;
 
   // DIRECTION_BACKWARD reads items before the cursor (chronologically older for logs).
-  DIRECTION_BACKWARD = 2;
+  PAGE_DIRECTION_BACKWARD = 2;
 }

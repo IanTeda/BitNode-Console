@@ -16,21 +16,34 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 /// A well-formed Argon2id PHC hash used across integration tests.
 ///
 /// The plaintext password is `"test_password"`.
-pub const TEST_PASSWORD_HASH: &str =
-    "$argon2id$v=19$m=4096,t=3,p=1$Mzk3NGQ1NDBiZmZiYjhhNDY0YWY3MmRjYjIwNDI2YmE\
+pub const TEST_PASSWORD_HASH: &str = "$argon2id$v=19$m=4096,t=3,p=1$Mzk3NGQ1NDBiZmZiYjhhNDY0YWY3MmRjYjIwNDI2YmE\
      $Bzo73djW0DkCVR4prXhqvWB4ViEdJ54h91mU0LCgqPY";
 
-/// Returns [`lib_settings::RpcSettings`] suitable for integration tests.
+/// Token secret used by [`test_settings`] and [`valid_access_token`].
+pub const TEST_TOKEN_SECRET: &str = "test_secret";
+
+/// Generate a valid access token signed with [`TEST_TOKEN_SECRET`].
+#[allow(dead_code)]
+pub fn valid_access_token() -> String {
+    lib_auth::AccessToken::new(&secrecy::SecretString::from(TEST_TOKEN_SECRET))
+        .expect("access token must generate")
+        .to_string()
+}
+
+/// Returns [`lib_settings::Settings`] suitable for integration tests.
 ///
 /// Uses port `0` so the OS assigns an ephemeral port, preventing conflicts
 /// when tests run in parallel.
 #[allow(dead_code)]
-pub fn test_settings() -> lib_settings::RpcSettings {
-    lib_settings::RpcSettings {
-        host: "127.0.0.1".to_string(),
-        port: 0,
-        password_hash: TEST_PASSWORD_HASH.to_string(),
-        token_secret: "test_secret".to_string(),
+pub fn test_settings() -> lib_settings::Settings {
+    lib_settings::Settings {
+        rpc: lib_settings::RpcSettings {
+            host: "127.0.0.1".to_string(),
+            port: 0,
+            password_hash: TEST_PASSWORD_HASH.to_string(),
+            token_secret: TEST_TOKEN_SECRET.to_string(),
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -59,14 +72,21 @@ impl TestRpcServer {
 
         tokio::spawn(server.run());
 
-        Self { address: bound_address }
+        Self {
+            address: bound_address,
+        }
     }
 
     /// Connect a [`UtilitiesServiceClient`] to this test server.
     #[allow(dead_code)]
-    pub async fn rpc_client(&self) -> lib_rpc::UtilitiesServiceClient<tonic::transport::Channel> {
-        lib_rpc::UtilitiesServiceClient::connect(format!("http://{}", self.address))
-            .await
-            .expect("failed to connect to test RPC server")
+    pub async fn rpc_client(
+        &self,
+    ) -> lib_rpc::services::utilities::UtilitiesServiceClient<tonic::transport::Channel> {
+        lib_rpc::services::utilities::UtilitiesServiceClient::connect(format!(
+            "http://{}",
+            self.address
+        ))
+        .await
+        .expect("failed to connect to test RPC server")
     }
 }

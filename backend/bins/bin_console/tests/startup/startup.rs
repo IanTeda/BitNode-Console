@@ -3,16 +3,26 @@
 //! The empty-password-hash guard lives in [`lib_rpc::Server::run`]; these
 //! tests verify it fires correctly before any service begins accepting requests.
 
-const VALID_HASH: &str =
-    "$argon2id$v=19$m=4096,t=3,p=1$Mzk3NGQ1NDBiZmZiYjhhNDY0YWY3MmRjYjIwNDI2YmE\
+const VALID_HASH: &str = "$argon2id$v=19$m=4096,t=3,p=1$Mzk3NGQ1NDBiZmZiYjhhNDY0YWY3MmRjYjIwNDI2YmE\
      $Bzo73djW0DkCVR4prXhqvWB4ViEdJ54h91mU0LCgqPY";
 
-fn rpc_settings(password_hash: &str) -> lib_settings::RpcSettings {
-    lib_settings::RpcSettings {
-        host: "127.0.0.1".to_string(),
-        port: 0,
-        password_hash: password_hash.to_string(),
-        token_secret: "test_secret".to_string(),
+const TEST_TOKEN_SECRET: &str = "test_secret";
+
+fn valid_access_token() -> String {
+    lib_auth::AccessToken::new(&secrecy::SecretString::from(TEST_TOKEN_SECRET))
+        .expect("access token must generate")
+        .to_string()
+}
+
+fn rpc_settings(password_hash: &str) -> lib_settings::Settings {
+    lib_settings::Settings {
+        rpc: lib_settings::RpcSettings {
+            host: "127.0.0.1".to_string(),
+            port: 0,
+            password_hash: password_hash.to_string(),
+            token_secret: "test_secret".to_string(),
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -36,9 +46,14 @@ async fn non_empty_password_hash_starts_server() {
     tokio::spawn(server.run());
 
     let mut client =
-        lib_rpc::UtilitiesServiceClient::connect(format!("http://{addr}")).await.unwrap();
-    let response =
-        client.ping(tonic::Request::new(lib_rpc::PingRequest {})).await.unwrap();
+        lib_rpc::services::utilities::UtilitiesServiceClient::connect(format!("http://{addr}"))
+            .await
+            .unwrap();
+    let mut request = tonic::Request::new(lib_rpc::services::utilities::PingRequest {});
+    request
+        .metadata_mut()
+        .insert("access_token", valid_access_token().parse().unwrap());
+    let response = client.ping(request).await.unwrap();
 
     assert_eq!(response.into_inner().pong, "Pong...");
 }

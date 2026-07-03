@@ -1,5 +1,5 @@
 [package]
-name = "lib_journald"
+name = "lib_core"
 description.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 ## --- Internal Dependencies
-lib_core = { path = "../../libs/lib_core" }
 
 ## --- Workspace Dependencies
 thiserror = { workspace = true }
@@ -21,8 +20,6 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 
 ## --- Library Dependencies
-async-stream = { version = "0.3.6" }
-systemd = { version = "0.10.1" }
 
 [build-dependencies]
 

@@ -1,19 +1,16 @@
-use crate::domains;
+//! Query parameters for fetching journal entries.
+
+use crate::domains::JournalPriority;
+use lib_core::domains::PaginationRequest;
 
 /// Default unit name to use when no specific unit name is provided.
 const DEFAULT_UNIT_NAME: &str = "";
 
-/// Default limit to use when no specific limit is provided.
-const DEFAULT_LIMIT: u64 = 100;
-
 /// Default priority level to use when no specific priority is provided.
-const DEFAULT_PRIORITY: domains::JournalPriority = domains::JournalPriority::Info;
+const DEFAULT_PRIORITY: JournalPriority = JournalPriority::Info;
 
-/// Default cursor to use when no specific cursor is provided.
-const DEFAULT_AFTER_CURSOR: Option<&str> = None;
-
-/// Settings controlling which journal entries to return from the query.
-pub struct Query<'a> {
+/// Parameters controlling which journal entries to return.
+pub struct JournalQuery<'a> {
     /// Systemd unit name to filter on, e.g. `"bitcoind.service"`.
     ///
     /// Matched against `_SYSTEMD_UNIT`. The `.service` suffix is also stripped
@@ -23,62 +20,57 @@ pub struct Query<'a> {
     /// [`BitcoinDaemonSettings`]: lib_settings::BitcoinDaemonSettings
     pub unit_name: &'a str,
 
+    /// Timestamp to start from, in microseconds since the Unix epoch.
+    pub timestamp_from: Option<i64>,
+
+    /// Timestamp to end at, in microseconds since the Unix epoch.
+    pub timestamp_to: Option<i64>,
+
     /// Minimum priority level to return.
-    pub priority: domains::JournalPriority,
+    pub priority: JournalPriority,
 
-    /// Maximum number of entries to return in one page.
-    pub page_size: u64,
-
-    /// Opaque cursor returned by a prior call; the page starts *after* this entry.
-    ///
-    /// Pass `None` to start from the oldest available entry.
-    pub after_cursor: Option<&'a str>,
+    /// Page size, cursor, and direction for this request.
+    pub pagination: PaginationRequest,
 }
 
-impl<'a> Default for Query<'a> {
+impl<'a> Default for JournalQuery<'a> {
     fn default() -> Self {
-        Self::new(
-            DEFAULT_UNIT_NAME,
-            DEFAULT_PRIORITY,
-            DEFAULT_LIMIT,
-            DEFAULT_AFTER_CURSOR,
-        )
+        Self {
+            unit_name: DEFAULT_UNIT_NAME,
+            timestamp_from: None,
+            timestamp_to: None,
+            priority: DEFAULT_PRIORITY,
+            pagination: PaginationRequest::default(),
+        }
     }
 }
 
-impl<'a> Query<'a> {
-    /// Creates a new `Query` with the given unit name and default priority, limit, and cursor.
+impl<'a> JournalQuery<'a> {
+    /// Create a new `Query` with explicit parameters.
     ///
     /// # Arguments
     ///
-    /// * `unit_name` - The systemd unit name to filter on.
-    /// * `priority` - The minimum priority level to return.
-    /// * `limit` - The maximum number of entries to return in one page.
-    /// * `after_cursor` - The opaque cursor returned by a prior call; the page starts *after* this entry.
-    ///
-    /// Pass `None` to start from the oldest available entry.
+    /// * `unit_name` — Systemd unit name to filter on.
+    /// * `priority` — Minimum severity level to return.
+    /// * `pagination` — Page size, cursor, and direction for this request.
     #[must_use]
     pub fn new(
         unit_name: &'a str,
-        priority: domains::JournalPriority,
-        page_size: u64,
-        after_cursor: Option<&'a str>,
+        priority: JournalPriority,
+        pagination: PaginationRequest,
     ) -> Self {
         Self {
             unit_name,
+            timestamp_from: None,
+            timestamp_to: None,
             priority,
-            page_size,
-            after_cursor,
+            pagination,
         }
     }
 
-    /// Creates a new `Query` with the given unit name and default priority, limit, and cursor.
-    ///
-    /// # Arguments
-    ///
-    /// * `unit_name` - The systemd unit name to filter on.
+    /// Create a `Query` for the given unit name, using defaults for everything else.
     #[must_use]
-    pub fn new_with_unit_name(unit_name: &'a str) -> Self {
+    pub fn with_unit(unit_name: &'a str) -> Self {
         Self {
             unit_name,
             ..Default::default()

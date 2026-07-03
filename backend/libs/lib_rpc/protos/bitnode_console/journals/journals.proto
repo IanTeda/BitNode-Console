@@ -19,6 +19,7 @@ service JournalsService {
   rpc GetJournals (GetJournalsRequest) returns (GetJournalsResponse);
 
   // StreamLogs streams new log entries in real time (server-streaming, for live tail).
+  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
   rpc StreamJournals (StreamJournalsRequest) returns (stream JournalsEntry);
 }
 

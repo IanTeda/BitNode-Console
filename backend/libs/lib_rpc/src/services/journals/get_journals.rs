@@ -1,6 +1,6 @@
 //! GetJournals handler for the Journals gRPC service.
 
-use super::{GetJournalsRequest, GetJournalsResponse};
+use crate::services::journals::{GetJournalsRequest, GetJournalsResponse};
 
 /// Handle a `GetJournals` request — return a page of journal log entries.
 #[tracing::instrument(skip(request))]
