@@ -9,7 +9,9 @@
       "Bash(nix-shell --run \"cargo clippy -p lib_settings 2>&1\")",
       "Bash(nix-shell --run \"cargo clippy -p lib_auth 2>&1\")",
       "Bash(npm install *)",
-      "Bash(cargo test *)"
+      "Bash(cargo test *)",
+      "Bash(git add *)",
+      "Bash(pnpm tsc *)"
     ]
   }
 }

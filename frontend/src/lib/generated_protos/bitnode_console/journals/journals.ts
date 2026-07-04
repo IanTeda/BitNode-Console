@@ -23,11 +23,7 @@ import { PageRequest } from "../common/pagination";
 /**
  * GetLogsRequest specifies the page of log entries to fetch.
  *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated from protobuf message bitnode_console.journals.v1.GetJournalsRequest
-========
- * @generated from protobuf message bitnode_console.journald.v1.GetJournalsRequest
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export interface GetJournalsRequest {
     /**
@@ -45,11 +41,7 @@ export interface GetJournalsRequest {
     /**
      * Minimum severity level to return; defaults to INFO when unspecified.
      *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
      * @generated from protobuf field: bitnode_console.journals.v1.Priority priority = 3
-========
-     * @generated from protobuf field: bitnode_console.journald.v1.Priority priority = 3
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
      */
     priority: Priority;
     /**
@@ -62,21 +54,13 @@ export interface GetJournalsRequest {
 /**
  * GetLogsResponse carries the fetched log entries and the next page token.
  *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated from protobuf message bitnode_console.journals.v1.GetJournalsResponse
-========
- * @generated from protobuf message bitnode_console.journald.v1.GetJournalsResponse
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export interface GetJournalsResponse {
     /**
      * Log entries in chronological order (oldest first).
      *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
      * @generated from protobuf field: repeated bitnode_console.journals.v1.JournalsEntry entries = 1
-========
-     * @generated from protobuf field: repeated bitnode_console.journald.v1.JournalsEntry entries = 1
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
      */
     entries: JournalsEntry[];
     /**
@@ -89,11 +73,7 @@ export interface GetJournalsResponse {
 /**
  * StreamLogsRequest initiates a live log tail.
  *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated from protobuf message bitnode_console.journals.v1.StreamJournalsRequest
-========
- * @generated from protobuf message bitnode_console.journald.v1.StreamJournalsRequest
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export interface StreamJournalsRequest {
     /**
@@ -106,11 +86,7 @@ export interface StreamJournalsRequest {
 /**
  * LogEntry represents a single journal log line from the Bitcoin daemon.
  *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated from protobuf message bitnode_console.journals.v1.JournalsEntry
-========
- * @generated from protobuf message bitnode_console.journald.v1.JournalsEntry
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export interface JournalsEntry {
     /**
@@ -128,11 +104,7 @@ export interface JournalsEntry {
     /**
      * Severity level of this entry.
      *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
      * @generated from protobuf field: bitnode_console.journals.v1.Priority priority = 3
-========
-     * @generated from protobuf field: bitnode_console.journald.v1.Priority priority = 3
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
      */
     priority: Priority;
     /**
@@ -162,11 +134,7 @@ export interface JournalsEntry {
  * PRIORITY_UNSPECIFIED is the proto3 default and is treated as
  * PRIORITY_INFO by the server.
  *
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated from protobuf enum bitnode_console.journals.v1.Priority
-========
- * @generated from protobuf enum bitnode_console.journald.v1.Priority
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export enum Priority {
     /**
@@ -209,17 +177,10 @@ export enum Priority {
 // @generated message type with reflection information, may provide speed optimized methods
 class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
     constructor() {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         super("bitnode_console.journals.v1.GetJournalsRequest", [
             { no: 1, name: "timestamp_from", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
             { no: 2, name: "timestamp_to", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
             { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journals.v1.Priority", Priority, "PRIORITY_"] },
-========
-        super("bitnode_console.journald.v1.GetJournalsRequest", [
-            { no: 1, name: "timestamp_from", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 2, name: "timestamp_to", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journald.v1.Priority", Priority, "PRIORITY_"] },
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
             { no: 4, name: "pagination", kind: "message", T: () => PageRequest }
         ]);
     }
@@ -243,11 +204,7 @@ class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
                 case /* int64 timestamp_to */ 2:
                     message.timestampTo = reader.int64().toString();
                     break;
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
                 case /* bitnode_console.journals.v1.Priority priority */ 3:
-========
-                case /* bitnode_console.journald.v1.Priority priority */ 3:
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
                     message.priority = reader.int32();
                     break;
                 case /* bitnode_console.common.v1.PageRequest pagination */ 4:
@@ -271,11 +228,7 @@ class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
         /* int64 timestamp_to = 2; */
         if (message.timestampTo !== "0")
             writer.tag(2, WireType.Varint).int64(message.timestampTo);
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         /* bitnode_console.journals.v1.Priority priority = 3; */
-========
-        /* bitnode_console.journald.v1.Priority priority = 3; */
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
         if (message.priority !== 0)
             writer.tag(3, WireType.Varint).int32(message.priority);
         /* bitnode_console.common.v1.PageRequest pagination = 4; */
@@ -288,21 +241,13 @@ class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
     }
 }
 /**
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated MessageType for protobuf message bitnode_console.journals.v1.GetJournalsRequest
-========
- * @generated MessageType for protobuf message bitnode_console.journald.v1.GetJournalsRequest
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export const GetJournalsRequest = new GetJournalsRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class GetJournalsResponse$Type extends MessageType<GetJournalsResponse> {
     constructor() {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         super("bitnode_console.journals.v1.GetJournalsResponse", [
-========
-        super("bitnode_console.journald.v1.GetJournalsResponse", [
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
             { no: 1, name: "entries", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => JournalsEntry },
             { no: 2, name: "pagination", kind: "message", T: () => PageResponse }
         ]);
@@ -319,11 +264,7 @@ class GetJournalsResponse$Type extends MessageType<GetJournalsResponse> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
                 case /* repeated bitnode_console.journals.v1.JournalsEntry entries */ 1:
-========
-                case /* repeated bitnode_console.journald.v1.JournalsEntry entries */ 1:
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
                     message.entries.push(JournalsEntry.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 case /* bitnode_console.common.v1.PageResponse pagination */ 2:
@@ -341,11 +282,7 @@ class GetJournalsResponse$Type extends MessageType<GetJournalsResponse> {
         return message;
     }
     internalBinaryWrite(message: GetJournalsResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         /* repeated bitnode_console.journals.v1.JournalsEntry entries = 1; */
-========
-        /* repeated bitnode_console.journald.v1.JournalsEntry entries = 1; */
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
         for (let i = 0; i < message.entries.length; i++)
             JournalsEntry.internalBinaryWrite(message.entries[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         /* bitnode_console.common.v1.PageResponse pagination = 2; */
@@ -358,21 +295,13 @@ class GetJournalsResponse$Type extends MessageType<GetJournalsResponse> {
     }
 }
 /**
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated MessageType for protobuf message bitnode_console.journals.v1.GetJournalsResponse
-========
- * @generated MessageType for protobuf message bitnode_console.journald.v1.GetJournalsResponse
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export const GetJournalsResponse = new GetJournalsResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class StreamJournalsRequest$Type extends MessageType<StreamJournalsRequest> {
     constructor() {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         super("bitnode_console.journals.v1.StreamJournalsRequest", [
-========
-        super("bitnode_console.journald.v1.StreamJournalsRequest", [
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
             { no: 1, name: "tail_lines", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
@@ -413,27 +342,16 @@ class StreamJournalsRequest$Type extends MessageType<StreamJournalsRequest> {
     }
 }
 /**
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated MessageType for protobuf message bitnode_console.journals.v1.StreamJournalsRequest
-========
- * @generated MessageType for protobuf message bitnode_console.journald.v1.StreamJournalsRequest
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export const StreamJournalsRequest = new StreamJournalsRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class JournalsEntry$Type extends MessageType<JournalsEntry> {
     constructor() {
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         super("bitnode_console.journals.v1.JournalsEntry", [
             { no: 1, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "timestamp_us", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
             { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journals.v1.Priority", Priority, "PRIORITY_"] },
-========
-        super("bitnode_console.journald.v1.JournalsEntry", [
-            { no: 1, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "timestamp_us", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journald.v1.Priority", Priority, "PRIORITY_"] },
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
             { no: 4, name: "unit", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "cursor", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "extra_fields", kind: "map", K: 9 /*ScalarType.STRING*/, V: { kind: "scalar", T: 9 /*ScalarType.STRING*/ } }
@@ -461,11 +379,7 @@ class JournalsEntry$Type extends MessageType<JournalsEntry> {
                 case /* int64 timestamp_us */ 2:
                     message.timestampUs = reader.int64().toString();
                     break;
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
                 case /* bitnode_console.journals.v1.Priority priority */ 3:
-========
-                case /* bitnode_console.journald.v1.Priority priority */ 3:
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
                     message.priority = reader.int32();
                     break;
                 case /* string unit */ 4:
@@ -499,11 +413,7 @@ class JournalsEntry$Type extends MessageType<JournalsEntry> {
                 case 2:
                     val = reader.string();
                     break;
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
                 default: throw new globalThis.Error("unknown map entry field for bitnode_console.journals.v1.JournalsEntry.extra_fields");
-========
-                default: throw new globalThis.Error("unknown map entry field for bitnode_console.journald.v1.JournalsEntry.extra_fields");
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
             }
         }
         map[key ?? ""] = val ?? "";
@@ -515,11 +425,7 @@ class JournalsEntry$Type extends MessageType<JournalsEntry> {
         /* int64 timestamp_us = 2; */
         if (message.timestampUs !== "0")
             writer.tag(2, WireType.Varint).int64(message.timestampUs);
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
         /* bitnode_console.journals.v1.Priority priority = 3; */
-========
-        /* bitnode_console.journald.v1.Priority priority = 3; */
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
         if (message.priority !== 0)
             writer.tag(3, WireType.Varint).int32(message.priority);
         /* string unit = 4; */
@@ -538,21 +444,13 @@ class JournalsEntry$Type extends MessageType<JournalsEntry> {
     }
 }
 /**
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
  * @generated MessageType for protobuf message bitnode_console.journals.v1.JournalsEntry
-========
- * @generated MessageType for protobuf message bitnode_console.journald.v1.JournalsEntry
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
  */
 export const JournalsEntry = new JournalsEntry$Type();
 /**
  * @generated ServiceType for protobuf service bitnode_console.journals.v1.JournalsService
  */
-<<<<<<<< HEAD:frontend/src/lib/generated_protos/bitnode_console/journals/journals.ts
 export const JournalsService = new ServiceType("bitnode_console.journals.v1.JournalsService", [
-========
-export const JournaldService = new ServiceType("bitnode_console.journald.v1.JournaldService", [
->>>>>>>> b886809227134060f10e741c619b99bf549093e4:frontend/src/lib/generated_protos/bitnode_console/journald/journald.ts
     { name: "GetJournals", options: {}, I: GetJournalsRequest, O: GetJournalsResponse },
     { name: "StreamJournals", serverStreaming: true, options: {}, I: StreamJournalsRequest, O: JournalsEntry }
 ]);
