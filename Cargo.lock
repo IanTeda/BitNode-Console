@@ -1259,7 +1259,11 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "lib_journals"
+=======
+name = "lib_journald"
+>>>>>>> b886809227134060f10e741c619b99bf549093e4
 version = "0.1.0"
 dependencies = [
  "async-stream",
@@ -1278,7 +1282,11 @@ dependencies = [
  "ipnet",
  "lib_auth",
  "lib_core",
+<<<<<<< HEAD
  "lib_journals",
+=======
+ "lib_journald",
+>>>>>>> b886809227134060f10e741c619b99bf549093e4
  "lib_settings",
  "lib_tracing",
  "prost",
