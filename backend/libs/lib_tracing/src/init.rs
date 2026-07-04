@@ -36,7 +36,16 @@ pub fn init(telemetry_level: Option<crate::Levels>) -> crate::Result<()> {
         crate::Error::Generic(format!("Failed to set global default subscriber: {err}"))
     })?;
 
-    tracing::info!("Tracing initialised at level: {}", default_level_filter(telemetry_level));
+    match std::env::var("RUST_LOG") {
+        Ok(rust_log) => tracing::info!(
+            "Tracing initialised; RUST_LOG={rust_log:?} overrides configured level ({})",
+            default_level_filter(telemetry_level),
+        ),
+        Err(_) => tracing::info!(
+            "Tracing initialised at level: {}",
+            default_level_filter(telemetry_level),
+        ),
+    }
 
     Ok(())
 }
