@@ -15,6 +15,18 @@ const DEFAULT_PASSWORD_HASH: &str = "";
 /// Default token secret — empty; server will fail to sign tokens until configured.
 const DEFAULT_TOKEN_SECRET: &str = "";
 
+fn default_token_secret() -> secrecy::SecretString {
+    secrecy::SecretString::from(DEFAULT_TOKEN_SECRET)
+}
+
+fn serialize_secret_string<S>(secret: &secrecy::SecretString, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use secrecy::ExposeSecret;
+    serializer.serialize_str(secret.expose_secret())
+}
+
 /// Default allowed IPs — localhost only.
 const DEFAULT_ALLOWED_IPS: &[&str] = &["127.0.0.1/32"];
 
@@ -26,7 +38,7 @@ fn default_allowed_ips() -> Vec<ipnet::IpNet> {
 }
 
 /// RPC server configuration.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct RpcSettings {
     /// Server port.
     pub port: u16,
@@ -52,7 +64,8 @@ pub struct RpcSettings {
     ///
     /// Must be a strong random value in production. The default is empty and
     /// will cause token signing to fail until a real value is configured.
-    pub token_secret: String,
+    #[serde(serialize_with = "serialize_secret_string")]
+    pub token_secret: secrecy::SecretString,
 
     /// List of IP addresses and CIDR subnets permitted to connect to the RPC server.
     ///
@@ -63,13 +76,26 @@ pub struct RpcSettings {
     pub allowed_ips: Vec<ipnet::IpNet>,
 }
 
+impl PartialEq for RpcSettings {
+    fn eq(&self, other: &Self) -> bool {
+        use secrecy::ExposeSecret;
+        self.port == other.port
+            && self.host == other.host
+            && self.password_hash == other.password_hash
+            && self.token_secret.expose_secret() == other.token_secret.expose_secret()
+            && self.allowed_ips == other.allowed_ips
+    }
+}
+
+impl Eq for RpcSettings {}
+
 impl Default for RpcSettings {
     fn default() -> Self {
         Self {
             port: DEFAULT_PORT,
             host: DEFAULT_HOST.to_string(),
             password_hash: DEFAULT_PASSWORD_HASH.to_string(),
-            token_secret: DEFAULT_TOKEN_SECRET.to_string(),
+            token_secret: default_token_secret(),
             allowed_ips: default_allowed_ips(),
         }
     }
@@ -96,7 +122,7 @@ impl RpcSettings {
 
     /// Returns the token signing secret.
     #[must_use]
-    pub fn token_secret(&self) -> &str {
+    pub fn token_secret(&self) -> &secrecy::SecretString {
         &self.token_secret
     }
 
@@ -138,7 +164,7 @@ mod tests {
             port: 8080,
             host: "127.0.0.1".to_string(),
             password_hash: SAMPLE_HASH.to_string(),
-            token_secret: "supersecret".to_string(),
+            token_secret: secrecy::SecretString::from("supersecret"),
             ..RpcSettings::default()
         }
     }
@@ -151,7 +177,7 @@ mod tests {
             port: 8080,
             host: "localhost".to_string(),
             password_hash: String::new(),
-            token_secret: String::new(),
+            token_secret: secrecy::SecretString::from(""),
             ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "localhost:8080");
@@ -169,7 +195,7 @@ mod tests {
             port: 0,
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
-            token_secret: String::new(),
+            token_secret: secrecy::SecretString::from(""),
             ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "127.0.0.1:0");
@@ -181,7 +207,7 @@ mod tests {
             port: u16::MAX,
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
-            token_secret: String::new(),
+            token_secret: secrecy::SecretString::from(""),
             ..RpcSettings::default()
         };
         assert_eq!(settings.address(), format!("127.0.0.1:{}", u16::MAX));
@@ -193,7 +219,7 @@ mod tests {
             port: 8080,
             host: "::1".to_string(),
             password_hash: String::new(),
-            token_secret: String::new(),
+            token_secret: secrecy::SecretString::from(""),
             ..RpcSettings::default()
         };
         assert_eq!(settings.address(), "::1:8080");
@@ -207,7 +233,7 @@ mod tests {
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
-        assert_eq!(s.token_secret, DEFAULT_TOKEN_SECRET);
+        assert_eq!(secrecy::ExposeSecret::expose_secret(&s.token_secret), DEFAULT_TOKEN_SECRET);
     }
 
     #[test]
@@ -216,7 +242,7 @@ mod tests {
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
-        assert_eq!(s.token_secret, DEFAULT_TOKEN_SECRET);
+        assert_eq!(secrecy::ExposeSecret::expose_secret(&s.token_secret), DEFAULT_TOKEN_SECRET);
     }
 
     #[test]
@@ -268,21 +294,24 @@ mod tests {
 
     #[test]
     fn default_token_secret_is_empty() {
-        assert_eq!(RpcSettings::default().token_secret(), DEFAULT_TOKEN_SECRET);
+        use secrecy::ExposeSecret;
+        assert_eq!(RpcSettings::default().token_secret().expose_secret(), DEFAULT_TOKEN_SECRET);
     }
 
     #[test]
     fn token_secret_accessor_returns_field_value() {
-        assert_eq!(settings().token_secret(), "supersecret");
+        use secrecy::ExposeSecret;
+        assert_eq!(settings().token_secret().expose_secret(), "supersecret");
     }
 
     #[test]
     fn token_secret_stores_arbitrary_value() {
         let s = RpcSettings {
-            token_secret: "my-jwt-signing-key".to_string(),
+            token_secret: secrecy::SecretString::from("my-jwt-signing-key"),
             ..RpcSettings::default()
         };
-        assert_eq!(s.token_secret(), "my-jwt-signing-key");
+        use secrecy::ExposeSecret;
+        assert_eq!(s.token_secret().expose_secret(), "my-jwt-signing-key");
     }
 
     // --- serialisation ---

@@ -20,7 +20,7 @@ fn rpc_settings(password_hash: &str) -> lib_settings::Settings {
             host: "127.0.0.1".to_string(),
             port: 0,
             password_hash: password_hash.to_string(),
-            token_secret: "test_secret".to_string(),
+            token_secret: secrecy::SecretString::from("test_secret"),
             ..Default::default()
         },
         ..Default::default()

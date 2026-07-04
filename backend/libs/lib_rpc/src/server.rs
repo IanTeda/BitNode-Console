@@ -95,7 +95,7 @@ impl Server {
         let allowed_ips_interceptor = tonic::service::interceptor(allowed_ips_interceptor);
 
         let access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
-            self.settings.rpc.token_secret().into(),
+            self.settings.rpc.token_secret().clone(),
         );
 
         // --- CORS Layer
@@ -122,7 +122,7 @@ impl Server {
         // Build a new authentication service (no access-token required to log in).
         let password_hash = lib_auth::PasswordHash::try_from(self.settings.rpc.password_hash())
             .map_err(|e| crate::Error::Config(e.to_string()))?;
-        let token_secret = SecretString::from(self.settings.rpc.token_secret());
+        let token_secret = self.settings.rpc.token_secret().clone();
         let auth_service = AuthenticationServiceServer::new(AuthenticationServiceImpl::new(
             password_hash,
             token_secret,
@@ -140,7 +140,7 @@ impl Server {
         // --- Journals RPC Service
         // Build a new journals service, protected by a separate access-token interceptor.
         let journals_access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
-            self.settings.rpc.token_secret().into(),
+            self.settings.rpc.token_secret().clone(),
         );
         let journals_service = JournalsServiceServer::with_interceptor(
             JournalsServiceImpl::new(self.settings.bitcoind.unit_name()),
@@ -204,7 +204,7 @@ mod tests {
                 host: "127.0.0.1".to_string(),
                 port: 0,
                 password_hash: test_hash().as_ref().to_string(),
-                token_secret: "test_secret".to_string(),
+                token_secret: secrecy::SecretString::from("test_secret"),
                 ..Default::default()
             },
             ..Default::default()

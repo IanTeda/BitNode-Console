@@ -41,7 +41,7 @@ pub fn test_settings() -> lib_settings::Settings {
             host: "127.0.0.1".to_string(),
             port: 0,
             password_hash: TEST_PASSWORD_HASH.to_string(),
-            token_secret: TEST_TOKEN_SECRET.to_string(),
+            token_secret: secrecy::SecretString::from(TEST_TOKEN_SECRET),
             ..Default::default()
         },
         ..Default::default()
