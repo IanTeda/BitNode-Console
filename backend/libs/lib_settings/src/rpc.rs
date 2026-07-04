@@ -19,7 +19,10 @@ fn default_token_secret() -> secrecy::SecretString {
     secrecy::SecretString::from(DEFAULT_TOKEN_SECRET)
 }
 
-fn serialize_secret_string<S>(secret: &secrecy::SecretString, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_secret_string<S>(
+    secret: &secrecy::SecretString,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -65,7 +68,7 @@ pub struct RpcSettings {
     /// Must be a strong random value in production. The default is empty and
     /// will cause token signing to fail until a real value is configured.
     #[serde(serialize_with = "serialize_secret_string")]
-    pub token_secret: secrecy::SecretString,
+    pub token_secret: secrecy::SecretString, // TODO: Move to a domain type
 
     /// List of IP addresses and CIDR subnets permitted to connect to the RPC server.
     ///
@@ -233,7 +236,10 @@ mod tests {
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
-        assert_eq!(secrecy::ExposeSecret::expose_secret(&s.token_secret), DEFAULT_TOKEN_SECRET);
+        assert_eq!(
+            secrecy::ExposeSecret::expose_secret(&s.token_secret),
+            DEFAULT_TOKEN_SECRET
+        );
     }
 
     #[test]
@@ -242,7 +248,10 @@ mod tests {
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
-        assert_eq!(secrecy::ExposeSecret::expose_secret(&s.token_secret), DEFAULT_TOKEN_SECRET);
+        assert_eq!(
+            secrecy::ExposeSecret::expose_secret(&s.token_secret),
+            DEFAULT_TOKEN_SECRET
+        );
     }
 
     #[test]
@@ -295,7 +304,10 @@ mod tests {
     #[test]
     fn default_token_secret_is_empty() {
         use secrecy::ExposeSecret;
-        assert_eq!(RpcSettings::default().token_secret().expose_secret(), DEFAULT_TOKEN_SECRET);
+        assert_eq!(
+            RpcSettings::default().token_secret().expose_secret(),
+            DEFAULT_TOKEN_SECRET
+        );
     }
 
     #[test]
@@ -375,7 +387,8 @@ mod tests {
 
     #[test]
     fn deserialize_without_allowed_ips_uses_default() {
-        let json = r#"{"host": "127.0.0.1", "port": 50051, "password_hash": "", "token_secret": "s"}"#;
+        let json =
+            r#"{"host": "127.0.0.1", "port": 50051, "password_hash": "", "token_secret": "s"}"#;
         let s: RpcSettings = serde_json::from_str(json).expect("deserialise without allowed_ips");
         assert_eq!(s.allowed_ips(), RpcSettings::default().allowed_ips());
     }

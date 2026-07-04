@@ -36,6 +36,8 @@ pub fn init(telemetry_level: Option<crate::Levels>) -> crate::Result<()> {
         crate::Error::Generic(format!("Failed to set global default subscriber: {err}"))
     })?;
 
+    tracing::info!("Tracing initialised at level: {}", default_level_filter(telemetry_level));
+
     Ok(())
 }
 

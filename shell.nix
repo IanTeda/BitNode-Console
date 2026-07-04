@@ -75,7 +75,6 @@ pkgs.mkShell {
     export BITNODE_ENV="development"
     export CARGO_TERM_COLOR="always"
     export RUST_BACKTRACE="1"
-    export RUST_LOG="info"
     export RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}"
     export PROTOC="${pkgs.protobuf}/bin/protoc"
   '';
