@@ -39,17 +39,21 @@ enum Priority {
   PRIORITY_DEBUG       = 8;
 }
 
-// GetLogsRequest specifies the page of log entries to fetch.
+// GetJournalsRequest specifies the time range, priority filter, and page for
+// log entries to fetch.
 message GetJournalsRequest {
 
-  // Timestamp to start fetching from.
-  int64 timestamp_from = 1;
+  // Inclusive lower bound; microseconds since the Unix epoch.
+  // Omit to start from the beginning of the journal.
+  optional int64 timestamp_from_us = 1;
 
-  // Timestamp to end fetching at.
-  int64 timestamp_to = 2;
+  // Exclusive upper bound; microseconds since the Unix epoch.
+  // Omit to read up to the most recent entry.
+  optional int64 timestamp_to_us = 2;
 
-  // Minimum severity level to return; defaults to INFO when unspecified.
-  Priority priority = 3;
+  // Minimum severity level to return.
+  // Omit (or PRIORITY_UNSPECIFIED) to default to PRIORITY_INFO on the server.
+  optional Priority priority = 3;
 
   // Pagination parameters: page size, page token, and direction.
   bitnode_console.common.v1.PageRequest pagination = 4;

@@ -34,12 +34,6 @@ message PageResponse {
   // Pass as page_token in the next request to fetch the page before this one
   // (chronologically older for logs). Absent when has_prev_page is false.
   optional string page_token_prev = 2;
-
-  // True when at least one more page exists in the DIRECTION_FORWARD direction.
-  bool has_page_next = 3;
-
-  // True when at least one more page exists in the DIRECTION_BACKWARD direction.
-  bool has_page_prev = 4;
 }
 
 // Direction controls which side of the pagination cursor to read from.
