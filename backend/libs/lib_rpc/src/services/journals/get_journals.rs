@@ -22,5 +22,7 @@ pub(super) async fn handle(
     //--- Convert the entries into a `GetJournalsResponse` and return it
     let response: GetJournalsResponse = entries.into();
 
+    // tracing::debug!("GetJournals response: {:?}", response);
+
     Ok(tonic::Response::new(response))
 }
