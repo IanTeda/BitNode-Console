@@ -21,29 +21,33 @@ import { MessageType } from "@protobuf-ts/runtime";
 import { PageResponse } from "../common/pagination";
 import { PageRequest } from "../common/pagination";
 /**
- * GetLogsRequest specifies the page of log entries to fetch.
+ * GetJournalsRequest specifies the time range, priority filter, and page for
+ * log entries to fetch.
  *
  * @generated from protobuf message bitnode_console.journals.v1.GetJournalsRequest
  */
 export interface GetJournalsRequest {
     /**
-     * Timestamp to start fetching from.
+     * Inclusive lower bound; microseconds since the Unix epoch.
+     * Omit to start from the beginning of the journal.
      *
-     * @generated from protobuf field: int64 timestamp_from = 1
+     * @generated from protobuf field: optional int64 timestamp_from_us = 1
      */
-    timestampFrom: string;
+    timestampFromUs?: string;
     /**
-     * Timestamp to end fetching at.
+     * Exclusive upper bound; microseconds since the Unix epoch.
+     * Omit to read up to the most recent entry.
      *
-     * @generated from protobuf field: int64 timestamp_to = 2
+     * @generated from protobuf field: optional int64 timestamp_to_us = 2
      */
-    timestampTo: string;
+    timestampToUs?: string;
     /**
-     * Minimum severity level to return; defaults to INFO when unspecified.
+     * Minimum severity level to return.
+     * Omit (or PRIORITY_UNSPECIFIED) to default to PRIORITY_INFO on the server.
      *
-     * @generated from protobuf field: bitnode_console.journals.v1.Priority priority = 3
+     * @generated from protobuf field: optional bitnode_console.journals.v1.Priority priority = 3
      */
-    priority: Priority;
+    priority?: Priority;
     /**
      * Pagination parameters: page size, page token, and direction.
      *
@@ -178,17 +182,14 @@ export enum Priority {
 class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
     constructor() {
         super("bitnode_console.journals.v1.GetJournalsRequest", [
-            { no: 1, name: "timestamp_from", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 2, name: "timestamp_to", kind: "scalar", T: 3 /*ScalarType.INT64*/ },
-            { no: 3, name: "priority", kind: "enum", T: () => ["bitnode_console.journals.v1.Priority", Priority, "PRIORITY_"] },
+            { no: 1, name: "timestamp_from_us", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/ },
+            { no: 2, name: "timestamp_to_us", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/ },
+            { no: 3, name: "priority", kind: "enum", opt: true, T: () => ["bitnode_console.journals.v1.Priority", Priority, "PRIORITY_"] },
             { no: 4, name: "pagination", kind: "message", T: () => PageRequest }
         ]);
     }
     create(value?: PartialMessage<GetJournalsRequest>): GetJournalsRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.timestampFrom = "0";
-        message.timestampTo = "0";
-        message.priority = 0;
         if (value !== undefined)
             reflectionMergePartial<GetJournalsRequest>(this, message, value);
         return message;
@@ -198,13 +199,13 @@ class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* int64 timestamp_from */ 1:
-                    message.timestampFrom = reader.int64().toString();
+                case /* optional int64 timestamp_from_us */ 1:
+                    message.timestampFromUs = reader.int64().toString();
                     break;
-                case /* int64 timestamp_to */ 2:
-                    message.timestampTo = reader.int64().toString();
+                case /* optional int64 timestamp_to_us */ 2:
+                    message.timestampToUs = reader.int64().toString();
                     break;
-                case /* bitnode_console.journals.v1.Priority priority */ 3:
+                case /* optional bitnode_console.journals.v1.Priority priority */ 3:
                     message.priority = reader.int32();
                     break;
                 case /* bitnode_console.common.v1.PageRequest pagination */ 4:
@@ -222,14 +223,14 @@ class GetJournalsRequest$Type extends MessageType<GetJournalsRequest> {
         return message;
     }
     internalBinaryWrite(message: GetJournalsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* int64 timestamp_from = 1; */
-        if (message.timestampFrom !== "0")
-            writer.tag(1, WireType.Varint).int64(message.timestampFrom);
-        /* int64 timestamp_to = 2; */
-        if (message.timestampTo !== "0")
-            writer.tag(2, WireType.Varint).int64(message.timestampTo);
-        /* bitnode_console.journals.v1.Priority priority = 3; */
-        if (message.priority !== 0)
+        /* optional int64 timestamp_from_us = 1; */
+        if (message.timestampFromUs !== undefined)
+            writer.tag(1, WireType.Varint).int64(message.timestampFromUs);
+        /* optional int64 timestamp_to_us = 2; */
+        if (message.timestampToUs !== undefined)
+            writer.tag(2, WireType.Varint).int64(message.timestampToUs);
+        /* optional bitnode_console.journals.v1.Priority priority = 3; */
+        if (message.priority !== undefined)
             writer.tag(3, WireType.Varint).int32(message.priority);
         /* bitnode_console.common.v1.PageRequest pagination = 4; */
         if (message.pagination)

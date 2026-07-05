@@ -10,8 +10,8 @@ const log = logger.getSubLogger({ name: "Journals Query" });
 export const JOURNALS_QUERY_KEY = ["journals"] as const;
 
 export interface JournalsQueryParams {
-  timestampFrom?: string;
-  timestampTo?: string;
+  timestampFromUs?: string;
+  timestampToUs?: string;
   priority?: Priority;
   pageSize?: number;
   pageToken?: string;
@@ -20,8 +20,8 @@ export interface JournalsQueryParams {
 async function getJournals(params: JournalsQueryParams): Promise<GetJournalsResponse> {
   log.debug("Fetching journals", params);
   const { response } = await journalsClient().getJournals({
-    timestampFrom: params.timestampFrom ?? "0",
-    timestampTo: params.timestampTo ?? "0",
+    timestampFromUs: params.timestampFromUs,
+    timestampToUs: params.timestampToUs,
     priority: params.priority ?? Priority.UNSPECIFIED,
     pagination: {
       pageSize: params.pageSize ?? 100,

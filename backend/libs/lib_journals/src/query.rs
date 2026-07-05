@@ -1,7 +1,7 @@
 //! Query parameters for fetching journal entries.
 
 use crate::domains::JournalPriority;
-use lib_core::domains::PaginationRequest;
+use lib_core::domains::pagination::PaginationRequest;
 
 /// Default unit name to use when no specific unit name is provided.
 const DEFAULT_UNIT_NAME: &str = "";
@@ -10,6 +10,7 @@ const DEFAULT_UNIT_NAME: &str = "";
 const DEFAULT_PRIORITY: JournalPriority = JournalPriority::Info;
 
 /// Parameters controlling which journal entries to return.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JournalQuery<'a> {
     /// Systemd unit name to filter on, e.g. `"bitcoind.service"`.
     ///

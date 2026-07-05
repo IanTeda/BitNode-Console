@@ -10,15 +10,15 @@ pub(super) async fn handle(
     password_hash: &lib_auth::PasswordHash,
     token_secret: &SecretString,
     request: tonic::Request<LoginRequest>,
-) -> std::result::Result<tonic::Response<LoginResponse>, tonic::Status> {
+) -> crate::Result<tonic::Response<LoginResponse>> {
     tracing::debug!("Login request received from {:?}", request.remote_addr());
 
     let login_request = request.into_inner();
 
     if login_request.password.is_empty() {
         tracing::warn!("Login rejected: password field is empty");
-        return Err(tonic::Status::invalid_argument(
-            "password must not be empty",
+        return Err(crate::Error::InvalidArgument(
+            "password must not be empty".to_string(),
         ));
     }
 
@@ -26,22 +26,22 @@ pub(super) async fn handle(
 
     let verified = password_hash.verify_password(&password).map_err(|e| {
         tracing::error!("Password hash error: {e}");
-        tonic::Status::internal("authentication error")
+        crate::Error::Generic("authentication error".to_string())
     })?;
 
     if !verified {
         tracing::warn!("Login rejected: invalid password");
-        return Err(tonic::Status::unauthenticated("invalid password"));
+        return Err(crate::Error::Authentication("invalid password".to_string()));
     }
 
     let access_token = lib_auth::AccessToken::new(token_secret).map_err(|e| {
         tracing::error!("Failed to generate access token: {e}");
-        tonic::Status::internal("authentication error")
+        crate::Error::Generic("authentication error".to_string())
     })?;
 
     let refresh_token = lib_auth::RefreshToken::new(token_secret).map_err(|e| {
         tracing::error!("Failed to generate refresh token: {e}");
-        tonic::Status::internal("authentication error")
+        crate::Error::Generic("authentication error".to_string())
     })?;
 
     tracing::info!("Login successful; tokens issued");
@@ -86,13 +86,13 @@ mod tests {
 
     #[tokio::test]
     async fn login_rejects_empty_password() {
-        let status = handle(test_hash(), &secret(), login_request("")).await.unwrap_err();
+        let status = tonic::Status::from(handle(test_hash(), &secret(), login_request("")).await.unwrap_err());
         assert_eq!(status.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
     async fn login_empty_password_error_message() {
-        let status = handle(test_hash(), &secret(), login_request("")).await.unwrap_err();
+        let status = tonic::Status::from(handle(test_hash(), &secret(), login_request("")).await.unwrap_err());
         assert_eq!(status.message(), "password must not be empty");
     }
 
@@ -100,27 +100,33 @@ mod tests {
 
     #[tokio::test]
     async fn login_rejects_wrong_password() {
-        let status =
-            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err(),
+        );
         assert_eq!(status.code(), tonic::Code::Unauthenticated);
     }
 
     #[tokio::test]
     async fn login_wrong_password_error_message() {
-        let status =
-            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request(WRONG_PASSWORD)).await.unwrap_err(),
+        );
         assert_eq!(status.message(), "invalid password");
     }
 
     #[tokio::test]
     async fn login_rejects_whitespace_only_password() {
-        let status = handle(test_hash(), &secret(), login_request("   ")).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request("   ")).await.unwrap_err(),
+        );
         assert_eq!(status.code(), tonic::Code::Unauthenticated);
     }
 
     #[tokio::test]
     async fn login_rejects_partial_password() {
-        let status = handle(test_hash(), &secret(), login_request("test_pass")).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request("test_pass")).await.unwrap_err(),
+        );
         assert_eq!(status.code(), tonic::Code::Unauthenticated);
     }
 

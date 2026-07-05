@@ -32,9 +32,20 @@ pub enum Error {
     #[error("Permission denied: {0}")]
     PermissionDenied(String),
 
+    /// A request argument was invalid or missing.
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+
+    /// The requested operation has not been implemented yet.
+    #[error("Not implemented: {0}")]
+    Unimplemented(String),
+
     /// Catch-all for errors that do not fit a more specific variant.
     #[error("RPC error: {0}")]
     Generic(String),
+
+    #[error("Journal error: {0}")]
+    Journal(#[from] lib_journals::Error),
 }
 
 impl From<Error> for tonic::Status {
@@ -42,6 +53,8 @@ impl From<Error> for tonic::Status {
         match e {
             Error::Authentication(msg) => tonic::Status::unauthenticated(msg),
             Error::PermissionDenied(msg) => tonic::Status::permission_denied(msg),
+            Error::InvalidArgument(msg) => tonic::Status::invalid_argument(msg),
+            Error::Unimplemented(msg) => tonic::Status::unimplemented(msg),
             other => tonic::Status::internal(other.to_string()),
         }
     }

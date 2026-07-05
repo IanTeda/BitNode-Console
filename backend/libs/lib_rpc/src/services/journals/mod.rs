@@ -1,6 +1,8 @@
 //! gRPC Journals service — delegates each RPC to its own handler module.
 
 pub(crate) mod get_journals;
+mod journal_page_from;
+mod journal_query_from;
 pub(crate) mod service_impl;
 pub(crate) mod stream_journals;
 

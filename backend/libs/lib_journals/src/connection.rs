@@ -15,16 +15,15 @@ pub struct JournalConnection {
 }
 
 impl JournalConnection {
-    // /// Open the system journal.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns [`Error::Io`] if the journal cannot be opened.
-    // pub fn open(unit: &str) -> Result<Self> {
-    //     let mut journal = OpenOptions::default().open()?;
-    //     journal.match_add("_SYSTEMD_UNIT", unit)?;
-    //     Ok(Self { journal })
-    // }
+    /// Open the system journal.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Io`] if the journal cannot be opened.
+    pub fn open() -> Result<Self> {
+        let journal = OpenOptions::default().open()?;
+        Ok(Self { journal })
+    }
 
     /// Open only the current user's journal slice.
     ///
@@ -36,13 +35,20 @@ impl JournalConnection {
         Ok(Self { journal })
     }
 
-    /// Add a `_SYSTEMD_UNIT` match filter so only entries for `unit` are returned.
+    /// Add match filters so only entries for `unit` are returned.
+    ///
+    /// Matches `_SYSTEMD_UNIT=<unit>` OR `SYSLOG_IDENTIFIER=<unit-without-.service>`,
+    /// covering both real systemd units and the `systemd-cat -t` dev workflow.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Io`] if the match cannot be applied.
+    /// Returns [`Error::Io`] if any match cannot be applied.
     pub fn match_unit(&mut self, unit: &str) -> Result<()> {
         self.journal.match_add("_SYSTEMD_UNIT", unit)?;
+        if let Some(syslog_id) = unit.strip_suffix(".service") {
+            self.journal.match_or()?;
+            self.journal.match_add("SYSLOG_IDENTIFIER", syslog_id)?;
+        }
         Ok(())
     }
 }

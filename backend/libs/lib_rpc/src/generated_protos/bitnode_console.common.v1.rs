@@ -28,12 +28,6 @@ pub struct PageResponse {
     /// (chronologically older for logs). Absent when has_prev_page is false.
     #[prost(string, optional, tag = "2")]
     pub page_token_prev: ::core::option::Option<::prost::alloc::string::String>,
-    /// True when at least one more page exists in the DIRECTION_FORWARD direction.
-    #[prost(bool, tag = "3")]
-    pub has_page_next: bool,
-    /// True when at least one more page exists in the DIRECTION_BACKWARD direction.
-    #[prost(bool, tag = "4")]
-    pub has_page_prev: bool,
 }
 /// Direction controls which side of the pagination cursor to read from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

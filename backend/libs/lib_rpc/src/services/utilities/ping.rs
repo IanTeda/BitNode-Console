@@ -6,7 +6,7 @@ use super::{PingRequest, PingResponse};
 #[tracing::instrument(skip(request))]
 pub(super) async fn handle(
     request: tonic::Request<PingRequest>,
-) -> std::result::Result<tonic::Response<PingResponse>, tonic::Status> {
+) -> crate::Result<tonic::Response<PingResponse>> {
     tracing::debug!("Ping request from {:?}", request.remote_addr());
 
     let reply = PingResponse {

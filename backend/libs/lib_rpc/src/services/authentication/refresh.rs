@@ -14,32 +14,32 @@ use crate::services::authentication::{RefreshRequest, RefreshResponse};
 pub(super) async fn handle(
     token_secret: &SecretString,
     request: tonic::Request<RefreshRequest>,
-) -> std::result::Result<tonic::Response<RefreshResponse>, tonic::Status> {
+) -> crate::Result<tonic::Response<RefreshResponse>> {
     tracing::debug!("Refresh request received from {:?}", request.remote_addr());
 
     let refresh_request = request.into_inner();
 
     if refresh_request.refresh_token.is_empty() {
         tracing::warn!("Refresh rejected: token field is empty");
-        return Err(tonic::Status::invalid_argument(
-            "refresh token must not be empty",
+        return Err(crate::Error::InvalidArgument(
+            "refresh token must not be empty".to_string(),
         ));
     }
 
     let refresh_token = lib_auth::RefreshToken::from(refresh_request.refresh_token);
     refresh_token.validate(token_secret).map_err(|e| {
         tracing::warn!("Refresh token validation failed: {e}");
-        tonic::Status::unauthenticated("invalid or expired refresh token")
+        crate::Error::Authentication("invalid or expired refresh token".to_string())
     })?;
 
     let access_token = lib_auth::AccessToken::new(token_secret).map_err(|e| {
         tracing::error!("Failed to generate access token: {e}");
-        tonic::Status::internal("authentication error")
+        crate::Error::Generic("authentication error".to_string())
     })?;
 
     let new_refresh_token = lib_auth::RefreshToken::new(token_secret).map_err(|e| {
         tracing::error!("Failed to generate refresh token: {e}");
-        tonic::Status::internal("authentication error")
+        crate::Error::Generic("authentication error".to_string())
     })?;
 
     tracing::info!("Token refresh successful; new token pair issued");
@@ -78,13 +78,13 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_rejects_empty_token() {
-        let status = handle(&secret(), refresh_request("")).await.unwrap_err();
+        let status = tonic::Status::from(handle(&secret(), refresh_request("")).await.unwrap_err());
         assert_eq!(status.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
     async fn refresh_empty_token_error_message() {
-        let status = handle(&secret(), refresh_request("")).await.unwrap_err();
+        let status = tonic::Status::from(handle(&secret(), refresh_request("")).await.unwrap_err());
         assert_eq!(status.message(), "refresh token must not be empty");
     }
 
@@ -92,13 +92,17 @@ mod tests {
 
     #[tokio::test]
     async fn refresh_rejects_invalid_token() {
-        let status = handle(&secret(), refresh_request("not.a.real.jwt")).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(&secret(), refresh_request("not.a.real.jwt")).await.unwrap_err(),
+        );
         assert_eq!(status.code(), tonic::Code::Unauthenticated);
     }
 
     #[tokio::test]
     async fn refresh_invalid_token_error_message() {
-        let status = handle(&secret(), refresh_request("not.a.real.jwt")).await.unwrap_err();
+        let status = tonic::Status::from(
+            handle(&secret(), refresh_request("not.a.real.jwt")).await.unwrap_err(),
+        );
         assert_eq!(status.message(), "invalid or expired refresh token");
     }
 

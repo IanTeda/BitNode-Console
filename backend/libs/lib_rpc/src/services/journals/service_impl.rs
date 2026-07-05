@@ -8,13 +8,15 @@ use crate::services::journals::{
 /// Concrete implementation of the [`JournalsService`] gRPC trait.
 #[derive(Debug)]
 pub struct JournalsServiceImpl {
-    unit: String,
+    unit_name: String,
 }
 
 impl JournalsServiceImpl {
     /// Create a new service instance scoped to the given systemd unit.
-    pub fn new(unit: impl Into<String>) -> Self {
-        Self { unit: unit.into() }
+    pub fn new(unit_name: impl Into<String>) -> Self {
+        Self {
+            unit_name: unit_name.into(),
+        }
     }
 }
 
@@ -26,13 +28,17 @@ impl JournalsService for JournalsServiceImpl {
         &self,
         request: tonic::Request<GetJournalsRequest>,
     ) -> std::result::Result<tonic::Response<GetJournalsResponse>, tonic::Status> {
-        super::get_journals::handle(request).await
+        super::get_journals::handle(&self.unit_name, request)
+            .await
+            .map_err(Into::into)
     }
 
     async fn stream_journals(
         &self,
         request: tonic::Request<StreamJournalsRequest>,
     ) -> std::result::Result<tonic::Response<Self::StreamJournalsStream>, tonic::Status> {
-        super::stream_journals::handle(request).await
+        super::stream_journals::handle(request)
+            .await
+            .map_err(Into::into)
     }
 }

@@ -68,18 +68,6 @@ export interface PageResponse {
      * @generated from protobuf field: optional string page_token_prev = 2
      */
     pageTokenPrev?: string;
-    /**
-     * True when at least one more page exists in the DIRECTION_FORWARD direction.
-     *
-     * @generated from protobuf field: bool has_page_next = 3
-     */
-    hasPageNext: boolean;
-    /**
-     * True when at least one more page exists in the DIRECTION_BACKWARD direction.
-     *
-     * @generated from protobuf field: bool has_page_prev = 4
-     */
-    hasPagePrev: boolean;
 }
 /**
  * Direction controls which side of the pagination cursor to read from.
@@ -173,15 +161,11 @@ class PageResponse$Type extends MessageType<PageResponse> {
     constructor() {
         super("bitnode_console.common.v1.PageResponse", [
             { no: 1, name: "page_token_next", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "page_token_prev", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "has_page_next", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 4, name: "has_page_prev", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 2, name: "page_token_prev", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<PageResponse>): PageResponse {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.hasPageNext = false;
-        message.hasPagePrev = false;
         if (value !== undefined)
             reflectionMergePartial<PageResponse>(this, message, value);
         return message;
@@ -196,12 +180,6 @@ class PageResponse$Type extends MessageType<PageResponse> {
                     break;
                 case /* optional string page_token_prev */ 2:
                     message.pageTokenPrev = reader.string();
-                    break;
-                case /* bool has_page_next */ 3:
-                    message.hasPageNext = reader.bool();
-                    break;
-                case /* bool has_page_prev */ 4:
-                    message.hasPagePrev = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -221,12 +199,6 @@ class PageResponse$Type extends MessageType<PageResponse> {
         /* optional string page_token_prev = 2; */
         if (message.pageTokenPrev !== undefined)
             writer.tag(2, WireType.LengthDelimited).string(message.pageTokenPrev);
-        /* bool has_page_next = 3; */
-        if (message.hasPageNext !== false)
-            writer.tag(3, WireType.Varint).bool(message.hasPageNext);
-        /* bool has_page_prev = 4; */
-        if (message.hasPagePrev !== false)
-            writer.tag(4, WireType.Varint).bool(message.hasPagePrev);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

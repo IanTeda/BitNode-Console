@@ -1,3 +1,4 @@
+use lib_core::domains::pagination::PaginationResponse;
 use systemd::journal::JournalSeek;
 
 use crate::{JournalConnection, JournalEntry, JournalPage, JournalQuery, Result};
@@ -13,6 +14,11 @@ impl<'a> JournalQuery<'a> {
     ///
     /// Returns [`crate::Error::Io`] if any underlying journal operation fails.
     pub fn seek(&self, conn: &mut JournalConnection) -> Result<JournalPage> {
+        //--- Apply unit filter before reading any entries.
+        if !self.unit_name.is_empty() {
+            conn.match_unit(self.unit_name)?;
+        }
+
         //--- Seek to the cursor position or head, then read forward to collect entries.
         match self.pagination.page_token.as_deref() {
             Some(cursor) => {
@@ -26,13 +32,9 @@ impl<'a> JournalQuery<'a> {
             None => conn.journal.seek(JournalSeek::Head)?,
         }
 
-        // Convert the limit to usize
         let limit = usize::try_from(self.pagination.page_size)?;
-
-        // Create a vector to hold the entries
         let mut entries = Vec::new();
 
-        // Read entries until the limit is reached or the end of the journal is reached.
         while entries.len() < limit {
             let Some(record) = conn.journal.next_entry()? else {
                 break;
@@ -44,12 +46,14 @@ impl<'a> JournalQuery<'a> {
             }
         }
 
-        // Get the next cursor position, if any (for use in pagination).
-        let next_cursor = entries.last().and_then(|e| e.cursor.clone());
+        let next_page_token = entries.last().and_then(|e| e.cursor.clone());
 
-        Ok(crate::JournalPage {
+        Ok(JournalPage {
             entries,
-            next_cursor,
+            pagination: PaginationResponse {
+                next_page_token,
+                prev_page_token: None,
+            },
         })
     }
 }

@@ -29,20 +29,24 @@ impl AuthenticationService for AuthenticationServiceImpl {
         &self,
         request: tonic::Request<LoginRequest>,
     ) -> std::result::Result<tonic::Response<LoginResponse>, tonic::Status> {
-        super::login::handle(&self.password_hash, &self.token_secret, request).await
+        super::login::handle(&self.password_hash, &self.token_secret, request)
+            .await
+            .map_err(Into::into)
     }
 
     async fn refresh(
         &self,
         request: tonic::Request<RefreshRequest>,
     ) -> std::result::Result<tonic::Response<RefreshResponse>, tonic::Status> {
-        super::refresh::handle(&self.token_secret, request).await
+        super::refresh::handle(&self.token_secret, request)
+            .await
+            .map_err(Into::into)
     }
 
     async fn logout(
         &self,
         request: tonic::Request<LogoutRequest>,
     ) -> std::result::Result<tonic::Response<LogoutResponse>, tonic::Status> {
-        super::logout::handle(request).await
+        super::logout::handle(request).await.map_err(Into::into)
     }
 }

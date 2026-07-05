@@ -57,8 +57,6 @@ impl From<PaginationResponse> for PageResponse {
         Self {
             page_token_next: page.next_page_token,
             page_token_prev: page.prev_page_token,
-            has_page_next: page.has_next_page,
-            has_page_prev: page.has_prev_page,
         }
     }
 }
@@ -146,18 +144,14 @@ mod tests {
     // --- PageResponse conversion -------------------------------------------------
 
     #[test]
-    fn page_response_converts_to_proto() {
+    fn page_response_tokens_convert_to_proto() {
         let domain = PaginationResponse {
             next_page_token: Some("next".to_string()),
             prev_page_token: Some("prev".to_string()),
-            has_next_page: true,
-            has_prev_page: false,
         };
         let proto = PageResponse::from(domain);
         assert_eq!(proto.page_token_next.as_deref(), Some("next"));
         assert_eq!(proto.page_token_prev.as_deref(), Some("prev"));
-        assert!(proto.has_page_next);
-        assert!(!proto.has_page_prev);
     }
 
     #[test]
@@ -165,7 +159,5 @@ mod tests {
         let proto = PageResponse::from(PaginationResponse::default());
         assert!(proto.page_token_next.is_none());
         assert!(proto.page_token_prev.is_none());
-        assert!(!proto.has_page_next);
-        assert!(!proto.has_page_prev);
     }
 }

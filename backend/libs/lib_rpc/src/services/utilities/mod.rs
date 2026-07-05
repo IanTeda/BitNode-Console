@@ -18,7 +18,7 @@ impl UtilitiesService for UtilitiesServiceImpl {
         &self,
         request: tonic::Request<PingRequest>,
     ) -> std::result::Result<tonic::Response<PingResponse>, tonic::Status> {
-        ping::handle(request).await
+        ping::handle(request).await.map_err(Into::into)
     }
 }
 

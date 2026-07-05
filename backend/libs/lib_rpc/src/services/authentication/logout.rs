@@ -9,11 +9,11 @@ use crate::services::authentication::{LogoutRequest, LogoutResponse};
 #[tracing::instrument(skip(request))]
 pub(super) async fn handle(
     request: tonic::Request<LogoutRequest>,
-) -> std::result::Result<tonic::Response<LogoutResponse>, tonic::Status> {
+) -> crate::Result<tonic::Response<LogoutResponse>> {
     tracing::debug!("Logout request received from {:?}", request.remote_addr());
     tracing::info!("Token invalidation not yet implemented");
-    Err(tonic::Status::unimplemented(
-        "logout is not yet implemented",
+    Err(crate::Error::Unimplemented(
+        "logout is not yet implemented".to_string(),
     ))
 }
 
@@ -27,13 +27,13 @@ mod tests {
 
     #[tokio::test]
     async fn logout_returns_unimplemented() {
-        let status = handle(logout_request()).await.unwrap_err();
+        let status = tonic::Status::from(handle(logout_request()).await.unwrap_err());
         assert_eq!(status.code(), tonic::Code::Unimplemented);
     }
 
     #[tokio::test]
     async fn logout_unimplemented_error_message() {
-        let status = handle(logout_request()).await.unwrap_err();
+        let status = tonic::Status::from(handle(logout_request()).await.unwrap_err());
         assert_eq!(status.message(), "logout is not yet implemented");
     }
 
