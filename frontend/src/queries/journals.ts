@@ -9,12 +9,15 @@ const log = logger.getSubLogger({ name: "Journals Query" });
 
 export const JOURNALS_QUERY_KEY = ["journals"] as const;
 
+export { PageDirection };
+
 export interface JournalsQueryParams {
   timestampFromUs?: string;
   timestampToUs?: string;
   priority?: Priority;
   pageSize?: number;
   pageToken?: string;
+  pageDirection?: PageDirection;
 }
 
 async function getJournals(params: JournalsQueryParams): Promise<GetJournalsResponse> {
@@ -26,7 +29,7 @@ async function getJournals(params: JournalsQueryParams): Promise<GetJournalsResp
     pagination: {
       pageSize: params.pageSize ?? 100,
       pageToken: params.pageToken,
-      pageDirection: PageDirection.UNSPECIFIED,
+      pageDirection: params.pageDirection ?? PageDirection.UNSPECIFIED,
     },
   });
   return response;

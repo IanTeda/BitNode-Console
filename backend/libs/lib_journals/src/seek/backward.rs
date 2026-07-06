@@ -31,8 +31,11 @@ impl<'a> JournalQuery<'a> {
                 // Step before the cursor entry so it isn't repeated on this page.
                 conn.journal.previous()?;
             },
-            // When no cursor is provided, start from the tail and seek backwards.
-            None => conn.journal.seek(JournalSeek::Tail)?,
+            // When no cursor is provided, start from the timestamp or tail and seek backwards.
+            None => match self.timestamp_to.and_then(|ts| u64::try_from(ts).ok()) {
+                Some(usec) => conn.journal.seek(JournalSeek::ClockRealtime { usec })?,
+                None => conn.journal.seek(JournalSeek::Tail)?,
+            },
         }
 
         // --- 02. Set Previous Page Token
@@ -53,6 +56,12 @@ impl<'a> JournalQuery<'a> {
                 break;
             };
             let timestamp_us = i64::try_from(conn.journal.timestamp_usec()?)?;
+            // Stop once we've gone back past the lower timestamp bound.
+            if let Some(from) = self.timestamp_from {
+                if timestamp_us < from {
+                    break;
+                }
+            }
             let mut entry = JournalEntry::from_record(&record, timestamp_us);
             // __CURSOR is metadata, not a data field — fetch it separately after positioning.
             entry.cursor = conn.journal.cursor().ok();
