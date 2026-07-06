@@ -1,6 +1,6 @@
 //! Integration tests for the Journals gRPC endpoint.
 
-use lib_rpc::services::journals::{GetJournalsRequest, StreamJournalsRequest};
+use lib_rpc::services::journals::{GetJournalsRequest, FollowJournalsRequest};
 
 use crate::support::TestRpcServer;
 
@@ -13,8 +13,8 @@ fn authenticated_get_journals() -> tonic::Request<GetJournalsRequest> {
     request
 }
 
-fn authenticated_stream_journals(tail_lines: u32) -> tonic::Request<StreamJournalsRequest> {
-    let mut request = tonic::Request::new(StreamJournalsRequest { tail_lines });
+fn authenticated_follow_journals(tail_lines: u32) -> tonic::Request<FollowJournalsRequest> {
+    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines });
     request.metadata_mut().insert(
         "access_token",
         crate::support::valid_access_token().parse().unwrap(),
@@ -74,51 +74,51 @@ async fn get_journals_default_request_is_accepted_by_server() {
     assert_ne!(status.code(), tonic::Code::InvalidArgument);
 }
 
-// --- stream_journals: auth ---
+// --- follow_journals: auth ---
 
 #[tokio::test]
-async fn stream_journals_without_token_returns_unauthenticated() {
+async fn follow_journals_without_token_returns_unauthenticated() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
     let result = client
-        .stream_journals(tonic::Request::new(StreamJournalsRequest { tail_lines: 0 }))
+        .follow_journals(tonic::Request::new(FollowJournalsRequest { tail_lines: 0 }))
         .await;
 
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unauthenticated);
 }
 
 #[tokio::test]
-async fn stream_journals_with_invalid_token_returns_unauthenticated() {
+async fn follow_journals_with_invalid_token_returns_unauthenticated() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let mut request = tonic::Request::new(StreamJournalsRequest { tail_lines: 0 });
+    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines: 0 });
     request.metadata_mut().insert("access_token", "not.a.real.jwt".parse().unwrap());
 
-    let result = client.stream_journals(request).await;
+    let result = client.follow_journals(request).await;
 
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unauthenticated);
 }
 
-// --- stream_journals: stub behaviour ---
+// --- follow_journals: stub behaviour ---
 
 #[tokio::test]
-async fn stream_journals_with_valid_token_returns_unimplemented() {
+async fn follow_journals_with_valid_token_returns_unimplemented() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let result = client.stream_journals(authenticated_stream_journals(0)).await;
+    let result = client.follow_journals(authenticated_follow_journals(0)).await;
 
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unimplemented);
 }
 
 #[tokio::test]
-async fn stream_journals_with_nonzero_tail_lines_returns_unimplemented() {
+async fn follow_journals_with_nonzero_tail_lines_returns_unimplemented() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let result = client.stream_journals(authenticated_stream_journals(50)).await;
+    let result = client.follow_journals(authenticated_follow_journals(50)).await;
 
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unimplemented);
 }

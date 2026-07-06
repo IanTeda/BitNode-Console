@@ -2,7 +2,7 @@
 
 use crate::services::journals::JournalsService;
 use crate::services::journals::{
-    GetJournalsRequest, GetJournalsResponse, JournalsEntry, StreamJournalsRequest,
+    GetJournalsRequest, GetJournalsResponse, JournalsEntry, FollowJournalsRequest,
 };
 
 /// Concrete implementation of the [`JournalsService`] gRPC trait.
@@ -22,7 +22,7 @@ impl JournalsServiceImpl {
 
 #[tonic::async_trait]
 impl JournalsService for JournalsServiceImpl {
-    type StreamJournalsStream = super::stream_journals::JournalStream;
+    type FollowJournalsStream = super::follow_journals::JournalStream;
 
     async fn get_journals(
         &self,
@@ -33,11 +33,11 @@ impl JournalsService for JournalsServiceImpl {
             .map_err(Into::into)
     }
 
-    async fn stream_journals(
+    async fn follow_journals(
         &self,
-        request: tonic::Request<StreamJournalsRequest>,
-    ) -> std::result::Result<tonic::Response<Self::StreamJournalsStream>, tonic::Status> {
-        super::stream_journals::handle(request)
+        request: tonic::Request<FollowJournalsRequest>,
+    ) -> std::result::Result<tonic::Response<Self::FollowJournalsStream>, tonic::Status> {
+        super::follow_journals::handle(request)
             .await
             .map_err(Into::into)
     }

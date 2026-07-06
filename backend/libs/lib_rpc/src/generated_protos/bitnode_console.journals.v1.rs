@@ -29,9 +29,9 @@ pub struct GetJournalsResponse {
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::common::v1::PageResponse>,
 }
-/// StreamLogsRequest initiates a live log tail.
+/// FollowJournalsRequest initiates a live log tail (mirrors journalctl --follow).
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct StreamJournalsRequest {
+pub struct FollowJournalsRequest {
     /// Number of existing lines to emit before streaming new entries.
     #[prost(uint32, tag = "1")]
     pub tail_lines: u32,
@@ -237,11 +237,11 @@ pub mod journals_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        /// StreamLogs streams new log entries in real time (server-streaming, for live tail).
+        /// FollowJournals streams new log entries in real time (server-streaming, for live tail).
         /// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-        pub async fn stream_journals(
+        pub async fn follow_journals(
             &mut self,
-            request: impl tonic::IntoRequest<super::StreamJournalsRequest>,
+            request: impl tonic::IntoRequest<super::FollowJournalsRequest>,
         ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::JournalsEntry>>,
             tonic::Status,
@@ -256,14 +256,14 @@ pub mod journals_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/bitnode_console.journals.v1.JournalsService/StreamJournals",
+                "/bitnode_console.journals.v1.JournalsService/FollowJournals",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "bitnode_console.journals.v1.JournalsService",
-                        "StreamJournals",
+                        "FollowJournals",
                     ),
                 );
             self.inner.server_streaming(req, path, codec).await
@@ -291,19 +291,19 @@ pub mod journals_service_server {
             tonic::Response<super::GetJournalsResponse>,
             tonic::Status,
         >;
-        /// Server streaming response type for the StreamJournals method.
-        type StreamJournalsStream: tonic::codegen::tokio_stream::Stream<
+        /// Server streaming response type for the FollowJournals method.
+        type FollowJournalsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::JournalsEntry, tonic::Status>,
             >
             + std::marker::Send
             + 'static;
-        /// StreamLogs streams new log entries in real time (server-streaming, for live tail).
+        /// FollowJournals streams new log entries in real time (server-streaming, for live tail).
         /// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-        async fn stream_journals(
+        async fn follow_journals(
             &self,
-            request: tonic::Request<super::StreamJournalsRequest>,
+            request: tonic::Request<super::FollowJournalsRequest>,
         ) -> std::result::Result<
-            tonic::Response<Self::StreamJournalsStream>,
+            tonic::Response<Self::FollowJournalsStream>,
             tonic::Status,
         >;
     }
@@ -432,26 +432,26 @@ pub mod journals_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/bitnode_console.journals.v1.JournalsService/StreamJournals" => {
+                "/bitnode_console.journals.v1.JournalsService/FollowJournals" => {
                     #[allow(non_camel_case_types)]
-                    struct StreamJournalsSvc<T: JournalsService>(pub Arc<T>);
+                    struct FollowJournalsSvc<T: JournalsService>(pub Arc<T>);
                     impl<
                         T: JournalsService,
-                    > tonic::server::ServerStreamingService<super::StreamJournalsRequest>
-                    for StreamJournalsSvc<T> {
+                    > tonic::server::ServerStreamingService<super::FollowJournalsRequest>
+                    for FollowJournalsSvc<T> {
                         type Response = super::JournalsEntry;
-                        type ResponseStream = T::StreamJournalsStream;
+                        type ResponseStream = T::FollowJournalsStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::StreamJournalsRequest>,
+                            request: tonic::Request<super::FollowJournalsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as JournalsService>::stream_journals(&inner, request)
+                                <T as JournalsService>::follow_journals(&inner, request)
                                     .await
                             };
                             Box::pin(fut)
@@ -463,7 +463,7 @@ pub mod journals_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = StreamJournalsSvc(inner);
+                        let method = FollowJournalsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

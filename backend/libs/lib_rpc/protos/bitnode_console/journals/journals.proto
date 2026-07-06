@@ -18,9 +18,9 @@ service JournalsService {
   // GetLogs returns a page of log lines (unary, for initial page load and pagination).
   rpc GetJournals (GetJournalsRequest) returns (GetJournalsResponse);
 
-  // StreamLogs streams new log entries in real time (server-streaming, for live tail).
+  // FollowJournals streams new log entries in real time (server-streaming, for live tail).
   // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-  rpc StreamJournals (StreamJournalsRequest) returns (stream JournalsEntry);
+  rpc FollowJournals (FollowJournalsRequest) returns (stream JournalsEntry);
 }
 
 // Priority mirrors the syslog severity levels from RFC 5424.
@@ -68,8 +68,8 @@ message GetJournalsResponse {
   bitnode_console.common.v1.PageResponse pagination = 2;
 }
 
-// StreamLogsRequest initiates a live log tail.
-message StreamJournalsRequest {
+// FollowJournalsRequest initiates a live log tail (mirrors journalctl --follow).
+message FollowJournalsRequest {
   // Number of existing lines to emit before streaming new entries.
   uint32 tail_lines = 1;
 }

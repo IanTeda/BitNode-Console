@@ -4,7 +4,7 @@ pub(crate) mod get_journals;
 mod journal_page_from;
 mod journal_query_from;
 pub(crate) mod service_impl;
-pub(crate) mod stream_journals;
+pub(crate) mod follow_journals;
 
 pub use crate::generated_protos::journals::journals_service_client::JournalsServiceClient;
 pub use crate::generated_protos::journals::journals_service_server::{
@@ -12,7 +12,7 @@ pub use crate::generated_protos::journals::journals_service_server::{
 };
 
 pub use crate::generated_protos::journals::{
-    GetJournalsRequest, GetJournalsResponse, JournalsEntry, StreamJournalsRequest,
+    GetJournalsRequest, GetJournalsResponse, JournalsEntry, FollowJournalsRequest,
 };
 
 pub use service_impl::JournalsServiceImpl;

@@ -12,7 +12,7 @@ import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { JournalsService } from "./journals";
 import type { JournalsEntry } from "./journals";
-import type { StreamJournalsRequest } from "./journals";
+import type { FollowJournalsRequest } from "./journals";
 import type { ServerStreamingCall } from "@protobuf-ts/runtime-rpc";
 import { stackIntercept } from "@protobuf-ts/runtime-rpc";
 import type { GetJournalsResponse } from "./journals";
@@ -35,12 +35,12 @@ export interface IJournalsServiceClient {
      */
     getJournals(input: GetJournalsRequest, options?: RpcOptions): UnaryCall<GetJournalsRequest, GetJournalsResponse>;
     /**
-     * StreamLogs streams new log entries in real time (server-streaming, for live tail).
+     * FollowJournals streams new log entries in real time (server-streaming, for live tail).
      * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
      *
-     * @generated from protobuf rpc: StreamJournals
+     * @generated from protobuf rpc: FollowJournals
      */
-    streamJournals(input: StreamJournalsRequest, options?: RpcOptions): ServerStreamingCall<StreamJournalsRequest, JournalsEntry>;
+    followJournals(input: FollowJournalsRequest, options?: RpcOptions): ServerStreamingCall<FollowJournalsRequest, JournalsEntry>;
 }
 /**
  * JournalsService exposes Bitcoin daemon log entries from the systemd journal.
@@ -66,13 +66,13 @@ export class JournalsServiceClient implements IJournalsServiceClient, ServiceInf
         return stackIntercept<GetJournalsRequest, GetJournalsResponse>("unary", this._transport, method, opt, input);
     }
     /**
-     * StreamLogs streams new log entries in real time (server-streaming, for live tail).
+     * FollowJournals streams new log entries in real time (server-streaming, for live tail).
      * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
      *
-     * @generated from protobuf rpc: StreamJournals
+     * @generated from protobuf rpc: FollowJournals
      */
-    streamJournals(input: StreamJournalsRequest, options?: RpcOptions): ServerStreamingCall<StreamJournalsRequest, JournalsEntry> {
+    followJournals(input: FollowJournalsRequest, options?: RpcOptions): ServerStreamingCall<FollowJournalsRequest, JournalsEntry> {
         const method = this.methods[1], opt = this._transport.mergeOptions(options);
-        return stackIntercept<StreamJournalsRequest, JournalsEntry>("serverStreaming", this._transport, method, opt, input);
+        return stackIntercept<FollowJournalsRequest, JournalsEntry>("serverStreaming", this._transport, method, opt, input);
     }
 }

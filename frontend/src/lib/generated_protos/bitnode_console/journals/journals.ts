@@ -75,11 +75,11 @@ export interface GetJournalsResponse {
     pagination?: PageResponse;
 }
 /**
- * StreamLogsRequest initiates a live log tail.
+ * FollowJournalsRequest initiates a live log tail (mirrors journalctl --follow).
  *
- * @generated from protobuf message bitnode_console.journals.v1.StreamJournalsRequest
+ * @generated from protobuf message bitnode_console.journals.v1.FollowJournalsRequest
  */
-export interface StreamJournalsRequest {
+export interface FollowJournalsRequest {
     /**
      * Number of existing lines to emit before streaming new entries.
      *
@@ -300,20 +300,20 @@ class GetJournalsResponse$Type extends MessageType<GetJournalsResponse> {
  */
 export const GetJournalsResponse = new GetJournalsResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class StreamJournalsRequest$Type extends MessageType<StreamJournalsRequest> {
+class FollowJournalsRequest$Type extends MessageType<FollowJournalsRequest> {
     constructor() {
-        super("bitnode_console.journals.v1.StreamJournalsRequest", [
+        super("bitnode_console.journals.v1.FollowJournalsRequest", [
             { no: 1, name: "tail_lines", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
-    create(value?: PartialMessage<StreamJournalsRequest>): StreamJournalsRequest {
+    create(value?: PartialMessage<FollowJournalsRequest>): FollowJournalsRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.tailLines = 0;
         if (value !== undefined)
-            reflectionMergePartial<StreamJournalsRequest>(this, message, value);
+            reflectionMergePartial<FollowJournalsRequest>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamJournalsRequest): StreamJournalsRequest {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FollowJournalsRequest): FollowJournalsRequest {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -332,7 +332,7 @@ class StreamJournalsRequest$Type extends MessageType<StreamJournalsRequest> {
         }
         return message;
     }
-    internalBinaryWrite(message: StreamJournalsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: FollowJournalsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* uint32 tail_lines = 1; */
         if (message.tailLines !== 0)
             writer.tag(1, WireType.Varint).uint32(message.tailLines);
@@ -343,9 +343,9 @@ class StreamJournalsRequest$Type extends MessageType<StreamJournalsRequest> {
     }
 }
 /**
- * @generated MessageType for protobuf message bitnode_console.journals.v1.StreamJournalsRequest
+ * @generated MessageType for protobuf message bitnode_console.journals.v1.FollowJournalsRequest
  */
-export const StreamJournalsRequest = new StreamJournalsRequest$Type();
+export const FollowJournalsRequest = new FollowJournalsRequest$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class JournalsEntry$Type extends MessageType<JournalsEntry> {
     constructor() {
@@ -453,5 +453,5 @@ export const JournalsEntry = new JournalsEntry$Type();
  */
 export const JournalsService = new ServiceType("bitnode_console.journals.v1.JournalsService", [
     { name: "GetJournals", options: {}, I: GetJournalsRequest, O: GetJournalsResponse },
-    { name: "StreamJournals", serverStreaming: true, options: {}, I: StreamJournalsRequest, O: JournalsEntry }
+    { name: "FollowJournals", serverStreaming: true, options: {}, I: FollowJournalsRequest, O: JournalsEntry }
 ]);
