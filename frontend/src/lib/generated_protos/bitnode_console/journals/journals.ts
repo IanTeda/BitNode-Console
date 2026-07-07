@@ -83,9 +83,15 @@ export interface FollowJournalsRequest {
     /**
      * Number of existing lines to emit before streaming new entries.
      *
-     * @generated from protobuf field: uint32 tail_lines = 1
+     * @generated from protobuf field: optional uint32 tail_lines = 1
      */
-    tailLines: number;
+    tailLines?: number;
+    /**
+     * Minimum severity level to return.
+     *
+     * @generated from protobuf field: optional bitnode_console.journals.v1.Priority priority = 2
+     */
+    priority?: Priority;
 }
 /**
  * LogEntry represents a single journal log line from the Bitcoin daemon.
@@ -303,12 +309,12 @@ export const GetJournalsResponse = new GetJournalsResponse$Type();
 class FollowJournalsRequest$Type extends MessageType<FollowJournalsRequest> {
     constructor() {
         super("bitnode_console.journals.v1.FollowJournalsRequest", [
-            { no: 1, name: "tail_lines", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 1, name: "tail_lines", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
+            { no: 2, name: "priority", kind: "enum", opt: true, T: () => ["bitnode_console.journals.v1.Priority", Priority, "PRIORITY_"] }
         ]);
     }
     create(value?: PartialMessage<FollowJournalsRequest>): FollowJournalsRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.tailLines = 0;
         if (value !== undefined)
             reflectionMergePartial<FollowJournalsRequest>(this, message, value);
         return message;
@@ -318,8 +324,11 @@ class FollowJournalsRequest$Type extends MessageType<FollowJournalsRequest> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* uint32 tail_lines */ 1:
+                case /* optional uint32 tail_lines */ 1:
                     message.tailLines = reader.uint32();
+                    break;
+                case /* optional bitnode_console.journals.v1.Priority priority */ 2:
+                    message.priority = reader.int32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -333,9 +342,12 @@ class FollowJournalsRequest$Type extends MessageType<FollowJournalsRequest> {
         return message;
     }
     internalBinaryWrite(message: FollowJournalsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* uint32 tail_lines = 1; */
-        if (message.tailLines !== 0)
+        /* optional uint32 tail_lines = 1; */
+        if (message.tailLines !== undefined)
             writer.tag(1, WireType.Varint).uint32(message.tailLines);
+        /* optional bitnode_console.journals.v1.Priority priority = 2; */
+        if (message.priority !== undefined)
+            writer.tag(2, WireType.Varint).int32(message.priority);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

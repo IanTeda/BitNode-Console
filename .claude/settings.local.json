@@ -11,7 +11,10 @@
       "Bash(npm install *)",
       "Bash(cargo test *)",
       "Bash(git add *)",
-      "Bash(pnpm tsc *)"
+      "Bash(pnpm tsc *)",
+      "Bash(cargo check *)",
+      "Bash(cargo doc *)",
+      "Read(//home/ian/.cargo/registry/src/**)"
     ]
   }
 }

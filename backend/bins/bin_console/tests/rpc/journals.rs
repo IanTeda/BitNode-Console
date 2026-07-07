@@ -1,6 +1,6 @@
 //! Integration tests for the Journals gRPC endpoint.
 
-use lib_rpc::services::journals::{GetJournalsRequest, FollowJournalsRequest};
+use lib_rpc::services::journals::{FollowJournalsRequest, GetJournalsRequest};
 
 use crate::support::TestRpcServer;
 
@@ -13,8 +13,8 @@ fn authenticated_get_journals() -> tonic::Request<GetJournalsRequest> {
     request
 }
 
-fn authenticated_follow_journals(tail_lines: u32) -> tonic::Request<FollowJournalsRequest> {
-    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines });
+fn authenticated_follow_journals(tail_lines: Option<u32>) -> tonic::Request<FollowJournalsRequest> {
+    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines, priority: None });
     request.metadata_mut().insert(
         "access_token",
         crate::support::valid_access_token().parse().unwrap(),
@@ -47,16 +47,16 @@ async fn get_journals_with_invalid_token_returns_unauthenticated() {
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unauthenticated);
 }
 
-// --- get_journals: stub behaviour ---
+// --- get_journals: behaviour ---
 
 #[tokio::test]
-async fn get_journals_with_valid_token_returns_unimplemented() {
+async fn get_journals_with_valid_token_returns_ok() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
     let result = client.get_journals(authenticated_get_journals()).await;
 
-    assert_eq!(result.unwrap_err().code(), tonic::Code::Unimplemented);
+    assert!(result.is_ok());
 }
 
 #[tokio::test]
@@ -66,12 +66,12 @@ async fn get_journals_default_request_is_accepted_by_server() {
 
     // Zero-valued fields (no timestamp bounds, default priority, no pagination)
     // must reach the handler — the server should not reject the request shape.
-    let status = client
-        .get_journals(authenticated_get_journals())
-        .await
-        .unwrap_err();
+    let result = client.get_journals(authenticated_get_journals()).await;
 
-    assert_ne!(status.code(), tonic::Code::InvalidArgument);
+    match result {
+        Ok(_) => {}
+        Err(status) => assert_ne!(status.code(), tonic::Code::InvalidArgument),
+    }
 }
 
 // --- follow_journals: auth ---
@@ -82,7 +82,10 @@ async fn follow_journals_without_token_returns_unauthenticated() {
     let mut client = app.journals_client().await;
 
     let result = client
-        .follow_journals(tonic::Request::new(FollowJournalsRequest { tail_lines: 0 }))
+        .follow_journals(tonic::Request::new(FollowJournalsRequest {
+            tail_lines: None,
+            priority: None,
+        }))
         .await;
 
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unauthenticated);
@@ -93,7 +96,10 @@ async fn follow_journals_with_invalid_token_returns_unauthenticated() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines: 0 });
+    let mut request = tonic::Request::new(FollowJournalsRequest {
+        tail_lines: None,
+        priority: None,
+    });
     request.metadata_mut().insert("access_token", "not.a.real.jwt".parse().unwrap());
 
     let result = client.follow_journals(request).await;
@@ -101,24 +107,24 @@ async fn follow_journals_with_invalid_token_returns_unauthenticated() {
     assert_eq!(result.unwrap_err().code(), tonic::Code::Unauthenticated);
 }
 
-// --- follow_journals: stub behaviour ---
+// --- follow_journals: behaviour ---
 
 #[tokio::test]
-async fn follow_journals_with_valid_token_returns_unimplemented() {
+async fn follow_journals_with_valid_token_returns_stream() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let result = client.follow_journals(authenticated_follow_journals(0)).await;
+    let result = client.follow_journals(authenticated_follow_journals(None)).await;
 
-    assert_eq!(result.unwrap_err().code(), tonic::Code::Unimplemented);
+    assert!(result.is_ok());
 }
 
 #[tokio::test]
-async fn follow_journals_with_nonzero_tail_lines_returns_unimplemented() {
+async fn follow_journals_with_nonzero_tail_lines_returns_stream() {
     let app = TestRpcServer::spawn().await;
     let mut client = app.journals_client().await;
 
-    let result = client.follow_journals(authenticated_follow_journals(50)).await;
+    let result = client.follow_journals(authenticated_follow_journals(Some(50))).await;
 
-    assert_eq!(result.unwrap_err().code(), tonic::Code::Unimplemented);
+    assert!(result.is_ok());
 }

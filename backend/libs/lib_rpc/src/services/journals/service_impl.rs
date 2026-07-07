@@ -37,7 +37,7 @@ impl JournalsService for JournalsServiceImpl {
         &self,
         request: tonic::Request<FollowJournalsRequest>,
     ) -> std::result::Result<tonic::Response<Self::FollowJournalsStream>, tonic::Status> {
-        super::follow_journals::handle(request)
+        super::follow_journals::handle(&self.unit_name, request)
             .await
             .map_err(Into::into)
     }

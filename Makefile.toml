@@ -76,7 +76,7 @@ script = '''
 ./dev/run-bitcoind.sh &
 BITCOIND_PID=$!
 trap "kill $BITCOIND_PID 2>/dev/null" EXIT
-cargo watch -q -c -w backend -x "run -p bin_console"
+cargo watch -w backend -x "run -p bin_console"
 '''
 
 [tasks.console-release]

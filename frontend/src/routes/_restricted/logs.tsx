@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -9,6 +9,7 @@ import {
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import logger from "@/lib/logger";
+import { journalsClient } from "@/lib/rpc/journals";
 import { useJournalsQuery, PageDirection } from "@/queries/journals";
 import type { JournalsEntry } from "@/lib/generated_protos/bitnode_console/journals/journals";
 import { Priority } from "@/lib/generated_protos/bitnode_console/journals/journals";
@@ -49,6 +50,54 @@ function dateToTimestampUs(date: Date | undefined, endOfDay = false): string | u
     d.setHours(0, 0, 0, 0);
   }
   return String(BigInt(d.getTime()) * 1000n);
+}
+
+// Max entries kept in memory during a live-tail session.
+const FOLLOW_MAX_ENTRIES = 500;
+
+function useJournalFollow() {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [entries, setEntries] = useState<JournalsEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  function start(priority?: Priority) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setEntries([]);
+    setError(null);
+    setIsFollowing(true);
+
+    (async () => {
+      try {
+        const call = journalsClient().followJournals(
+          { priority: priority ?? Priority.UNSPECIFIED },
+          { abort: controller.signal },
+        );
+        for await (const entry of call.responses) {
+          setEntries((prev) => [entry, ...prev].slice(0, FOLLOW_MAX_ENTRIES));
+        }
+      } catch (e) {
+        if (!controller.signal.aborted) {
+          setError(String(e));
+        }
+      } finally {
+        setIsFollowing(false);
+      }
+    })();
+  }
+
+  function stop() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }
+
+  // Abort the stream if the component unmounts while following.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  return { isFollowing, entries, error, start, stop };
 }
 
 const columnHelper = createColumnHelper<JournalsEntry>();
@@ -104,6 +153,8 @@ function RouteComponent() {
   const [appliedDateFrom, setAppliedDateFrom] = useState<Date | undefined>(undefined);
   const [appliedDateTo, setAppliedDateTo] = useState<Date | undefined>(undefined);
 
+  const follow = useJournalFollow();
+
   function resetPagination() {
     setPageToken(undefined);
     setTokenStack([]);
@@ -118,8 +169,10 @@ function RouteComponent() {
     timestampToUs: dateToTimestampUs(appliedDateTo, true),
   });
 
+  const displayEntries = follow.isFollowing ? follow.entries : (data?.entries ?? []);
+
   const table = useReactTable({
-    data: data?.entries ?? [],
+    data: displayEntries,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -190,8 +243,8 @@ function RouteComponent() {
     appliedDateFrom !== undefined ||
     appliedDateTo !== undefined;
 
-  if (isPending) return <div>Loading logs...</div>;
-  if (isError) return <div>Error loading logs: {String(error)}</div>;
+  if (isPending && !follow.isFollowing) return <div>Loading logs...</div>;
+  if (isError && !follow.isFollowing) return <div>Error loading logs: {String(error)}</div>;
 
   return (
     <div className="flex flex-col gap-2">
@@ -263,18 +316,36 @@ function RouteComponent() {
           </Popover>
         </div>
         <div className="flex gap-2 self-end">
-          {isDirty && (
+          {isDirty && !follow.isFollowing && (
             <Button size="sm" onClick={handleApply}>
               Apply
             </Button>
           )}
-          {hasActiveFilters && (
+          {hasActiveFilters && !follow.isFollowing && (
             <Button size="sm" variant="outline" onClick={handleClearFilters}>
               Clear
             </Button>
           )}
+          {follow.isFollowing ? (
+            <Button size="sm" variant="destructive" onClick={follow.stop}>
+              Stop Following
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => follow.start(draftPriority)}>
+              Tail Follow
+            </Button>
+          )}
         </div>
       </div>
+      {follow.isFollowing && (
+        <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          Following — {follow.entries.length} entries received
+        </div>
+      )}
+      {follow.error && (
+        <div className="text-sm text-destructive py-1">Stream error: {follow.error}</div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -304,43 +375,45 @@ function RouteComponent() {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between py-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReverse}
-            className="px-3 py-1 text-sm border rounded hover:bg-muted/50"
-          >
-            {reversed ? "Oldest first" : "Newest first"}
-          </button>
-          <select
-            value={pageSize}
-            onChange={handlePageSize}
-            className="px-2 py-1 text-sm border rounded bg-background hover:bg-muted/50"
-          >
-            {PAGE_SIZE_OPTIONS.map((n) => (
-              <option key={n} value={n}>
-                {n} per page
-              </option>
-            ))}
-          </select>
+      {!follow.isFollowing && (
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReverse}
+              className="px-3 py-1 text-sm border rounded hover:bg-muted/50"
+            >
+              {reversed ? "Oldest first" : "Newest first"}
+            </button>
+            <select
+              value={pageSize}
+              onChange={handlePageSize}
+              className="px-2 py-1 text-sm border rounded bg-background hover:bg-muted/50"
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} per page
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrev}
+              disabled={!hasPrev}
+              className="px-3 py-1 text-sm border rounded disabled:opacity-40 hover:bg-muted/50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!hasNext}
+              className="px-3 py-1 text-sm border rounded disabled:opacity-40 hover:bg-muted/50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrev}
-            disabled={!hasPrev}
-            className="px-3 py-1 text-sm border rounded disabled:opacity-40 hover:bg-muted/50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={!hasNext}
-            className="px-3 py-1 text-sm border rounded disabled:opacity-40 hover:bg-muted/50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

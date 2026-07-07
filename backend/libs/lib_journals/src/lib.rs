@@ -7,7 +7,7 @@
 mod connection;
 mod domains;
 mod error;
-mod query;
+mod follow;
 mod seek;
 
 // --- Re-exports to flatten module hierarchy to the crate top level
@@ -16,13 +16,10 @@ mod seek;
 pub use error::Error;
 
 /// Re-export journal domain types.
-pub use domains::{JournalEntry, JournalPage, JournalPriority};
+pub use domains::{JournalEntry, JournalFollowTail, JournalPage, JournalPriority, JournalQuery};
 
 /// Re-export connection types.
 pub use connection::JournalConnection;
-
-/// Re-export seek types.
-pub use query::JournalQuery;
 
 // -- Result type alias
 

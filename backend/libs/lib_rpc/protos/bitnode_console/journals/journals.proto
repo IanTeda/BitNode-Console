@@ -71,7 +71,10 @@ message GetJournalsResponse {
 // FollowJournalsRequest initiates a live log tail (mirrors journalctl --follow).
 message FollowJournalsRequest {
   // Number of existing lines to emit before streaming new entries.
-  uint32 tail_lines = 1;
+  optional uint32 tail_lines = 1;
+
+  // Minimum severity level to return.
+  optional Priority priority = 2;
 }
 
 // LogEntry represents a single journal log line from the Bitcoin daemon.

@@ -2,9 +2,10 @@
 
 use std::pin::Pin;
 
-use tokio_stream::Stream;
+use tokio::sync::mpsc;
+use tokio_stream::{Stream, wrappers::ReceiverStream};
 
-use super::{JournalsEntry, FollowJournalsRequest};
+use super::{FollowJournalsRequest, JournalsEntry};
 
 /// Pinned boxed stream of journal entries yielded by [`handle`].
 pub(super) type JournalStream =
@@ -13,45 +14,46 @@ pub(super) type JournalStream =
 /// Handle a `FollowJournals` request — stream live journal log entries.
 #[tracing::instrument(skip(request))]
 pub(super) async fn handle(
+    unit_name: &str,
     request: tonic::Request<FollowJournalsRequest>,
 ) -> crate::Result<tonic::Response<JournalStream>> {
     tracing::debug!("FollowJournals request from {:?}", request.remote_addr());
 
-    Err(crate::Error::Unimplemented(
-        "FollowJournals is not yet implemented".to_string(),
-    ))
-}
+    let journal_query: lib_journals::JournalFollowTail = request.into_inner().into();
 
-#[cfg(test)]
-mod tests {
-    use super::{FollowJournalsRequest, handle};
+    // Clone fields before moving into the blocking thread.  `unit_name` comes
+    // from service configuration (`&self.unit_name`) so it can't be `'static`
+    // — owning it here lets the thread construct a fresh `JournalFollowTail`
+    // that borrows from its own stack frame.
+    let unit_name = unit_name.to_string();
+    let priority = journal_query.priority;
+    let tail_lines = journal_query.tail_lines;
 
-    fn follow_journals_request() -> tonic::Request<FollowJournalsRequest> {
-        tonic::Request::new(FollowJournalsRequest { tail_lines: 0 })
-    }
+    // Create a channel for streaming journal entries back to the caller.
+    let (tx, rx) = mpsc::channel(16);
 
-    #[tokio::test]
-    async fn follow_journals_returns_unimplemented() {
-        match handle(follow_journals_request()).await {
-            Err(err) => assert_eq!(tonic::Status::from(err).code(), tonic::Code::Unimplemented),
-            Ok(_) => panic!("expected Unimplemented error"),
+    // `follow` blocks the thread indefinitely (it calls `journal.wait(None)`
+    // between batches), so it must run on a dedicated OS thread rather than a
+    // Tokio worker.  `blocking_send` bridges back into the async world.
+    std::thread::spawn(move || {
+        let query = lib_journals::JournalFollowTail::new(unit_name.as_str(), priority, tail_lines);
+
+        let mut conn = match lib_journals::JournalConnection::open_current_user() {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = tx.blocking_send(Err(crate::Error::Journal(e).into()));
+                return;
+            },
+        };
+
+        if let Err(e) = query.follow(&mut conn, |entry| {
+            // Stop streaming when the receiver has been dropped (client
+            // disconnected or the stream was cancelled).
+            tx.blocking_send(Ok(entry.into())).is_ok()
+        }) {
+            let _ = tx.blocking_send(Err(crate::Error::Journal(e).into()));
         }
-    }
+    });
 
-    #[tokio::test]
-    async fn follow_journals_unimplemented_message_is_not_empty() {
-        match handle(follow_journals_request()).await {
-            Err(err) => assert!(!tonic::Status::from(err).message().is_empty()),
-            Ok(_) => panic!("expected Unimplemented error"),
-        }
-    }
-
-    #[tokio::test]
-    async fn follow_journals_with_nonzero_tail_returns_unimplemented() {
-        let request = tonic::Request::new(FollowJournalsRequest { tail_lines: 100 });
-        match handle(request).await {
-            Err(err) => assert_eq!(tonic::Status::from(err).code(), tonic::Code::Unimplemented),
-            Ok(_) => panic!("expected Unimplemented error"),
-        }
-    }
+    Ok(tonic::Response::new(Box::pin(ReceiverStream::new(rx))))
 }

@@ -33,8 +33,11 @@ pub struct GetJournalsResponse {
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct FollowJournalsRequest {
     /// Number of existing lines to emit before streaming new entries.
-    #[prost(uint32, tag = "1")]
-    pub tail_lines: u32,
+    #[prost(uint32, optional, tag = "1")]
+    pub tail_lines: ::core::option::Option<u32>,
+    /// Minimum severity level to return.
+    #[prost(enumeration = "Priority", optional, tag = "2")]
+    pub priority: ::core::option::Option<i32>,
 }
 /// LogEntry represents a single journal log line from the Bitcoin daemon.
 #[derive(Clone, PartialEq, ::prost::Message)]
