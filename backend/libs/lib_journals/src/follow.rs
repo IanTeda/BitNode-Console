@@ -2,9 +2,9 @@
 
 use systemd::journal::JournalSeek;
 
-use crate::{JournalConnection, JournalEntry, JournalFollowTail, Result};
+use crate::{Connection, Entry, FollowTail, Result};
 
-impl<'a> JournalFollowTail<'a> {
+impl<'a> FollowTail<'a> {
     /// Stream journal entries for the configured unit in chronological order.
     ///
     /// Replays the last [`JournalFollowTail::tail_lines`] entries then blocks,
@@ -17,9 +17,9 @@ impl<'a> JournalFollowTail<'a> {
     /// # Errors
     ///
     /// Returns [`crate::Error::Io`] if any underlying journal operation fails.
-    pub fn follow<F>(&self, conn: &mut JournalConnection, mut on_entry: F) -> Result<()>
+    pub fn follow<F>(&self, conn: &mut Connection, mut on_entry: F) -> Result<()>
     where
-        F: FnMut(JournalEntry) -> bool,
+        F: FnMut(Entry) -> bool,
     {
         // Apply unit filter before reading any entries.
         if !self.unit_name.is_empty() {
@@ -40,7 +40,7 @@ impl<'a> JournalFollowTail<'a> {
             while let Some(record) = conn.journal.next_entry()? {
                 let timestamp_us = i64::try_from(conn.journal.timestamp_usec()?)?;
 
-                let mut entry = JournalEntry::from_record(&record, timestamp_us);
+                let mut entry = Entry::from_record(&record, timestamp_us);
                 entry.cursor = conn.journal.cursor().ok();
 
                 if entry.priority <= self.priority && !on_entry(entry) {
@@ -56,7 +56,7 @@ impl<'a> JournalFollowTail<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{JournalConnection, JournalFollowTail, JournalPriority};
+    use crate::{Connection, FollowTail, Priority};
 
     /// Inject a line into the system journal under `identifier` at the given syslog priority.
     fn inject(identifier: &str, priority: &str, message: &str) {
@@ -72,8 +72,8 @@ mod tests {
         child.wait().expect("systemd-cat must complete");
     }
 
-    fn open() -> JournalConnection {
-        JournalConnection::open().expect("system journal must open")
+    fn open() -> Connection {
+        Connection::open().expect("system journal must open")
     }
 
     #[test]
@@ -85,7 +85,7 @@ mod tests {
 
         let mut conn = open();
         let mut collected = Vec::new();
-        let query = JournalFollowTail::with_unit("lib-jd-follow-tail-replay.service");
+        let query = FollowTail::with_unit("lib-jd-follow-tail-replay.service");
 
         query
             .follow(&mut conn, |entry| {
@@ -109,7 +109,7 @@ mod tests {
 
         let mut conn = open();
         let mut count = 0usize;
-        let query = JournalFollowTail::with_unit("lib-jd-follow-tail-stop.service");
+        let query = FollowTail::with_unit("lib-jd-follow-tail-stop.service");
 
         query
             .follow(&mut conn, |_entry| {
@@ -127,18 +127,14 @@ mod tests {
         inject(id, "info", "info-msg-should-be-excluded");
 
         let mut conn = open();
-        let query = JournalFollowTail::new(
-            "lib-jd-follow-tail-priority.service",
-            JournalPriority::Error,
-            5,
-        );
+        let query = FollowTail::new("lib-jd-follow-tail-priority.service", Priority::Error, 5);
 
         let mut received_any = false;
         query
             .follow(&mut conn, |entry| {
                 received_any = true;
                 assert!(
-                    entry.priority <= JournalPriority::Error,
+                    entry.priority <= Priority::Error,
                     "entry with priority {:?} must not exceed Error threshold",
                     entry.priority,
                 );

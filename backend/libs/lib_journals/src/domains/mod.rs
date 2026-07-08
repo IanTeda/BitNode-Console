@@ -1,13 +1,18 @@
 //! Journal domain types.
 
+// --- Imports Modules
+
+mod direction;
 mod entry;
 mod follow_tail;
 mod page;
 mod priority;
 mod query;
 
-pub use entry::JournalEntry;
-pub use follow_tail::JournalFollowTail;
-pub use page::JournalPage;
-pub use priority::JournalPriority;
-pub use query::JournalQuery;
+// --- Re-exports Public Types, Structs, and Enums
+
+pub use entry::Entry;
+pub use follow_tail::FollowTail;
+pub use page::Page;
+pub use priority::Priority;
+pub use query::Query;

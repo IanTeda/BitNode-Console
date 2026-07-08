@@ -3,9 +3,9 @@
 use lib_core::domains::pagination::PaginationResponse;
 use systemd::journal::JournalSeek;
 
-use crate::{JournalConnection, JournalEntry, JournalPage, JournalQuery, Result};
+use crate::{Entry, Connection, Page, Query, Result};
 
-impl<'a> JournalQuery<'a> {
+impl<'a> Query<'a> {
     /// Seek forward through the journal, reading entries from oldest to newest.
     ///
     /// Starts at [`JournalSeek::Head`] when no cursor is provided, or just past `page_token`
@@ -14,7 +14,7 @@ impl<'a> JournalQuery<'a> {
     /// # Errors
     ///
     /// Returns [`crate::Error::Io`] if any underlying journal operation fails.
-    pub fn seek_forward(&self, conn: &mut JournalConnection) -> Result<JournalPage> {
+    pub fn seek_forward(&self, conn: &mut Connection) -> Result<Page> {
         let limit = usize::try_from(self.pagination.page_size)?;
         let mut entries = Vec::with_capacity(limit);
 
@@ -60,7 +60,7 @@ impl<'a> JournalQuery<'a> {
                     break;
                 }
             }
-            let mut entry = JournalEntry::from_record(&record, timestamp_us);
+            let mut entry = Entry::from_record(&record, timestamp_us);
             // __CURSOR is metadata, not a data field — fetch it separately after positioning.
             entry.cursor = conn.journal.cursor().ok();
             if entry.priority <= self.priority {
@@ -77,7 +77,7 @@ impl<'a> JournalQuery<'a> {
             None
         };
 
-        Ok(JournalPage {
+        Ok(Page {
             entries,
             pagination: PaginationResponse {
                 next_page_token,
@@ -91,7 +91,7 @@ impl<'a> JournalQuery<'a> {
 mod tests {
     use lib_core::domains::pagination::{Direction, PaginationRequest};
 
-    use crate::{JournalConnection, JournalPriority, JournalQuery};
+    use crate::{Connection, Priority, Query};
 
     /// Inject a line into the system journal under `identifier` at the given syslog priority.
     ///
@@ -109,14 +109,10 @@ mod tests {
         child.wait().expect("systemd-cat must complete");
     }
 
-    fn make_query(
-        unit: &'static str,
-        page_size: u32,
-        token: Option<String>,
-    ) -> JournalQuery<'static> {
-        JournalQuery::new(
+    fn make_query(unit: &'static str, page_size: u32, token: Option<String>) -> Query<'static> {
+        Query::new(
             unit,
-            JournalPriority::Debug,
+            Priority::Debug,
             PaginationRequest {
                 page_size,
                 page_token: token,
@@ -126,15 +122,12 @@ mod tests {
     }
 
     /// Run a forward seek through the proper entry point so the unit filter is applied.
-    fn forward_seek(
-        query: JournalQuery<'_>,
-        conn: &mut JournalConnection,
-    ) -> crate::Result<crate::JournalPage> {
+    fn forward_seek(query: Query<'_>, conn: &mut Connection) -> crate::Result<crate::Page> {
         query.seek(conn)
     }
 
-    fn open() -> JournalConnection {
-        JournalConnection::open().expect("system journal must open")
+    fn open() -> Connection {
+        Connection::open().expect("system journal must open")
     }
 
     #[test]
@@ -255,9 +248,9 @@ mod tests {
         inject(id, "info", "info-msg-should-be-excluded");
 
         let mut conn = open();
-        let query = JournalQuery::new(
+        let query = Query::new(
             "lib-jd-fwd-priority.service",
-            JournalPriority::Error,
+            Priority::Error,
             PaginationRequest {
                 page_size: 50,
                 page_token: None,
@@ -268,7 +261,7 @@ mod tests {
 
         for entry in &page.entries {
             assert!(
-                entry.priority <= JournalPriority::Error,
+                entry.priority <= Priority::Error,
                 "entry with priority {:?} must not exceed Error threshold",
                 entry.priority,
             );

@@ -1,29 +1,30 @@
 //! Query parameters for fetching journal entries.
 
-use crate::domains::JournalPriority;
 use lib_core::domains::pagination::PaginationRequest;
 
 /// Default unit name to use when no specific unit name is provided.
 const DEFAULT_UNIT_NAME: &str = "";
 
 /// Default priority level to use when no specific priority is provided.
-const DEFAULT_PRIORITY: JournalPriority = JournalPriority::Info;
+const DEFAULT_PRIORITY: crate::Priority = crate::Priority::Info;
 
 /// Default number of tail lines to use when no specific number is provided.
 const DEFAULT_TAIL_LINES: u32 = 30;
 
 /// Parameters controlling which journal entries to follow.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct JournalFollowTail<'a> {
+pub struct FollowTail<'a> {
     /// Systemd unit name to filter on, e.g. `"bitcoind.service"`.
     pub unit_name: &'a str,
+
     /// Minimum priority level to return.
-    pub priority: JournalPriority,
+    pub priority: crate::Priority,
+
     /// Number of existing tail entries to replay before streaming new entries.
     pub tail_lines: u32,
 }
 
-impl<'a> Default for JournalFollowTail<'a> {
+impl<'a> Default for FollowTail<'a> {
     fn default() -> Self {
         Self {
             unit_name: DEFAULT_UNIT_NAME,
@@ -33,7 +34,7 @@ impl<'a> Default for JournalFollowTail<'a> {
     }
 }
 
-impl<'a> JournalFollowTail<'a> {
+impl<'a> FollowTail<'a> {
     /// Create a new [`JournalFollowTail`] with explicit parameters.
     ///
     /// # Arguments
@@ -42,7 +43,7 @@ impl<'a> JournalFollowTail<'a> {
     /// * `priority` — Minimum severity level to return.
     /// * `tail_lines` — Number of existing tail entries to replay first.
     #[must_use]
-    pub fn new(unit_name: &'a str, priority: JournalPriority, tail_lines: u32) -> Self {
+    pub fn new(unit_name: &'a str, priority: crate::Priority, tail_lines: u32) -> Self {
         Self {
             unit_name,
             priority,
@@ -57,5 +58,34 @@ impl<'a> JournalFollowTail<'a> {
             unit_name,
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_uses_constants() {
+        let follow = FollowTail::default();
+        assert_eq!(follow.unit_name, DEFAULT_UNIT_NAME);
+        assert_eq!(follow.priority, DEFAULT_PRIORITY);
+        assert_eq!(follow.tail_lines, DEFAULT_TAIL_LINES);
+    }
+
+    #[test]
+    fn new_stores_all_fields() {
+        let follow = FollowTail::new("bitcoind.service", crate::Priority::Warning, 50);
+        assert_eq!(follow.unit_name, "bitcoind.service");
+        assert_eq!(follow.priority, crate::Priority::Warning);
+        assert_eq!(follow.tail_lines, 50);
+    }
+
+    #[test]
+    fn with_unit_sets_unit_name_and_keeps_defaults() {
+        let follow = FollowTail::with_unit("bitcoind.service");
+        assert_eq!(follow.unit_name, "bitcoind.service");
+        assert_eq!(follow.priority, DEFAULT_PRIORITY);
+        assert_eq!(follow.tail_lines, DEFAULT_TAIL_LINES);
     }
 }

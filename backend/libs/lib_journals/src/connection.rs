@@ -10,11 +10,11 @@ use crate::{Error, Result};
 /// [`JournalConnection::open_current_user`] when only the calling user's
 /// journal slice is required.  Add match filters with
 /// [`match_add`][Self::match_add] before iterating or streaming entries.
-pub struct JournalConnection {
+pub struct Connection {
     pub(crate) journal: Journal,
 }
 
-impl JournalConnection {
+impl Connection {
     /// Open the system journal.
     ///
     /// # Errors
@@ -53,8 +53,41 @@ impl JournalConnection {
     }
 }
 
-impl std::fmt::Debug for JournalConnection {
+impl std::fmt::Debug for Connection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("JournalConnection").finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn open_returns_ok() {
+        assert!(Connection::open().is_ok());
+    }
+
+    #[test]
+    fn open_current_user_returns_ok() {
+        assert!(Connection::open_current_user().is_ok());
+    }
+
+    #[test]
+    fn debug_contains_type_name() {
+        let conn = Connection::open().unwrap();
+        assert!(format!("{conn:?}").contains("JournalConnection"));
+    }
+
+    #[test]
+    fn match_unit_with_service_suffix_returns_ok() {
+        let mut conn = Connection::open().unwrap();
+        assert!(conn.match_unit("bitcoind.service").is_ok());
+    }
+
+    #[test]
+    fn match_unit_without_service_suffix_returns_ok() {
+        let mut conn = Connection::open().unwrap();
+        assert!(conn.match_unit("kernel").is_ok());
     }
 }

@@ -1,37 +1,60 @@
-//! Journal priority level.
+//! Journal entry priority levels.
+//!
+//! Provides the [`Priority`] enum, which maps the numeric `PRIORITY` field
+//! stored in the systemd journal to the eight syslog severity levels defined
+//! by RFC 5424. Conversions from both `u8` and `&str` are provided so that
+//! raw journal field values can be decoded directly into a typed variant.
 
 /// Systemd journal priority levels, matching syslog severity (RFC 5424).
+///
+/// Variants are ordered from most to least severe, so comparisons such as
+/// `priority <= Priority::Error` work as expected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum JournalPriority {
+pub enum Priority {
+    /// System is unusable (syslog level 0, `emerg`).
     Emergency,
+
+    /// Action must be taken immediately (syslog level 1, `alert`).
     Alert,
+
+    /// Critical conditions (syslog level 2, `crit`).
     Critical,
+
+    /// Error conditions (syslog level 3, `err`).
     Error,
+
+    /// Warning conditions (syslog level 4, `warning`).
     Warning,
+
+    /// Normal but significant conditions (syslog level 5, `notice`).
     Notice,
+
+    /// Informational messages (syslog level 6, `info`).
     Info,
+
+    /// Debug-level messages (syslog level 7, `debug`).
     Debug,
 }
 
-impl JournalPriority {
+impl Priority {
     /// Returns the lowercase syslog name for this priority level.
     #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Emergency => "emerg",
-            Self::Alert     => "alert",
-            Self::Critical  => "crit",
-            Self::Error     => "err",
-            Self::Warning   => "warning",
-            Self::Notice    => "notice",
-            Self::Info      => "info",
-            Self::Debug     => "debug",
+            Self::Alert => "alert",
+            Self::Critical => "crit",
+            Self::Error => "err",
+            Self::Warning => "warning",
+            Self::Notice => "notice",
+            Self::Info => "info",
+            Self::Debug => "debug",
         }
     }
 }
 
 /// Converts from a numeric priority value (0–7). Values outside this range map to `Info`.
-impl From<u8> for JournalPriority {
+impl From<u8> for Priority {
     fn from(n: u8) -> Self {
         match n {
             0 => Self::Emergency,
@@ -49,13 +72,14 @@ impl From<u8> for JournalPriority {
 
 /// Converts from the numeric string stored in the journal `PRIORITY` field (`"0"`–`"7"`).
 /// Unrecognised values (non-numeric or out of range) map to `Info`.
-impl From<&str> for JournalPriority {
+impl From<&str> for Priority {
     fn from(s: &str) -> Self {
         s.parse::<u8>().map(Self::from).unwrap_or(Self::Info)
     }
 }
 
-impl std::fmt::Display for JournalPriority {
+/// Formats the priority using its lowercase syslog name (delegates to [`Priority::as_str`]).
+impl std::fmt::Display for Priority {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_str())
     }
@@ -67,44 +91,44 @@ mod tests {
 
     #[test]
     fn from_u8_all_known_values() {
-        assert_eq!(JournalPriority::from(0u8), JournalPriority::Emergency);
-        assert_eq!(JournalPriority::from(1u8), JournalPriority::Alert);
-        assert_eq!(JournalPriority::from(2u8), JournalPriority::Critical);
-        assert_eq!(JournalPriority::from(3u8), JournalPriority::Error);
-        assert_eq!(JournalPriority::from(4u8), JournalPriority::Warning);
-        assert_eq!(JournalPriority::from(5u8), JournalPriority::Notice);
-        assert_eq!(JournalPriority::from(6u8), JournalPriority::Info);
-        assert_eq!(JournalPriority::from(7u8), JournalPriority::Debug);
+        assert_eq!(Priority::from(0u8), Priority::Emergency);
+        assert_eq!(Priority::from(1u8), Priority::Alert);
+        assert_eq!(Priority::from(2u8), Priority::Critical);
+        assert_eq!(Priority::from(3u8), Priority::Error);
+        assert_eq!(Priority::from(4u8), Priority::Warning);
+        assert_eq!(Priority::from(5u8), Priority::Notice);
+        assert_eq!(Priority::from(6u8), Priority::Info);
+        assert_eq!(Priority::from(7u8), Priority::Debug);
     }
 
     #[test]
     fn from_u8_out_of_range_defaults_to_info() {
-        assert_eq!(JournalPriority::from(8u8), JournalPriority::Info);
-        assert_eq!(JournalPriority::from(255u8), JournalPriority::Info);
+        assert_eq!(Priority::from(8u8), Priority::Info);
+        assert_eq!(Priority::from(255u8), Priority::Info);
     }
 
     #[test]
     fn from_str_numeric() {
-        assert_eq!(JournalPriority::from("0"), JournalPriority::Emergency);
-        assert_eq!(JournalPriority::from("3"), JournalPriority::Error);
-        assert_eq!(JournalPriority::from("6"), JournalPriority::Info);
-        assert_eq!(JournalPriority::from("7"), JournalPriority::Debug);
+        assert_eq!(Priority::from("0"), Priority::Emergency);
+        assert_eq!(Priority::from("3"), Priority::Error);
+        assert_eq!(Priority::from("6"), Priority::Info);
+        assert_eq!(Priority::from("7"), Priority::Debug);
     }
 
     #[test]
     fn from_str_unrecognised_defaults_to_info() {
-        assert_eq!(JournalPriority::from(""), JournalPriority::Info);
-        assert_eq!(JournalPriority::from("abc"), JournalPriority::Info);
-        assert_eq!(JournalPriority::from("8"), JournalPriority::Info);
-        assert_eq!(JournalPriority::from("-1"), JournalPriority::Info);
+        assert_eq!(Priority::from(""), Priority::Info);
+        assert_eq!(Priority::from("abc"), Priority::Info);
+        assert_eq!(Priority::from("8"), Priority::Info);
+        assert_eq!(Priority::from("-1"), Priority::Info);
     }
 
     #[test]
     fn display_uses_syslog_names() {
-        assert_eq!(JournalPriority::Emergency.to_string(), "emerg");
-        assert_eq!(JournalPriority::Critical.to_string(), "crit");
-        assert_eq!(JournalPriority::Error.to_string(), "err");
-        assert_eq!(JournalPriority::Info.to_string(), "info");
-        assert_eq!(JournalPriority::Debug.to_string(), "debug");
+        assert_eq!(Priority::Emergency.to_string(), "emerg");
+        assert_eq!(Priority::Critical.to_string(), "crit");
+        assert_eq!(Priority::Error.to_string(), "err");
+        assert_eq!(Priority::Info.to_string(), "info");
+        assert_eq!(Priority::Debug.to_string(), "debug");
     }
 }

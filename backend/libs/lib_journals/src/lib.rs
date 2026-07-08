@@ -16,10 +16,10 @@ mod seek;
 pub use error::Error;
 
 /// Re-export journal domain types.
-pub use domains::{JournalEntry, JournalFollowTail, JournalPage, JournalPriority, JournalQuery};
+pub use domains::{Entry, FollowTail, Page, Priority, Query};
 
 /// Re-export connection types.
-pub use connection::JournalConnection;
+pub use connection::Connection;
 
 // -- Result type alias
 
