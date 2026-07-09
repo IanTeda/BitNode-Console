@@ -49,7 +49,7 @@ pub struct Query<'a> {
     pub pagination: PaginationRequest,
 }
 
-impl<'a> Default for Query<'a> {
+impl Default for Query<'_> {
     /// Returns a `Query` with an empty unit filter, no timestamp bounds,
     /// [`Priority::Info`](crate::Priority::Info) threshold, and default
     /// pagination settings.
@@ -77,7 +77,7 @@ impl<'a> Query<'a> {
     /// * `priority` — Maximum priority level to include.
     /// * `pagination` — Page size, resume cursor, and read direction.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         unit_name: &'a str,
         priority: crate::Priority,
         pagination: PaginationRequest,
@@ -105,7 +105,7 @@ impl<'a> Query<'a> {
 
 #[cfg(test)]
 mod tests {
-    use lib_core::domains::pagination::{Direction, PaginationRequest, DEFAULT_PAGE_SIZE};
+    use lib_core::domains::pagination::{DEFAULT_PAGE_SIZE, Direction, PaginationRequest};
 
     use crate::{Priority, Query};
 
@@ -165,7 +165,11 @@ mod tests {
         let q = Query {
             timestamp_from: Some(1_000_000),
             timestamp_to: Some(2_000_000),
-            ..Query::new("bitcoind.service", Priority::Debug, PaginationRequest::default())
+            ..Query::new(
+                "bitcoind.service",
+                Priority::Debug,
+                PaginationRequest::default(),
+            )
         };
 
         assert_eq!(q.timestamp_from, Some(1_000_000));
@@ -177,7 +181,10 @@ mod tests {
 
     #[test]
     fn with_unit_sets_unit_name() {
-        assert_eq!(Query::with_unit("bitcoind.service").unit_name, "bitcoind.service");
+        assert_eq!(
+            Query::with_unit("bitcoind.service").unit_name,
+            "bitcoind.service"
+        );
     }
 
     #[test]

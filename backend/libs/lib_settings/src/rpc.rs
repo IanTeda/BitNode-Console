@@ -125,7 +125,7 @@ impl RpcSettings {
 
     /// Returns the token signing secret.
     #[must_use]
-    pub fn token_secret(&self) -> &secrecy::SecretString {
+    pub const fn token_secret(&self) -> &secrecy::SecretString {
         &self.token_secret
     }
 
@@ -318,11 +318,11 @@ mod tests {
 
     #[test]
     fn token_secret_stores_arbitrary_value() {
+        use secrecy::ExposeSecret;
         let s = RpcSettings {
             token_secret: secrecy::SecretString::from("my-jwt-signing-key"),
             ..RpcSettings::default()
         };
-        use secrecy::ExposeSecret;
         assert_eq!(s.token_secret().expose_secret(), "my-jwt-signing-key");
     }
 
@@ -406,7 +406,7 @@ mod tests {
     fn allowed_ips_accessor_returns_field_value() {
         let net: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
         let s = RpcSettings {
-            allowed_ips: vec![net.clone()],
+            allowed_ips: vec![net],
             ..RpcSettings::default()
         };
         assert_eq!(s.allowed_ips(), &[net]);

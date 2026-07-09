@@ -7,9 +7,7 @@
 //! returned by the handler into a [`tonic::Status`] via [`Into::into`].
 
 use crate::services::journals::JournalsService;
-use crate::services::journals::{
-    FollowJournalsRequest, GetJournalsRequest, GetJournalsResponse,
-};
+use crate::services::journals::{FollowJournalsRequest, GetJournalsRequest, GetJournalsResponse};
 
 /// Concrete implementation of the [`JournalsService`] gRPC trait.
 ///
@@ -50,9 +48,7 @@ impl JournalsService for JournalsServiceImpl {
         &self,
         request: tonic::Request<GetJournalsRequest>,
     ) -> std::result::Result<tonic::Response<GetJournalsResponse>, tonic::Status> {
-        super::get_journals::handle(&self.unit_name, request)
-            .await
-            .map_err(Into::into)
+        super::get_journals::handle(&self.unit_name, request).await.map_err(Into::into)
     }
 
     /// Stream live journal log entries until the client disconnects.

@@ -12,10 +12,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_core = { path = "../../libs/lib_core" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

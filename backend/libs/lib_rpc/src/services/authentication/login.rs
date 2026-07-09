@@ -86,13 +86,17 @@ mod tests {
 
     #[tokio::test]
     async fn login_rejects_empty_password() {
-        let status = tonic::Status::from(handle(test_hash(), &secret(), login_request("")).await.unwrap_err());
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request("")).await.unwrap_err(),
+        );
         assert_eq!(status.code(), tonic::Code::InvalidArgument);
     }
 
     #[tokio::test]
     async fn login_empty_password_error_message() {
-        let status = tonic::Status::from(handle(test_hash(), &secret(), login_request("")).await.unwrap_err());
+        let status = tonic::Status::from(
+            handle(test_hash(), &secret(), login_request("")).await.unwrap_err(),
+        );
         assert_eq!(status.message(), "password must not be empty");
     }
 

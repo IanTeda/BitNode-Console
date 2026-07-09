@@ -8,5 +8,5 @@ pub mod request;
 pub mod response;
 
 pub use direction::Direction;
-pub use request::{PaginationRequest, DEFAULT_PAGE_SIZE};
+pub use request::{DEFAULT_PAGE_SIZE, PaginationRequest};
 pub use response::PaginationResponse;

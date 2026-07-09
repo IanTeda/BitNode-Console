@@ -48,7 +48,7 @@ pub struct BitcoinDaemonSettings {
     /// Used to filter journal entries when serving logs over gRPC. Must match
     /// the `_SYSTEMD_UNIT` field written by the daemon's service unit, e.g.
     /// `"bitcoind.service"`. In development, when the daemon is launched via
-    /// `systemd-cat -t bitcoind`, lib_journals also matches the
+    /// `systemd-cat -t bitcoind`, `lib_journals` also matches the
     /// `SYSLOG_IDENTIFIER` field derived by stripping the `.service` suffix.
     pub unit_name: String,
 
@@ -135,7 +135,7 @@ impl BitcoinDaemonSettings {
 
     /// Returns the RPC port.
     #[must_use]
-    pub fn rpc_port(&self) -> u16 {
+    pub const fn rpc_port(&self) -> u16 {
         self.rpc_port
     }
 
@@ -150,7 +150,7 @@ impl BitcoinDaemonSettings {
     /// Call [`ExposeSecret::expose_secret`] on the returned value to access the
     /// raw string, e.g. `settings.rpc_password().expose_secret()`.
     #[must_use]
-    pub fn rpc_password(&self) -> &SecretString {
+    pub const fn rpc_password(&self) -> &SecretString {
         &self.rpc_password
     }
 

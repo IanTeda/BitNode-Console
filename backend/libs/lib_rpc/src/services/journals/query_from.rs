@@ -66,7 +66,12 @@ mod tests {
         priority: Option<i32>,
         pagination: Option<PageRequest>,
     ) -> GetJournalsRequest {
-        GetJournalsRequest { timestamp_from_us, timestamp_to_us, priority, pagination }
+        GetJournalsRequest {
+            timestamp_from_us,
+            timestamp_to_us,
+            priority,
+            pagination,
+        }
     }
 
     fn empty_req() -> GetJournalsRequest {
@@ -74,7 +79,11 @@ mod tests {
     }
 
     fn page_req(page_size: u32) -> PageRequest {
-        PageRequest { page_size, page_token: None, page_direction: 0 }
+        PageRequest {
+            page_size,
+            page_token: None,
+            page_direction: 0,
+        }
     }
 
     // ── unit_name ─────────────────────────────────────────────────────────────
@@ -126,7 +135,10 @@ mod tests {
 
     #[test]
     fn absent_pagination_uses_default() {
-        assert_eq!(Query::from(empty_req()).pagination, PaginationRequest::default());
+        assert_eq!(
+            Query::from(empty_req()).pagination,
+            PaginationRequest::default()
+        );
     }
 
     #[test]
@@ -143,11 +155,16 @@ mod tests {
 
     #[test]
     fn page_token_passes_through() {
-        let req = make_req(None, None, None, Some(PageRequest {
-            page_size: 10,
-            page_token: Some("cursor-abc".to_owned()),
-            page_direction: 0,
-        }));
+        let req = make_req(
+            None,
+            None,
+            None,
+            Some(PageRequest {
+                page_size: 10,
+                page_token: Some("cursor-abc".to_owned()),
+                page_direction: 0,
+            }),
+        );
         assert_eq!(
             Query::from(req).pagination.page_token.as_deref(),
             Some("cursor-abc"),

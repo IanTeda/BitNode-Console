@@ -2,14 +2,54 @@
 
 # Formatting preferences for the BitNode Console workspace.
 # Keep code readable, consistent, and aligned with modern Rust style.
+#
+# Only stable rustfmt options are configured here so `cargo fmt` on the pinned
+# stable toolchain (see rust-toolchain.toml) produces deterministic output.
+# Nightly-only options (group_imports, imports_granularity, wrap_comments, …)
+# are intentionally omitted; revisit if we ever run `cargo +nightly fmt` in CI.
+
+# Rust edition targeted by the formatter. Must track the `edition` field used
+# by workspace crates so idiomatic syntax (e.g. `let ... else`) is respected.
 edition = "2024"
+
+# Layout width settings. `max_width` is the hard line cap; `chain_width` gives
+# method chains a slightly tighter budget so long fluent calls break earlier.
 max_width = 100
+chain_width = 80
+
+# Indentation: spaces, four per level (the community default, made explicit).
 hard_tabs = false
-use_small_heuristics = "Default"
+tab_spaces = 4
+
+# Let rustfmt pick line endings based on the file being formatted, so Windows
+# checkouts don't churn on LF/CRLF differences.
 newline_style = "Auto"
+
+# "Default" small-heuristics keeps rustfmt's built-in width ratios for arrays,
+# structs, function calls, etc. — the same behaviour most Rust projects use.
+use_small_heuristics = "Default"
+
+# Import and module ordering. rustfmt will alphabetise `use` statements within
+# a group and sort `mod` declarations, keeping diffs stable across contributors.
 reorder_imports = true
 reorder_modules = true
+
+# Always leave a trailing comma after the final arm in a block-style `match`,
+# which produces cleaner diffs when new arms are added.
 match_block_trailing_comma = true
 
-# Prefer configurable spacing for chained method calls and field initialisation.
-chain_width = 80
+# Function parameter layout when a signature spills across lines. "Tall" stacks
+# each parameter on its own line (this replaces the deprecated `fn_args_layout`).
+fn_params_layout = "Tall"
+
+# Modernisation / lint-style rewrites applied on every format pass:
+# - use_field_init_shorthand: `Foo { x }` instead of `Foo { x: x }`.
+# - use_try_shorthand:        forbids the legacy `try!(..)` macro, requires `?`.
+# - merge_derives:            collapses adjacent `#[derive(..)]` into one attr.
+# - force_explicit_abi:       requires `extern "C"` rather than bare `extern`.
+# - remove_nested_parens:     strips redundant parentheses like `((x))`.
+use_field_init_shorthand = true
+use_try_shorthand = true
+merge_derives = true
+force_explicit_abi = true
+remove_nested_parens = true

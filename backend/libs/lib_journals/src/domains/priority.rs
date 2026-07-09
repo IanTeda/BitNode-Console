@@ -39,7 +39,7 @@ pub enum Priority {
 impl Priority {
     /// Returns the lowercase syslog name for this priority level.
     #[must_use]
-    pub fn as_str(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
             Self::Emergency => "emerg",
             Self::Alert => "alert",
@@ -63,7 +63,6 @@ impl From<u8> for Priority {
             3 => Self::Error,
             4 => Self::Warning,
             5 => Self::Notice,
-            6 => Self::Info,
             7 => Self::Debug,
             _ => Self::Info,
         }
@@ -74,7 +73,7 @@ impl From<u8> for Priority {
 /// Unrecognised values (non-numeric or out of range) map to `Info`.
 impl From<&str> for Priority {
     fn from(s: &str) -> Self {
-        s.parse::<u8>().map(Self::from).unwrap_or(Self::Info)
+        s.parse::<u8>().map_or(Self::Info, Self::from)
     }
 }
 

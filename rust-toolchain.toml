@@ -1,0 +1,21 @@
+# Pins the Rust toolchain used to build this workspace.
+#
+# When rustup encounters this file, it automatically installs (if missing) and
+# activates the specified toolchain for any cargo/rustc command run within the
+# repository. This keeps every contributor and CI job on the same compiler
+# version, avoiding "works on my machine" drift caused by differing local
+# defaults.
+#
+# Reference: https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
+
+[toolchain]
+# The exact Rust release to use. Pinning to a specific version (rather than
+# "stable") gives reproducible builds and lets us adopt new compiler releases
+# deliberately rather than whenever the local `stable` channel updates.
+channel = "1.97.0"
+
+# Extra components installed alongside rustc:
+# - rustfmt: enforces the workspace formatting style (`cargo fmt`).
+# - clippy:  provides the lints run via `cargo clippy` (pedantic + nursery
+#            groups are enabled in the root Cargo.toml).
+components = ["rustfmt", "clippy"]

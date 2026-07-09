@@ -12,20 +12,22 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_auth = { path = "../../libs/lib_auth" }
 lib_core = { path = "../../libs/lib_core" }
 lib_journals = { path = "../../libs/lib_journals" }
 lib_settings = { path = "../../libs/lib_settings" }
 lib_tracing = { path = "../../libs/lib_tracing" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 prost = { workspace = true }
 secrecy = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
+tonic-prost = { workspace = true }
+tonic-reflection = { workspace = true }
 tonic-web = { workspace = true }
 tracing = { workspace = true }
 
@@ -34,10 +36,10 @@ http = "1"
 ipnet = { version = "2" }
 tower = { version = "0.4" }
 tower-http = { version = "0.6", features = ["cors"] }
-tonic-reflection = "0.12"
 
 [build-dependencies]
 tonic-build = { workspace = true }
+tonic-prost-build = { workspace = true }
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false }

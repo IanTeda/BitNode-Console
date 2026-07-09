@@ -12,7 +12,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Workspace Crate Dependencies
 
 ## --- Workspace Dependencies
 secrecy = { workspace = true }

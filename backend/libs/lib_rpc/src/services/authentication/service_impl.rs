@@ -38,9 +38,7 @@ impl AuthenticationService for AuthenticationServiceImpl {
         &self,
         request: tonic::Request<RefreshRequest>,
     ) -> std::result::Result<tonic::Response<RefreshResponse>, tonic::Status> {
-        super::refresh::handle(&self.token_secret, request)
-            .await
-            .map_err(Into::into)
+        super::refresh::handle(&self.token_secret, request).await.map_err(Into::into)
     }
 
     async fn logout(

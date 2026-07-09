@@ -10,12 +10,12 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_rpc = { path = "../../libs/lib_rpc" }
 lib_settings = { path = "../../libs/lib_settings" }
 lib_tracing = { path = "../../libs/lib_tracing" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

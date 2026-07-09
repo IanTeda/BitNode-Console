@@ -1,0 +1,216 @@
+name: Build Release Binaries
+
+# Triggered when a GitHub Release is published via the Releases UI or API.
+# Each entry in the matrix produces one archive attached to the release.
+on:
+  release:
+    types: [created]
+
+# Least-privilege token: three scopes are required, everything else stays at
+# the default `none`.
+# - contents: write        — softprops/action-gh-release uploads the archive
+#                            and checksum to the release that triggered us.
+# - id-token: write        — actions/attest-build-provenance signs the
+#                            attestation with a short-lived OIDC token minted
+#                            by the runner (used as its Sigstore identity).
+# - attestations: write    — records the signed attestation in this
+#                            repository's attestation store so consumers can
+#                            verify it with `gh attestation verify`.
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    # Each matrix entry produces one archive attached to the release.
+    name: release ${{ matrix.binary }} (${{ matrix.target }})
+
+    # Pin the runner OS rather than tracking `ubuntu-latest`. The binary links
+    # against the runner's glibc and libsystemd, so a moving base image would
+    # silently change the minimum host requirements between releases.
+    # Update this deliberately (with a release note) when bumping the target
+    # glibc floor.
+    runs-on: ubuntu-24.04
+
+    # Serialise runs for the same release tag + binary + target so a rapid
+    # republish (edit-and-save via the Releases UI) can't race two builds
+    # writing to the same asset. `cancel-in-progress: false` lets an in-flight
+    # upload finish rather than being killed mid-write, which would leave
+    # partial assets. Job-level (not workflow-level) so it can reference
+    # matrix values.
+    concurrency:
+      group: release-${{ github.event.release.tag_name }}-${{ matrix.binary }}-${{ matrix.target }}
+      cancel-in-progress: false
+
+    # Matrix of (binary, target) pairs. Each entry produces one archive.
+    strategy:
+      # keep building other entries if one fails
+      fail-fast: false
+
+      matrix:
+        include:
+          # RPC-only server. x86_64 Linux (glibc). libsystemd is a shared
+          # library only — it cannot be statically linked — so musl is not
+          # viable for this binary. The app reads systemd journals, so it
+          # will only ever run on systemd-based Linux where libsystemd.so is
+          # already present.
+          - package: bin_rpc
+            binary: bin_rpc
+            asset_name: rpc
+            target: x86_64-unknown-linux-gnu
+
+          # Full server (web UI + RPC). Same glibc/libsystemd story as
+          # bin_rpc, plus `lib_web`'s build.rs shells out to `pnpm run build`
+          # in `frontend/` to compile the React app, so this entry also
+          # needs Node.js and pnpm on the runner (see steps guarded by
+          # `matrix.needs_frontend`).
+          - package: bin_console
+            binary: bin_console
+            asset_name: console
+            target: x86_64-unknown-linux-gnu
+            needs_frontend: true
+
+    steps:
+      # Checkout the repository source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Install system libraries required by the build.
+      # protobuf-compiler / libprotobuf-dev  — prost-build needs protoc to
+      #   generate Rust source from .proto files at compile time.
+      # libsystemd-dev  — the systemd crate (used by lib_journals) links
+      #   against libsystemd; this is the Ubuntu dev package that provides
+      #   both the shared library and pkg-config metadata.
+      # mold  — a modern linker that's several times faster than the default
+      #   GNU ld. Scoped to this workflow via RUSTFLAGS on the build step
+      #   below, so local dev builds keep whatever linker their toolchain
+      #   defaults to.
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libprotobuf-dev libsystemd-dev mold
+
+      # Derive the archive filename once and export it via $GITHUB_ENV so
+      # every subsequent step references the same value. Including the release
+      # tag and a short asset name in the filename (e.g.
+      # bitnode-console-v0.1.0-rpc-x86_64-...tar.gz) disambiguates downloads
+      # once they leave the Release page and keeps the two binaries from
+      # colliding on the same asset name. `asset_name` is deliberately shorter
+      # than the cargo package name (e.g. `console` vs `bin_console`) so the
+      # published artifact reads naturally.
+      # GITHUB_REF_NAME resolves to the tag name for release events.
+      - name: Compute archive name
+        run: echo "ARCHIVE_NAME=bitnode-console-${GITHUB_REF_NAME}-${{ matrix.asset_name }}-${{ matrix.target }}.tar.gz" >> "$GITHUB_ENV"
+
+      # Set up Node.js and pnpm for entries that build the React frontend as
+      # part of the Rust build (currently just bin_console via lib_web's
+      # build.rs). pnpm/action-setup must run before setup-node so that the
+      # `cache: 'pnpm'` option can find the pnpm binary.
+      - name: Install pnpm
+        if: matrix.needs_frontend
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Node.js
+        if: matrix.needs_frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # Populate frontend/node_modules before the Rust build kicks off.
+      # `lib_web`'s build.rs runs `pnpm run build` (which invokes
+      # `tsc -b && vite build`) but does not install dependencies first — on
+      # a fresh runner tsc then fails with "Cannot find type definition file
+      # for 'vite/client' / 'node'". `--frozen-lockfile` refuses to update
+      # pnpm-lock.yaml, so a drifted lockfile fails the build here rather
+      # than silently resolving to different versions than developers see.
+      - name: Install frontend dependencies
+        if: matrix.needs_frontend
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      # Restore the cargo registry, git index, and target/ directory from a
+      # previous run to avoid recompiling the whole dependency graph on every
+      # release. The action keys the cache on Cargo.lock + rust-toolchain.toml,
+      # so a real source or toolchain change still triggers a fresh build.
+      # We add `matrix.package` and `matrix.target` to the key so parallel
+      # matrix jobs don't overwrite each other's caches.
+      # See: https://github.com/Swatinem/rust-cache
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.package }}-${{ matrix.target }}
+
+      # Register the target with the Rust toolchain installed by rust-toolchain.toml.
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      # Build the selected package in release mode.
+      # `--locked` forces cargo to honour Cargo.lock exactly; if the lockfile
+      # is out of sync with Cargo.toml the build fails instead of silently
+      # updating dependencies. This guarantees the shipped binary matches the
+      # exact dependency set committed at the release tag.
+      #
+      # `RUSTFLAGS=-C link-arg=-fuse-ld=mold` routes the final link through
+      # mold via the gcc driver. RUSTFLAGS is deliberately set on this step
+      # only so the value is scoped to CI and doesn't need to be baked into
+      # rustflags in a checked-in .cargo/config.toml (which would affect all
+      # local developer builds). Swatinem/rust-cache mixes RUSTFLAGS into its
+      # cache key, so switching linkers cleanly invalidates prior caches once.
+      - name: Build ${{ matrix.package }}
+        env:
+          RUSTFLAGS: -C link-arg=-fuse-ld=mold
+        run: cargo build --release --locked --target ${{ matrix.target }} --package ${{ matrix.package }}
+
+      # Cheap post-build sanity check before we ship the artifact.
+      # `file` confirms the output really is an ELF for the expected target.
+      # `ldd` confirms every dynamic dependency (notably libsystemd.so.0)
+      # resolves against the runner's system libraries — catches the case
+      # where the build succeeds but a runtime link is broken. This is more
+      # useful than `<binary> --version` because the binaries have no CLI
+      # parser.
+      - name: Smoke test built binary
+        run: |
+          BIN=target/${{ matrix.target }}/release/${{ matrix.binary }}
+          file "$BIN"
+          ldd "$BIN"
+
+      # Bundle the binary and supporting files into a tar.gz archive.
+      - name: Create archive
+        run: |
+          tar -czf "$ARCHIVE_NAME" \
+            -C target/${{ matrix.target }}/release ${{ matrix.binary }} \
+            -C "$GITHUB_WORKSPACE" README.md LICENSE
+
+      # Publish a SHA256 checksum alongside the archive so downloaders can
+      # verify integrity independently of GitHub's own transport. Convention
+      # followed by ripgrep, cargo, hyperfine, and most Rust CLI releases.
+      - name: Generate SHA256 checksum
+        run: sha256sum "$ARCHIVE_NAME" > "$ARCHIVE_NAME.sha256"
+
+      # Produce a signed SLSA-style build attestation binding the archive's
+      # content hash to this workflow file, this repository, this commit, and
+      # this run. Consumers can then verify provenance offline with
+      # `gh attestation verify <archive> --owner <org>`, giving them proof
+      # that the binary came from an authorised build rather than a hijacked
+      # release or a compromised maintainer machine.
+      # See: https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ env.ARCHIVE_NAME }}
+
+      # Attach the archive and its checksum to the GitHub Release that
+      # triggered this workflow. The attestation from the previous step is
+      # stored separately in the repository's attestation store (surfaced on
+      # the Releases page automatically) and does not need to be attached
+      # here as a file.
+      # https://github.com/softprops/action-gh-release
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ARCHIVE_NAME }}
+            ${{ env.ARCHIVE_NAME }}.sha256
