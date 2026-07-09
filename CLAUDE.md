@@ -9,13 +9,19 @@ node — configuration (`bitcoin.conf`), status monitoring, and log viewing with
 requiring CLI/SSH access. The project is currently in its **feasibility stage**
 (see `docs/product-requirements.md` and `README.md` roadmap): demonstrating
 auth via RPC credentials, daemon status, journalctl log output, and parsing
-`bitcoin.conf` settings. Most functionality does not exist yet — `crates/web` is
+`bitcoin.conf` settings. Most functionality does not exist yet — `backend/server` is
 currently a minimal axum "Hello, World!" server.
 
 ## Repository Structure
 
-- Cargo workspace (`Cargo.toml`) with members under `crates/*`.
-- `crates/web` — axum-based web server (binary crate, `src/main.rs`).
+- Cargo workspace (`Cargo.toml`) with members under `backend/bins/*` and
+  `backend/libs/*`.
+- `backend/bins/bin_console` — full server binary: serves both the React web
+  frontend (HTTP) and gRPC backend concurrently.
+- `backend/bins/bin_rpc` — RPC-only server binary: serves only the gRPC
+  backend, no web frontend (headless / API-only deployments).
+- `backend/libs/` — shared library crates (`lib_auth`, `lib_rpc`,
+  `lib_settings`, `lib_tracing`, `lib_web`).
 - `docs/` — mdBook documentation source (`book.toml`, built to `docs/.book/`).
 - `shell.nix` / `.envrc` — Nix + direnv development environment.
 
@@ -30,7 +36,8 @@ run `nix-shell` manually from the repo root.
 ## Common Commands
 
 - Build: `cargo build`
-- Run the web server: `cargo run -p web` (serves on `0.0.0.0:3000`)
+- Run full server (web + RPC): `cargo run -p bin_console`
+- Run RPC-only server: `cargo run -p bin_rpc`
 - Test (all): `cargo test`
 - Test (single, by name): `cargo test <test_name>`
 - Lint: `cargo clippy`

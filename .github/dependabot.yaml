@@ -1,0 +1,34 @@
+# Dependabot Configuration
+#
+# Dependabot automatically opens pull requests to keep dependencies up to date
+# and to surface security vulnerabilities as soon as they are published to the
+# relevant advisory databases (RustSec for Cargo, npm for Node).
+#
+# Each entry under `updates` watches one package ecosystem:
+#   - cargo           — Rust crates declared in Cargo.toml / Cargo.lock
+#   - npm             — Node packages declared in package.json / package-lock.json
+#   - github-actions  — Action versions pinned in .github/workflows/*.yml
+#
+# Schedule options: daily | weekly | monthly
+# To adjust the day/time, add `day` and `time` keys under `schedule`.
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Rust workspace (Cargo.toml at repo root covers all backend crates)
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+
+  # React frontend (frontend/package.json)
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+
+  # GitHub Actions workflow dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,0 +1,56 @@
+// BitNode-Console Authentication Service Protocol Buffer Definition
+//
+// Defines the RPC service and messages for user authentication,
+// including login, token refresh, and logout.
+
+syntax = "proto3";
+
+package bitnode_console.authentication.v1;
+
+// AuthenticationService handles user authentication and token management.
+service AuthenticationService {
+  // Login authenticates a user with a username and password.
+  rpc Login (LoginRequest) returns (LoginResponse);
+
+  // Refresh issues a new access token using the refresh token in the request metadata.
+  rpc Refresh (RefreshRequest) returns (RefreshResponse);
+
+  // Logout invalidates the caller's access and refresh tokens.
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+}
+
+// LoginRequest carries the credentials for authentication.
+message LoginRequest {
+  // Password to authenticate against.
+  string password = 1;
+}
+
+// LoginResponse returns the token pair on successful authentication.
+message LoginResponse {
+  // Short-lived access token for authorising subsequent RPCs.
+  string access_token = 1;
+
+  // Long-lived refresh token for obtaining new access tokens.
+  string refresh_token = 2;
+}
+
+// RefreshRequest is intentionally empty; the refresh token is sent via request metadata.
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+// RefreshResponse returns a new token pair (token rotation).
+message RefreshResponse {
+  // Newly issued short-lived access token.
+  string access_token = 1;
+
+  // Newly issued refresh token, replacing the one that was redeemed.
+  // Clients must store this and discard the previous refresh token.
+  string refresh_token = 2;
+}
+
+// LogoutRequest is intentionally empty; the session is identified via request metadata.
+message LogoutRequest {}
+
+// LogoutResponse is intentionally empty; errors are conveyed via gRPC status codes.
+message LogoutResponse {}

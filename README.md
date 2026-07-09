@@ -1,6 +1,5 @@
 <!-- markdownlint-disable MD033 -->
 <!-- Improved compatibility of back to top link -->
-
 <a name="readme-top"></a>
 
 <!-- The extra return after center is needed for it to render the markdown links center -->
@@ -63,8 +62,8 @@
   </ol>
 </details>
 
-<!-- REPOSITORY OVERVIEW -->
 
+<!-- REPOSITORY OVERVIEW -->
 ## Overview
 
 [![BitNode Screenshot][product-screenshot]](https://github.com/IanTeda/BitNode-Console)
@@ -76,7 +75,6 @@ While Bitcoin Knots/Core provides thoughtful default settings that simplify usag
 Additionally, the `bitcoin.conf` file can grow large and difficult to manage. BitNode offers a logical, structured way to configure a Bitcoin Knots/Core daemon, including dedicated areas for notes and references to aid navigation.
 
 <!-- APPLICATION FEATURES -->
-
 ## Features
 
 BitNode Console features will be added over time, as discussed in the roadmap section below. For now, the aim of the feasibility stage is to have the following features available:
@@ -87,25 +85,21 @@ BitNode Console features will be added over time, as discussed in the roadmap se
 - Log view, including useful filters and alerts.
 
 <!-- APPLICATION QUICK START -->
-
 ## Quick Start
 
 No information available yet. Details will be added during the concept stage.
 
 <!-- APPLICATION CONFIGURATION -->
-
 ## Configuration
 
 No information available yet. Details will be added during the concept stage.
 
 <!-- APPLICATION DEVELOPMENT -->
-
 ## Development
 
 This section describes the technology stack used and how to set up your development environment if you want to contribute or play around.
 
 <!-- APPLICATION TECHNOLOGY STACK -->
-
 ### Technology Stack
 
 The BitNode uses the following technology stack:
@@ -113,7 +107,6 @@ The BitNode uses the following technology stack:
 - Rust Language: Because it is what I am learning.
 
 <!-- REPOSITORY FILE/FOLDER STRUCTURE -->
-
 ### Repository Structure
 
 No information available yet. Details will be added during the feasibility stage.
@@ -123,67 +116,42 @@ No information available yet. Details will be added during the feasibility stage
 
 ```
 
-<!-- GETTING STARTED WITH DEVELOPMENT/CONTRIBUTING -->
-
-### Getting Started
-
-Use `direnv` to automatically load development environment variables in this
-repository.
-
-#### `.envrc` Development Environment
-
-The repository includes a root `.envrc` file used during development.
-
-- Loads `shell.nix` automatically using `direnv` (`use nix`).
-- Watches core project files (`Cargo.toml`, `Makefile.toml`, `book.toml`, and
-  `shell.nix`) so updates trigger a reload.
-- Optionally loads a local `.envrc.local` file for machine-specific overrides.
-
-#### `shell.nix` Development Shell
-
-The repository includes a root `shell.nix` that defines the development
-toolchain for this project.
-
-- Provides Rust tooling (`rustc`, `cargo`, `rustfmt`, `clippy`, and
-  `rust-analyzer`).
-- Provides project tools (`mdbook`, `cargo-make`, `nodejs`, and `pnpm`).
-- Exports development defaults such as `BITNODE_ENV`, `RUST_BACKTRACE`,
-  `RUST_LOG`, and `CARGO_TERM_COLOR` via the shell hook.
-
-If `direnv` is enabled, entering the repository automatically enters this shell.
-You can also enter it manually with `nix-shell` from the repository root.
-
-To use it:
-
-1. Install `direnv` for your operating system.
-2. Hook `direnv` into your shell.
-3. From the repository root, run `direnv allow` once.
-
-After allowing, entering this directory automatically loads the environment,
-and leaving it unloads the environment.
-
-Use `.envrc.local` for any local-only values you do not want committed.
-
 TODO: Add git flow repository structure
 
-<!-- CODE TESTING NOTES -->
+<!-- GETTING STARTED WITH DEVELOPMENT/CONTRIBUTING -->
+### Getting Started
 
+No information available yet. Details will be added during the concept stage.
+
+To get started with developing with this repository check off the following:
+
+1. Update rust
+
+`$ rustup update`
+
+2. Setup Leptos
+
+[Leptos Getting Started](https://book.leptos.dev/getting_started/index.html)
+
+[Leptos Developer Experience](https://book.leptos.dev/getting_started/leptos_dx.html)
+
+
+
+<!-- CODE TESTING NOTES -->
 ### Testing
 
 No information available yet. Details will be added during the feasibility stage.
 
 <!-- APPLICATION ROADMAP -->
-
 ## Roadmap
 
 It is anticipated that there will be three stages to the initial development of BitNode, which will have their own git release branch within the repository:
 
-1. **Feasibility Stage:** This stage will demonstrate the underlying technologies and their suitability for achieving the desired outcomes.
-2. **Concept Stage:** This stage will be used to develop a minimal viable product that demonstrates functionality and use cases.
-3. **Development Stage:** This stage will be used to fill out the functionality and user experience. While refining the code and security aspects.
+1. __Feasibility Stage:__ This stage will demonstrate the underlying technologies and their suitability for achieving the desired outcomes.
+2. __Concept Stage:__ This stage will be used to develop a minimal viable product that demonstrates functionality and use cases.
+3. __Development Stage:__ This stage will be used to fill out the functionality and user experience. While refining the code and security aspects.
 
 <!-- FEASIBILITY STAGE -->
-
 ### Feasibility Stage
 
 The feasibility stage will initially aim to demonstrate the following:
@@ -194,26 +162,22 @@ The feasibility stage will initially aim to demonstrate the following:
 4. Provide a logical list of current node settings (read and parse the bitcoin.con file)
 
 <!-- CONCEPT STAGE -->
-
 ### Concept Stage
 
 No information available yet. Details will be added during the concept stage.
 
 <!-- DEVELOPMENT STAGE -->
-
 ### Development Stage
 
 No information available yet. Details will be added during the development stage.
 
 <!-- CODE LICENSE -->
-
 ## License
 
 License type [GPL V3](LICENSE)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-
 [contributors-shield]: https://img.shields.io/github/contributors/IanTeda/BitNode-Console.svg?style=for-the-badge
 [contributors-url]: https://github.com/IanTeda/BitNode-Console/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/IanTeda/BitNode-Console.svg?style=for-the-badge

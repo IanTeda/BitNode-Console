@@ -1,0 +1,27 @@
+[package]
+name = "lib_tracing"
+description.workspace = true
+repository.workspace = true
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+# Inherit lint configuration from the workspace Cargo.toml
+workspace = true
+
+[dependencies]
+## --- Internal Dependencies
+
+## --- Workspace Dependencies
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+## --- Library Dependencies
+tracing-log = { version = "0.2.0" }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "std"] }
+
+[dev-dependencies]
+serde_json = { version = "1.0" }

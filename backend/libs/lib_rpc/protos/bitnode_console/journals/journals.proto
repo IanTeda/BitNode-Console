@@ -1,0 +1,99 @@
+// BitNode-Console Journals Service Protocol Buffer Definition
+//
+// Defines the RPC service and messages for reading Bitcoin daemon
+// log entries from the systemd journal.
+
+syntax = "proto3";
+
+package bitnode_console.journals.v1;
+
+// Common definitions.
+import "bitnode_console/common/pagination.proto";
+
+// JournalsService exposes Bitcoin daemon log entries from the systemd journal.
+//
+// The unit name read is fixed by server configuration; clients cannot select
+// an arbitrary unit, preventing authenticated users from reading unrelated logs.
+service JournalsService {
+  // GetLogs returns a page of log lines (unary, for initial page load and pagination).
+  rpc GetJournals (GetJournalsRequest) returns (GetJournalsResponse);
+
+  // FollowJournals streams new log entries in real time (server-streaming, for live tail).
+  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+  rpc FollowJournals (FollowJournalsRequest) returns (stream JournalsEntry);
+}
+
+// Priority mirrors the syslog severity levels from RFC 5424.
+//
+// PRIORITY_UNSPECIFIED is the proto3 default and is treated as
+// PRIORITY_INFO by the server.
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_EMERGENCY   = 1;
+  PRIORITY_ALERT       = 2;
+  PRIORITY_CRITICAL    = 3;
+  PRIORITY_ERROR       = 4;
+  PRIORITY_WARNING     = 5;
+  PRIORITY_NOTICE      = 6;
+  PRIORITY_INFO        = 7;
+  PRIORITY_DEBUG       = 8;
+}
+
+// GetJournalsRequest specifies the time range, priority filter, and page for
+// log entries to fetch.
+message GetJournalsRequest {
+
+  // Inclusive lower bound; microseconds since the Unix epoch.
+  // Omit to start from the beginning of the journal.
+  optional int64 timestamp_from_us = 1;
+
+  // Exclusive upper bound; microseconds since the Unix epoch.
+  // Omit to read up to the most recent entry.
+  optional int64 timestamp_to_us = 2;
+
+  // Minimum severity level to return.
+  // Omit (or PRIORITY_UNSPECIFIED) to default to PRIORITY_INFO on the server.
+  optional Priority priority = 3;
+
+  // Pagination parameters: page size, page token, and direction.
+  bitnode_console.common.v1.PageRequest pagination = 4;
+}
+
+// GetLogsResponse carries the fetched log entries and the next page token.
+message GetJournalsResponse {
+  // Log entries in chronological order (oldest first).
+  repeated JournalsEntry entries = 1;
+
+  // Pagination cursors and boundary flags for navigating between pages.
+  bitnode_console.common.v1.PageResponse pagination = 2;
+}
+
+// FollowJournalsRequest initiates a live log tail (mirrors journalctl --follow).
+message FollowJournalsRequest {
+  // Number of existing lines to emit before streaming new entries.
+  optional uint32 tail_lines = 1;
+
+  // Minimum severity level to return.
+  optional Priority priority = 2;
+}
+
+// LogEntry represents a single journal log line from the Bitcoin daemon.
+message JournalsEntry {
+  // Log message text.
+  string message = 1;
+
+  // Wall-clock time of the entry in microseconds since the Unix epoch.
+  int64 timestamp_us = 2;
+
+  // Severity level of this entry.
+  Priority priority = 3;
+
+  // Systemd unit or syslog identifier that produced the entry.
+  string unit = 4;
+
+  // Journal cursor for seeking and pagination; absent when not recorded.
+  optional string cursor = 5;
+
+  // All remaining journal fields not captured by the fields above.
+  map<string, string> extra_fields = 6;
+}

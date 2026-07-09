@@ -1,0 +1,15 @@
+#-- ./rustfmt.toml
+
+# Formatting preferences for the BitNode Console workspace.
+# Keep code readable, consistent, and aligned with modern Rust style.
+edition = "2024"
+max_width = 100
+hard_tabs = false
+use_small_heuristics = "Default"
+newline_style = "Auto"
+reorder_imports = true
+reorder_modules = true
+match_block_trailing_comma = true
+
+# Prefer configurable spacing for chained method calls and field initialisation.
+chain_width = 80

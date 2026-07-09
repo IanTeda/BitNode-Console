@@ -1,0 +1,79 @@
+# mkdocs.yaml
+#
+# MkDocs site configuration for BitNode Console documentation.
+#
+# Local development:
+#   pip install -r docs/requirements.txt
+#   mkdocs serve          # live-reload preview at http://127.0.0.1:8000
+#   mkdocs build          # build static site to site/
+#
+# Deployment (GitHub Pages):
+#   mkdocs gh-deploy --force --clean
+#   The .github/workflows/mkdocks.yaml workflow runs this automatically on
+#   every push to main or develop.
+#
+# Reference: https://www.mkdocs.org/user-guide/configuration/
+
+site_name: BitNode Console
+site_url: https://ianteda.github.io/BitNode-Console
+site_description: >-
+  A web-based interface for managing a Bitcoin Knots/Core daemon node —
+  configuration, status monitoring, and log viewing without CLI/SSH access.
+site_author: Ian Teda
+repo_url: https://github.com/IanTeda/bitnode-console
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024 Ian Teda
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Configuration: configuration.md
+  - Development:
+      - Structure: structure.md
+      - Product Requirements: product-requirements.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist:
+      custom_checkbox: true

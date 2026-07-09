@@ -1,0 +1,22 @@
+# EditorConfig
+#
+# Defines consistent coding styles (indentation, line endings, charset)
+# across editors and IDEs for this repository.
+#
+# References:
+# - https://editorconfig.org
+# - https://editorconfig.org/#file-format-details
+
+# top-most EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

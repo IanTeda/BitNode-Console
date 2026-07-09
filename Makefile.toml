@@ -1,17 +1,121 @@
-## --- [BUILD MD BOOK]----------------------------------------------------------
-
-[tasks.docs-mdbook]
-description = "Build mdBook documentation"
-command = "sh"
-args = ["-c", "mdbook build"]
+## --- [ DOCUMENTATION ] ---------------------------------------------------------
+# Tasks related to building and serving documentation.
 
 [tasks.docs-build]
-description = "Build all documentation"
-dependencies = ["docs-mdbook"]
+workspace = false
+description = "Build mdBook documentation"
+command = "mdbook"
+args = ["build"]
 
 [tasks.docs-serve]
 workspace = false
-install_crate = "mdbook"
 description = "Serve mdBook documentation on port 8001"
 command = "mdbook"
 args = ["serve", "--port", "8001"]
+
+## --- [ FRONTEND ] --------------------------------------------------------------
+# Tasks related to building and serving the frontend.
+
+[tasks.frontend-install]
+workspace = false
+description = "Install frontend npm dependencies"
+command = "npm"
+args = ["install"]
+cwd = "frontend"
+
+[tasks.frontend-build]
+workspace = false
+description = "Build frontend production assets"
+dependencies = ["frontend-install"]
+command = "npm"
+args = ["run", "build"]
+cwd = "frontend"
+
+[tasks.frontend-dev]
+workspace = false
+description = "Run Vite dev server with hot reload"
+command = "npm"
+args = ["run", "dev"]
+cwd = "frontend"
+
+[tasks.frontend-lint]
+workspace = false
+description = "Lint frontend code"
+command = "npm"
+args = ["run", "lint"]
+cwd = "frontend"
+
+## --- [ BITCOIN ] ---------------------------------------------------------------
+# Tasks related to the Bitcoin Knots daemon.
+
+[tasks.bitcoind]
+workspace = false
+description = "Start bitcoind-knots in regtest mode, piping logs to the journal (foreground)"
+command = "bash"
+args = ["./dev/run-bitcoind.sh"]
+
+## --- [ BIN_CONSOLE ] -----------------------------------------------------------
+## Full server: serves the React web frontend (HTTP) and gRPC backend together.
+
+[tasks.console-assets-copy]
+workspace = false
+description = "Copy frontend build output to lib_web/assets"
+dependencies = ["frontend-build"]
+script_runner = "@shell"
+script = '''
+rm -rf backend/libs/lib_web/assets
+cp -r frontend/dist backend/libs/lib_web/assets
+'''
+
+[tasks.console-dev]
+workspace = false
+description = "Build frontend, copy assets, start bitcoind in background, then watch and reload the full console server (web + RPC)"
+dependencies = ["console-assets-copy"]
+script_runner = "@shell"
+script = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -w backend -x "run -p bin_console"
+'''
+
+[tasks.console-release]
+workspace = false
+description = "Build frontend, copy assets, then compile a release binary for the full console server"
+dependencies = ["console-assets-copy"]
+command = "cargo"
+args = ["build", "-p", "bin_console", "--release"]
+
+[tasks.console-run-release]
+workspace = false
+description = "Build frontend, copy assets, then run the release console server binary"
+dependencies = ["console-assets-copy"]
+command = "cargo"
+args = ["run", "-p", "bin_console", "--release"]
+
+## --- [BIN_RPC] ---------------------------------------------------------------
+## RPC-only server: serves only the gRPC backend — no web frontend.
+
+[tasks.rpc-dev]
+workspace = false
+description = "Start bitcoind in background, then watch and reload the RPC-only server on backend changes"
+script_runner = "@shell"
+script = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -w backend -x "run -p bin_rpc"
+'''
+# cargo watch -q -c -w backend -x "run -p bin_rpc"
+
+[tasks.rpc-release]
+workspace = false
+description = "Compile a release binary for the RPC-only server"
+command = "cargo"
+args = ["build", "-p", "bin_rpc", "--release"]
+
+[tasks.rpc-run-release]
+workspace = false
+description = "Run the release RPC-only server binary"
+command = "cargo"
+args = ["run", "-p", "bin_rpc", "--release"]

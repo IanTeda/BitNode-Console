@@ -1,0 +1,39 @@
+[package]
+name = "bin_console"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+# Inherit lint configuration from the workspace Cargo.toml
+workspace = true
+
+[dependencies]
+## --- Internal Dependencies
+lib_auth = { path = "../../libs/lib_auth" }
+lib_rpc = { path = "../../libs/lib_rpc" }
+lib_settings = { path = "../../libs/lib_settings" }
+lib_tracing = { path = "../../libs/lib_tracing" }
+lib_web = { path = "../../libs/lib_web" }
+
+## --- Workspace Dependencies
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tracing = { workspace = true }
+
+## --- Library Dependencies
+axum = { version = "0.7", features = ["macros"] }
+clap = { version = "4.6.1", features = ["derive"] }
+tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+once_cell = "1.21.4"
+reqwest = { version = "0.12", default-features = false }
+secrecy = { workspace = true }
+serde_json = { version = "1.0" }
+tokio-stream = { workspace = true }
+tonic-reflection = "0.12"

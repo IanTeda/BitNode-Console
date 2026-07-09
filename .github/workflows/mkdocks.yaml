@@ -1,0 +1,47 @@
+# .github/workflows/mkdocks.yaml
+#
+# Builds the MkDocs documentation site and deploys it to GitHub Pages.
+# Triggers on every push to main.
+#
+# GitHub Pages must be configured to use "GitHub Actions" as the source:
+#   Settings → Pages → Source → GitHub Actions
+
+name: mkdocs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v4
+
+      # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+          cache: pip
+
+      - run: pip install -r docs/requirements.txt
+      - run: mkdocs build
+
+      # https://github.com/actions/upload-pages-artifact
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      # https://github.com/actions/deploy-pages
+      - id: deployment
+        uses: actions/deploy-pages@v4

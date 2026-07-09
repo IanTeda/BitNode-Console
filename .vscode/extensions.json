@@ -1,11 +1,14 @@
 {
-  "recommendations": [
-    "mkhl.direnv",
-    "LiemLB.nix-flakes",
-    "rust-lang.rust-analyzer",
-    "tamasfe.even-better-toml",
-    "dbaeumer.vscode-eslint",
-    "usernamehw.errorlens",
-    "bradlc.vscode-tailwindcss"
-  ]
+    "recommendations": [
+        "fill-labs.dependi",
+        "gruntfuggly.todo-tree",
+        "mhutchie.git-graph",
+        "mkhl.direnv",
+        "rust-lang.rust-analyzer",
+        "streetsidesoftware.code-spell-checker-australian-english",
+        "streetsidesoftware.code-spell-checker",
+        "tamasfe.even-better-toml",
+        "vadimcn.vscode-lldb",
+        "vector-of-bool.gitflow",
+    ]
 }

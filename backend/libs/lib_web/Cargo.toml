@@ -1,0 +1,35 @@
+[package]
+name = "lib_web"
+description.workspace = true
+repository.workspace = true
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+# Inherit lint configuration from the workspace Cargo.toml
+workspace = true
+
+[dependencies]
+## --- Internal Dependencies
+lib_tracing = { path = "../../libs/lib_tracing" }
+lib_settings = { path = "../../libs/lib_settings" }
+
+## --- Workspace Dependencies
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+## --- Library Dependencies
+axum = { version = "0.7", features = ["macros"] }
+clap = { version = "4.6.1", features = ["derive"] }
+tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[build-dependencies]
+walkdir = "2"
+
+[dev-dependencies]
+serde_json = { version = "1.0" }
