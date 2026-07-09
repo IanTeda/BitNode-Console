@@ -25,7 +25,6 @@ pub enum Error {
     InvalidTokenType { expected: String, got: String },
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

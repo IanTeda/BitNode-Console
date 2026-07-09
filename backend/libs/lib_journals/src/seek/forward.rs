@@ -3,7 +3,7 @@
 use lib_core::domains::pagination::PaginationResponse;
 use systemd::journal::JournalSeek;
 
-use crate::{Entry, Connection, Page, Query, Result};
+use crate::{Connection, Entry, Page, Query, Result};
 
 impl<'a> Query<'a> {
     /// Seek forward through the journal, reading entries from oldest to newest.

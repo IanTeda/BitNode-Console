@@ -65,7 +65,10 @@ mod tests {
     use super::*;
 
     fn make_req(tail_lines: Option<u32>, priority: Option<i32>) -> FollowJournalsRequest {
-        FollowJournalsRequest { tail_lines, priority }
+        FollowJournalsRequest {
+            tail_lines,
+            priority,
+        }
     }
 
     /// Every proto `Priority` variant maps to its domain counterpart;
@@ -85,7 +88,10 @@ mod tests {
         ];
         for (proto, expected) in cases {
             let q = FollowTail::from(make_req(Some(10), Some(proto)));
-            assert_eq!(q.priority, expected, "priority mismatch for proto value {proto}");
+            assert_eq!(
+                q.priority, expected,
+                "priority mismatch for proto value {proto}"
+            );
         }
     }
 

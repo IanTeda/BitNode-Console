@@ -107,7 +107,10 @@ mod tests {
         tail_lines: Option<u32>,
         priority: Option<i32>,
     ) -> tonic::Request<FollowJournalsRequest> {
-        tonic::Request::new(FollowJournalsRequest { tail_lines, priority })
+        tonic::Request::new(FollowJournalsRequest {
+            tail_lines,
+            priority,
+        })
     }
 
     /// `handle` always returns `Ok` — journal errors surface as stream items,
@@ -122,9 +125,7 @@ mod tests {
     /// panicking — confirming the channel and type-boxing steps succeed.
     #[tokio::test]
     async fn response_contains_valid_stream() {
-        let response = handle("bitcoind.service", follow_request(Some(10), None))
-            .await
-            .unwrap();
+        let response = handle("bitcoind.service", follow_request(Some(10), None)).await.unwrap();
         let _stream = response.into_inner();
     }
 
@@ -133,9 +134,7 @@ mod tests {
     /// by `is_ok()`, stopping the follow loop cleanly.
     #[tokio::test]
     async fn dropping_stream_does_not_panic() {
-        let response = handle("bitcoind.service", follow_request(Some(1), None))
-            .await
-            .unwrap();
+        let response = handle("bitcoind.service", follow_request(Some(1), None)).await.unwrap();
         drop(response);
     }
 
@@ -153,8 +152,10 @@ mod tests {
 
         let mut stream = response.into_inner();
 
-        let timed =
-            tokio::time::timeout(Duration::from_millis(200), stream.next()).await;
-        assert!(timed.is_err(), "expected timeout for a unit with no entries");
+        let timed = tokio::time::timeout(Duration::from_millis(200), stream.next()).await;
+        assert!(
+            timed.is_err(),
+            "expected timeout for a unit with no entries"
+        );
     }
 }

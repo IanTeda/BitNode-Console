@@ -64,19 +64,36 @@ mod tests {
         assert_eq!(proto.priority, Priority::Info as i32);
         assert_eq!(proto.unit, "bitcoind");
         assert_eq!(proto.cursor.as_deref(), Some("s=abc123"));
-        assert_eq!(proto.extra_fields.get("_PID").map(String::as_str), Some("1234"));
+        assert_eq!(
+            proto.extra_fields.get("_PID").map(String::as_str),
+            Some("1234")
+        );
     }
 
     #[test]
     fn absent_cursor_stays_none() {
-        let entry = make_entry("msg", 0, lib_journals::Priority::Debug, "", None, BTreeMap::new());
+        let entry = make_entry(
+            "msg",
+            0,
+            lib_journals::Priority::Debug,
+            "",
+            None,
+            BTreeMap::new(),
+        );
         let proto = JournalsEntry::from(entry);
         assert!(proto.cursor.is_none());
     }
 
     #[test]
     fn empty_extra_fields() {
-        let entry = make_entry("msg", 0, lib_journals::Priority::Info, "", None, BTreeMap::new());
+        let entry = make_entry(
+            "msg",
+            0,
+            lib_journals::Priority::Info,
+            "",
+            None,
+            BTreeMap::new(),
+        );
         let proto = JournalsEntry::from(entry);
         assert!(proto.extra_fields.is_empty());
     }

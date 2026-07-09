@@ -71,6 +71,9 @@ mod tests {
 
     #[test]
     fn display_strings_are_distinct() {
-        assert_ne!(TokenType::Access.to_string(), TokenType::Refresh.to_string());
+        assert_ne!(
+            TokenType::Access.to_string(),
+            TokenType::Refresh.to_string()
+        );
     }
 }

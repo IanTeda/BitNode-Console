@@ -105,7 +105,7 @@ impl<'a> Query<'a> {
 
 #[cfg(test)]
 mod tests {
-    use lib_core::domains::pagination::{Direction, PaginationRequest, DEFAULT_PAGE_SIZE};
+    use lib_core::domains::pagination::{DEFAULT_PAGE_SIZE, Direction, PaginationRequest};
 
     use crate::{Priority, Query};
 
@@ -165,7 +165,11 @@ mod tests {
         let q = Query {
             timestamp_from: Some(1_000_000),
             timestamp_to: Some(2_000_000),
-            ..Query::new("bitcoind.service", Priority::Debug, PaginationRequest::default())
+            ..Query::new(
+                "bitcoind.service",
+                Priority::Debug,
+                PaginationRequest::default(),
+            )
         };
 
         assert_eq!(q.timestamp_from, Some(1_000_000));
@@ -177,7 +181,10 @@ mod tests {
 
     #[test]
     fn with_unit_sets_unit_name() {
-        assert_eq!(Query::with_unit("bitcoind.service").unit_name, "bitcoind.service");
+        assert_eq!(
+            Query::with_unit("bitcoind.service").unit_name,
+            "bitcoind.service"
+        );
     }
 
     #[test]

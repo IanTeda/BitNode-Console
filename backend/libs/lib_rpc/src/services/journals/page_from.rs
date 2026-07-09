@@ -43,11 +43,7 @@ mod tests {
         }
     }
 
-    fn make_page(
-        entries: Vec<Entry>,
-        next_token: Option<&str>,
-        prev_token: Option<&str>,
-    ) -> Page {
+    fn make_page(entries: Vec<Entry>, next_token: Option<&str>, prev_token: Option<&str>) -> Page {
         Page {
             entries,
             pagination: PaginationResponse {
@@ -107,9 +103,8 @@ mod tests {
 
     #[test]
     fn absent_tokens_remain_none() {
-        let pagination = GetJournalsResponse::from(make_page(vec![], None, None))
-            .pagination
-            .unwrap();
+        let pagination =
+            GetJournalsResponse::from(make_page(vec![], None, None)).pagination.unwrap();
         assert!(pagination.page_token_next.is_none());
         assert!(pagination.page_token_prev.is_none());
     }

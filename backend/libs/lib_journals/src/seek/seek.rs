@@ -77,11 +77,18 @@ mod tests {
         inject(id, "info", "fwd-msg");
 
         let mut conn = open();
-        let page = Query::new("lib-jd-mod-fwd.service", Priority::Debug, pag(50, Direction::Forward))
-            .seek(&mut conn)
-            .expect("seek must succeed");
+        let page = Query::new(
+            "lib-jd-mod-fwd.service",
+            Priority::Debug,
+            pag(50, Direction::Forward),
+        )
+        .seek(&mut conn)
+        .expect("seek must succeed");
 
-        assert!(!page.entries.is_empty(), "expected entries with Forward direction");
+        assert!(
+            !page.entries.is_empty(),
+            "expected entries with Forward direction"
+        );
     }
 
     #[test]
@@ -90,11 +97,18 @@ mod tests {
         inject(id, "info", "bwd-msg");
 
         let mut conn = open();
-        let page = Query::new("lib-jd-mod-bwd.service", Priority::Debug, pag(50, Direction::Backward))
-            .seek(&mut conn)
-            .expect("seek must succeed");
+        let page = Query::new(
+            "lib-jd-mod-bwd.service",
+            Priority::Debug,
+            pag(50, Direction::Backward),
+        )
+        .seek(&mut conn)
+        .expect("seek must succeed");
 
-        assert!(!page.entries.is_empty(), "expected entries with Backward direction");
+        assert!(
+            !page.entries.is_empty(),
+            "expected entries with Backward direction"
+        );
     }
 
     #[test]
@@ -105,9 +119,13 @@ mod tests {
         inject(id_b, "info", "msg-from-b");
 
         let mut conn = open();
-        let page = Query::new("lib-jd-mod-filter-a.service", Priority::Debug, pag(50, Direction::Forward))
-            .seek(&mut conn)
-            .expect("seek must succeed");
+        let page = Query::new(
+            "lib-jd-mod-filter-a.service",
+            Priority::Debug,
+            pag(50, Direction::Forward),
+        )
+        .seek(&mut conn)
+        .expect("seek must succeed");
 
         for entry in &page.entries {
             assert_eq!(
@@ -125,7 +143,10 @@ mod tests {
             .seek(&mut conn)
             .expect("seek must succeed");
 
-        assert!(!page.entries.is_empty(), "expected entries when no unit filter is applied");
+        assert!(
+            !page.entries.is_empty(),
+            "expected entries when no unit filter is applied"
+        );
     }
 
     #[test]
@@ -139,6 +160,9 @@ mod tests {
         .seek(&mut conn)
         .expect("seek must succeed");
 
-        assert!(page.entries.is_empty(), "unknown unit must return no entries");
+        assert!(
+            page.entries.is_empty(),
+            "unknown unit must return no entries"
+        );
     }
 }
