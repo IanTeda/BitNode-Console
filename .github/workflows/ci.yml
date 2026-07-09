@@ -37,8 +37,9 @@ jobs:
           version: "10"
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: "1.95.0"
           components: rustfmt,clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
