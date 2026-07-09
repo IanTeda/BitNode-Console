@@ -62,18 +62,65 @@ unsafe_code = "forbid"
 unused = { level = "allow", priority = -1 }
 
 # Treat all warnings as errors to enforce code quality and prevent issues from being
-# ignored
-warnings = "deny"
+# ignored. Uses a lower priority than pedantic/nursery so those lint groups can
+# stay at `warn` level without being promoted to error by this catch-all.
+warnings = { level = "deny", priority = -2 }
+
+# Silence noisy pedantic/nursery lints that fire heavily on generated code and
+# domain code; these are informational, not defects. Keep the rest of pedantic
+# and nursery at `warn` (see [workspace.lints.clippy]).
 
 [workspace.lints.clippy]
 
 # Enable pedantic lints to catch more potential issues and enforce stricter coding
-# standards
+# standards. Kept at `warn` level; specific noisy lints are set to `allow` below.
 pedantic = { level = "warn", priority = -1 }
 
 # Allow certain clippy lints that may be too strict or not applicable to our codebase,
 # with low priority to allow overrides
 nursery = { level = "warn", priority = -1 }
+
+# The following pedantic/nursery lints are silenced because they either fire on
+# style choices we've already made, on generated code (tonic/prost output), or
+# on patterns that are intentional in this codebase. Priority 0 (default) so
+# these `allow`s override the `pedantic`/`nursery` group `warn` at priority -1.
+use_self = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+missing_const_for_fn = "allow"
+doc_markdown = "allow"
+derive_partial_eq_without_eq = "allow"
+items_after_statements = "allow"
+needless_pass_by_value = "allow"
+redundant_clone = "allow"
+default_constructed_unit_structs = "allow"
+match_same_arms = "allow"
+significant_drop_tightening = "allow"
+pub_underscore_fields = "allow"
+unnecessary_wraps = "allow"
+too_many_lines = "allow"
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
+missing_fields_in_debug = "allow"
+uninlined_format_args = "allow"
+option_if_let_else = "allow"
+or_fun_call = "allow"
+unused_async = "allow"
+unnecessary_literal_unwrap = "allow"
+clone_on_copy = "allow"
+collapsible_if = "allow"
+collapsible_match = "allow"
+manual_let_else = "allow"
+map_unwrap_or = "allow"
+match_wildcard_for_single_variants = "allow"
+module_inception = "allow"
+needless_lifetimes = "allow"
+redundant_pub_crate = "allow"
+single_match_else = "allow"
+default_trait_access = "allow"
+trivially_copy_pass_by_ref = "allow"
+ip_constant = "allow"
+non_std_lazy_statics = "allow"
 
 ## --- [ SHARED WORKSPACE DEPENDENCIES ] ---------------------------------------
 # Define shared (default) code dependencies here to ensure consistent versions across

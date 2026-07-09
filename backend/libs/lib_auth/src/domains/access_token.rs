@@ -12,7 +12,7 @@ pub static ACCESS_TOKEN_DURATION: u64 = 5 * 60;
 /// Construct via [`AccessToken::new`] and forward to the client. On the
 /// receiving end, decode and verify via [`AccessToken::from_token`] to obtain
 /// the embedded [`TokenClaim`].
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AccessToken(String);
 
 impl AsRef<str> for AccessToken {
@@ -31,6 +31,10 @@ impl AccessToken {
     /// Generate a new access token signed with `secret`.
     ///
     /// The embedded claim expires after [`ACCESS_TOKEN_DURATION`] seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if encoding the JWT with `secret` fails.
     #[tracing::instrument(skip(secret))]
     pub fn new(secret: &SecretString) -> crate::Result<Self> {
         let claim = TokenClaim::new(&TokenType::Access, ACCESS_TOKEN_DURATION);
@@ -40,6 +44,8 @@ impl AccessToken {
     }
 
     /// Decode and verify an access token string, returning its embedded claim.
+    ///
+    /// # Errors
     ///
     /// Returns an error if the signature is invalid, the token has expired, the
     /// `nbf` or `iss` claims fail validation, or the token is not an access token

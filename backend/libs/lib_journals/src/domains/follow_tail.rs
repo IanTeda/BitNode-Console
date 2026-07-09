@@ -24,7 +24,7 @@ pub struct FollowTail<'a> {
     pub tail_lines: u32,
 }
 
-impl<'a> Default for FollowTail<'a> {
+impl Default for FollowTail<'_> {
     fn default() -> Self {
         Self {
             unit_name: DEFAULT_UNIT_NAME,
@@ -43,7 +43,7 @@ impl<'a> FollowTail<'a> {
     /// * `priority` — Minimum severity level to return.
     /// * `tail_lines` — Number of existing tail entries to replay first.
     #[must_use]
-    pub fn new(unit_name: &'a str, priority: crate::Priority, tail_lines: u32) -> Self {
+    pub const fn new(unit_name: &'a str, priority: crate::Priority, tail_lines: u32) -> Self {
         Self {
             unit_name,
             priority,

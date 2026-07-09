@@ -14,8 +14,8 @@ pub enum TokenType {
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenType::Access => write!(f, "Access"),
-            TokenType::Refresh => write!(f, "Refresh"),
+            Self::Access => write!(f, "Access"),
+            Self::Refresh => write!(f, "Refresh"),
         }
     }
 }

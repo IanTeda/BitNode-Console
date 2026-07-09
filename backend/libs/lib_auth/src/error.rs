@@ -53,7 +53,7 @@ mod tests {
     fn result_alias_works_with_ok() {
         let result: crate::Result<u32> = Ok(42);
 
-        assert_eq!(result.unwrap(), 42);
+        assert!(matches!(result, Ok(42)));
     }
 
     #[test]

@@ -4,7 +4,7 @@ use systemd::journal::JournalSeek;
 
 use crate::{Connection, Entry, FollowTail, Result};
 
-impl<'a> FollowTail<'a> {
+impl FollowTail<'_> {
     /// Stream journal entries for the configured unit in chronological order.
     ///
     /// Replays the last [`JournalFollowTail::tail_lines`] entries then blocks,
@@ -89,7 +89,7 @@ mod tests {
 
         query
             .follow(&mut conn, |entry| {
-                collected.push(entry.message.clone());
+                collected.push(entry.message);
                 collected.len() < 3
             })
             .expect("follow must succeed");

@@ -49,7 +49,7 @@ pub struct Query<'a> {
     pub pagination: PaginationRequest,
 }
 
-impl<'a> Default for Query<'a> {
+impl Default for Query<'_> {
     /// Returns a `Query` with an empty unit filter, no timestamp bounds,
     /// [`Priority::Info`](crate::Priority::Info) threshold, and default
     /// pagination settings.
@@ -77,7 +77,7 @@ impl<'a> Query<'a> {
     /// * `priority` — Maximum priority level to include.
     /// * `pagination` — Page size, resume cursor, and read direction.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         unit_name: &'a str,
         priority: crate::Priority,
         pagination: PaginationRequest,
