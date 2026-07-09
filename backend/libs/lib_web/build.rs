@@ -17,7 +17,7 @@ fn main() {
     // Re-run this script whenever anything inside frontend/src changes.
     println!("cargo:rerun-if-changed={}", frontend_src.display());
 
-    let status = Command::new("npm")
+    let status = Command::new("pnpm")
         .args(["run", "build"])
         .current_dir(&frontend_dir)
         .status()
