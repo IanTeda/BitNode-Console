@@ -34,7 +34,7 @@ tracing = { workspace = true }
 ## --- Library Dependencies
 http = "1"
 ipnet = { version = "2" }
-tower = { version = "0.4" }
+tower = { version = "0.5" }
 tower-http = { version = "0.6", features = ["cors"] }
 
 [build-dependencies]
