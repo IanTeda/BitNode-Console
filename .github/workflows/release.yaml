@@ -41,3 +41,5 @@ jobs:
           EXTRA_FILES: "README.md LICENSE"
           # Pin to the same Rust version as rust-toolchain.toml.
           TOOLCHAIN_VERSION: 1.95.0
+          # Build only the RPC-only server binary (headless/API-only deployments).
+          EXTRA_COMMAND_FLAGS: "--package bin_rpc"
