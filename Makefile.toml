@@ -1,3 +1,20 @@
+## --- [ CARGO UPDATES ] ---------------------------------------------------------
+
+[tasks.cargo-check-updates]
+workspace = false
+description = "List available dependency upgrades (read-only)"
+install_crate = { crate_name = "cargo-upgrades", binary = "cargo-upgrades", test_arg = "--version" }
+command = "cargo"
+args = ["upgrades"]
+
+[tasks.cargo-update]
+workspace = false
+description = "Upgrade dependency versions in Cargo.toml"
+install_crate = { crate_name = "cargo-edit", binary = "cargo-upgrade", test_arg = "--version" }
+command = "cargo"
+args = ["upgrade"]
+
+
 ## --- [ DOCUMENTATION ] ---------------------------------------------------------
 # Tasks related to building and serving documentation.
 
