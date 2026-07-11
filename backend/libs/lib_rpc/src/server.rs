@@ -92,7 +92,7 @@ impl Server {
         let allowed_ips_interceptor = crate::interceptors::AllowedIpsInterceptor::new(
             self.settings.rpc.allowed_ips().to_vec(),
         );
-        let allowed_ips_interceptor = tonic::service::interceptor(allowed_ips_interceptor);
+        let allowed_ips_interceptor = tonic::service::InterceptorLayer::new(allowed_ips_interceptor);
 
         let access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
             self.settings.rpc.token_secret().clone(),

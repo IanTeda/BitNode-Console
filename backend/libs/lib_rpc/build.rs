@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=protos/bitnode_console/");
 
-    tonic_build::configure()
+    tonic_prost_build::configure()
         .protoc_arg("--experimental_allow_proto3_optional")
         .build_client(true)
         .build_server(true)
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 proto_dir.join("bitnode_console/journals/journals.proto"),
                 proto_dir.join("bitnode_console/utilities/utilities.proto"),
             ],
-            &[&proto_dir],
+            &[proto_dir],
         )?;
     Ok(())
 }
