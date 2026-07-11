@@ -14,33 +14,45 @@ jobs:
       fail-fast: false # keep building other targets if one fails
       matrix:
         include:
-          - target: x86_64-unknown-linux-musl # statically linked, portable Linux binary
-            archive: tar.gz
+          # x86_64 Linux (glibc). libsystemd is a shared library only — it cannot
+          # be statically linked — so musl is not viable for this binary.
+          # The app reads systemd journals, so it will only ever run on
+          # systemd-based Linux where libsystemd.so is already present.
+          - target: x86_64-unknown-linux-gnu
+            archive_name: bitnode-console-x86_64-unknown-linux-gnu.tar.gz
 
     steps:
       # Checkout the repository source code.
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
-      # Cross-compile the workspace and attach the resulting archive to the
-      # GitHub Release. rust-build.action handles toolchain installation,
-      # cross-compilation, archiving, and uploading.
-      # https://github.com/rust-build/rust-build.action
-      - name: Compile binaries and upload to release
-        uses: rust-build/rust-build.action@v1.4.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Install system libraries required by the build.
+      # protobuf-compiler / libprotobuf-dev  — prost-build needs protoc to
+      #   generate Rust source from .proto files at compile time.
+      # libsystemd-dev  — the systemd crate (used by lib_journals) links
+      #   against libsystemd; this is the Ubuntu dev package that provides
+      #   both the shared library and pkg-config metadata.
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libprotobuf-dev libsystemd-dev
+
+      # Register the target with the Rust toolchain installed by rust-toolchain.toml.
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      # Build the RPC-only server binary in release mode.
+      - name: Build bin_rpc
+        run: cargo build --release --target ${{ matrix.target }} --package bin_rpc
+
+      # Bundle the binary and supporting files into a tar.gz archive.
+      - name: Create archive
+        run: |
+          tar -czf ${{ matrix.archive_name }} \
+            -C target/${{ matrix.target }}/release bin_rpc \
+            README.md LICENSE
+
+      # Attach the archive to the GitHub Release that triggered this workflow.
+      # https://github.com/softprops/action-gh-release
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          ARCHIVE_NAME: bitnode-console-${{ matrix.target }}
-          # Script that runs inside the build container before cargo build.
-          # Must be executable (chmod +x) in the repository.
-          PRE_BUILD: "./.github/workflows/release-pre.sh"
-          # MINIFY: "yes"
-          EXTRA_FILES: "README.md LICENSE"
-          # Pin to the same Rust version as rust-toolchain.toml.
-          TOOLCHAIN_VERSION: 1.95.0
-          # Point at the package directly so the action sees a real [package]
-          # manifest rather than the virtual workspace root Cargo.toml.
-          SRC_DIR: "backend/bins/bin_rpc"
+          files: ${{ matrix.archive_name }}
