@@ -18,7 +18,7 @@ currently a minimal axum "Hello, World!" server.
   `backend/libs/*`.
 - `backend/bins/bin_console` — full server binary: serves both the React web
   frontend (HTTP) and gRPC backend concurrently.
-- `backend/bins/bin_rpc` — RPC-only server binary: serves only the gRPC
+- `backend/bins/bin_backend` — RPC-only server binary: serves only the gRPC
   backend, no web frontend (headless / API-only deployments).
 - `backend/libs/` — shared library crates (`lib_auth`, `lib_rpc`,
   `lib_settings`, `lib_tracing`, `lib_web`).
@@ -37,7 +37,7 @@ run `nix-shell` manually from the repo root.
 
 - Build: `cargo build`
 - Run full server (web + RPC): `cargo run -p bin_console`
-- Run RPC-only server: `cargo run -p bin_rpc`
+- Run Backend RPC-only server: `cargo run -p bin_backend`
 - Test (all): `cargo test`
 - Test (single, by name): `cargo test <test_name>`
 - Lint: `cargo clippy`

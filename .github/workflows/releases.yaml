@@ -1,10 +1,11 @@
-name: Build Release Binaries
+name: Build and Publish Release Binaries
 
 # Triggered when a GitHub Release is published via the Releases UI or API.
 # Each entry in the matrix produces one archive attached to the release.
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 # Least-privilege token: three scopes are required, everything else stays at
 # the default `none`.
@@ -55,19 +56,18 @@ jobs:
           # viable for this binary. The app reads systemd journals, so it
           # will only ever run on systemd-based Linux where libsystemd.so is
           # already present.
-          - package: bin_rpc
-            binary: bin_rpc
-            asset_name: rpc
+          - package: bin_backend
+            binary: bin_backend
+            asset_name: backend
             target: x86_64-unknown-linux-gnu
 
           # Full server (web UI + RPC). Same glibc/libsystemd story as
-          # bin_rpc, plus `lib_web`'s build.rs shells out to `pnpm run build`
+          # bin_backend, plus `lib_web`'s build.rs shells out to `pnpm run build`
           # in `frontend/` to compile the React app, so this entry also
           # needs Node.js and pnpm on the runner (see steps guarded by
           # `matrix.needs_frontend`).
           - package: bin_console
             binary: bin_console
-            asset_name: console
             target: x86_64-unknown-linux-gnu
             needs_frontend: true
 
@@ -92,14 +92,17 @@ jobs:
       # Derive the archive filename once and export it via $GITHUB_ENV so
       # every subsequent step references the same value. Including the release
       # tag and a short asset name in the filename (e.g.
-      # bitnode-console-v0.1.0-rpc-x86_64-...tar.gz) disambiguates downloads
+      # bitnode-console-v0.1.0-backend-x86_64-...tar.gz) disambiguates downloads
       # once they leave the Release page and keeps the two binaries from
       # colliding on the same asset name. `asset_name` is deliberately shorter
       # than the cargo package name (e.g. `console` vs `bin_console`) so the
       # published artifact reads naturally.
       # GITHUB_REF_NAME resolves to the tag name for release events.
       - name: Compute archive name
-        run: echo "ARCHIVE_NAME=bitnode-console-${GITHUB_REF_NAME}-${{ matrix.asset_name }}-${{ matrix.target }}.tar.gz" >> "$GITHUB_ENV"
+        run: |
+          INFIX="${{ matrix.asset_name }}"
+          INFIX="${INFIX:+${INFIX}-}"
+          echo "ARCHIVE_NAME=bitnode-console-${GITHUB_REF_NAME}-${INFIX}${{ matrix.target }}.tar.gz" >> "$GITHUB_ENV"
 
       # Set up Node.js and pnpm for entries that build the React frontend as
       # part of the Rust build (currently just bin_console via lib_web's
@@ -115,8 +118,8 @@ jobs:
         if: matrix.needs_frontend
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       # Populate frontend/node_modules before the Rust build kicks off.

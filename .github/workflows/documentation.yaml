@@ -1,0 +1,64 @@
+# .github/workflows/mkdocks.yaml
+#
+# Builds the MkDocs documentation site and deploys it to GitHub Pages.
+# Triggered when a GitHub Release is published. A `workflow_dispatch` entry
+# lets maintainers rebuild the docs on demand without cutting a release —
+# convenient when only documentation content has changed.
+#
+# GitHub Pages must be configured to use "GitHub Actions" as the source:
+#   Settings → Pages → Source → GitHub Actions
+
+name: Build And Publish Documentation
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+# Serialise page deployments so a rapid re-publish can't race two jobs
+# writing to the same Pages environment. `cancel-in-progress: true` drops
+# the stale run in favour of the newest one.
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+# Least-privilege token: only the three scopes required for Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # https://github.com/actions/checkout
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # https://github.com/actions/setup-python
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+          cache: pip
+
+      - name: Install MkDocs dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build documentation
+        run: mkdocs build
+
+      # https://github.com/actions/upload-pages-artifact
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/
+
+      # https://github.com/actions/deploy-pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

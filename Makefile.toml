@@ -86,7 +86,7 @@ cp -r frontend/dist backend/libs/lib_web/assets
 
 [tasks.console-dev]
 workspace = false
-description = "Build frontend, copy assets, start bitcoind in background, then watch and reload the full console server (web + RPC)"
+description = "Build frontend, copy assets, start bitcoind in background, then watch and reload the full console server (frontend + backend)"
 dependencies = ["console-assets-copy"]
 script_runner = "@shell"
 script = '''
@@ -110,29 +110,75 @@ dependencies = ["console-assets-copy"]
 command = "cargo"
 args = ["run", "-p", "bin_console", "--release"]
 
-## --- [BIN_RPC] ---------------------------------------------------------------
-## RPC-only server: serves only the gRPC backend — no web frontend.
+## --- [BIN_BACKEND] -----------------------------------------------------------
+## Backend-only RPC server: serves only the gRPC backend — no web frontend.
 
-[tasks.rpc-dev]
+[tasks.backend-dev]
 workspace = false
-description = "Start bitcoind in background, then watch and reload the RPC-only server on backend changes"
+description = "Start bitcoind in background, then watch and reload the Backend RPC server on backend changes"
 script_runner = "@shell"
 script = '''
 ./dev/run-bitcoind.sh &
 BITCOIND_PID=$!
 trap "kill $BITCOIND_PID 2>/dev/null" EXIT
-cargo watch -w backend -x "run -p bin_rpc"
+cargo watch -w backend -x "run -p bin_backend"
 '''
-# cargo watch -q -c -w backend -x "run -p bin_rpc"
+# cargo watch -q -c -w backend -x "run -p bin_backend"
 
-[tasks.rpc-release]
+[tasks.backend-release]
 workspace = false
-description = "Compile a release binary for the RPC-only server"
+description = "Compile a release binary for the Backend RPC server"
 command = "cargo"
-args = ["build", "-p", "bin_rpc", "--release"]
+args = ["build", "-p", "bin_backend", "--release"]
 
-[tasks.rpc-run-release]
+[tasks.backend-run-release]
 workspace = false
-description = "Run the release RPC-only server binary"
+description = "Run the release Backend RPC server binary"
 command = "cargo"
-args = ["run", "-p", "bin_rpc", "--release"]
+args = ["run", "-p", "bin_backend", "--release"]
+
+## --- [ DOCKER ] ----------------------------------------------------------------
+## Tasks related to building container images locally. All Dockerfiles use the
+## workspace root as their build context (they reference frontend/, backend/,
+## and docker/ paths), so these tasks intentionally do NOT set `cwd`.
+
+[tasks.docker-build-backend]
+workspace = false
+description = "Build the bitnode-backend image (bin_backend: gRPC-only, headless)"
+command = "docker"
+args = ["build", "--format", "docker", "-f", "docker/Dockerfile.backend", "-t", "bitnode-backend:local", "."]
+
+[tasks.docker-build-frontend]
+workspace = false
+description = "Build the bitnode-frontend image (React SPA served by nginx)"
+command = "docker"
+args = ["build", "--format", "docker", "-f", "docker/Dockerfile.frontend", "-t", "bitnode-frontend:local", "."]
+
+[tasks.docker-build-console]
+workspace = false
+description = "Build the bitnode-console image (bin_console: HTTP + gRPC, embeds frontend)"
+command = "docker"
+args = ["build", "--format", "docker", "-f", "docker/Dockerfile.console", "-t", "bitnode-console:local", "."]
+
+[tasks.docker-build-node]
+workspace = false
+description = "Build the bitnode-node image (console + Bitcoin Knots via supervisord)"
+command = "docker"
+args = [
+    "build",
+    "--format", "docker",
+    "-f", "docker/Dockerfile.node",
+    "--build-arg", "BITCOIN_KNOTS_VERSION=27.1.knots20240801",
+    "-t", "bitnode-node:local",
+    ".",
+]
+
+[tasks.docker-build-all]
+workspace = false
+description = "Build all four bitnode container images locally"
+dependencies = [
+    "docker-build-console",
+    "docker-build-backend",
+    "docker-build-frontend",
+    "docker-build-node",
+]

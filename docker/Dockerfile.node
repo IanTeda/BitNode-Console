@@ -1,0 +1,175 @@
+# syntax=docker/dockerfile:1
+# Pins the Dockerfile syntax to BuildKit 1.x, enabling --mount=type=cache and
+# other BuildKit features on Docker 23+.
+#
+# Dockerfile for the BitNode all-in-one node image.
+#
+# Runs Bitcoin Knots (bitcoind) and the BitNode Console (bin_console) together
+# under supervisord. Use this image when you want a single container that manages
+# both the Bitcoin daemon and the web/gRPC interface.
+#
+# Three-stage build:
+#   1. node:22-bookworm-slim — installs pnpm dependencies.
+#   2. rust:1-bookworm       — compiles bin_console; lib_web/build.rs calls
+#                              `pnpm build` at compile time, baking the React
+#                              frontend into the assets directory.
+#   3. debian:bookworm-slim  — downloads Bitcoin Knots, installs both binaries,
+#                              and runs them under supervisord.
+#
+# Build-time arguments (baked into the JS bundle by Vite; cannot change at runtime):
+#   BITCOIN_KNOTS_VERSION   — Bitcoin Knots release to download
+#                             (default: 27.1.knots20240801)
+#   BITNODE_RPC_BASE_URL    — gRPC-Web URL the browser uses to reach the backend
+#                             (default: http://127.0.0.1:50051)
+#   BITNODE_RPC_DEADLINE_MS — gRPC call timeout in ms  (default: 30000)
+#
+# Runtime environment variables (prefix: BITNODE_; see lib_settings for all fields):
+#   BITNODE_WEB_HOST          — HTTP bind address    (default: 127.0.0.1)
+#   BITNODE_WEB_PORT          — HTTP port            (default: 8090)
+#   BITNODE_RPC_HOST          — gRPC bind address    (default: 127.0.0.1)
+#   BITNODE_RPC_PORT          — gRPC port            (default: 50051)
+#   BITNODE_RPC_PASSWORD_HASH — Argon2id PHC hash    (required for auth)
+#   BITNODE_RPC_TOKEN_SECRET  — JWT signing key      (required for auth)
+#   BITNODE_RPC_ALLOWED_IPS   — permitted CIDRs      (default: 127.0.0.1/32)
+#
+# Bitcoin data and configuration are read from the mounted volume:
+#   /home/bitcoin/.bitcoin    — bitcoind data directory (mount a named volume here)
+#
+# Example:
+#   docker build \
+#     --build-arg BITNODE_RPC_BASE_URL=https://rpc.example.com \
+#     -f docker/Dockerfile.node -t bitnode-node .
+#   docker run \
+#     -e BITNODE_WEB_HOST=0.0.0.0 \
+#     -e BITNODE_RPC_HOST=0.0.0.0 \
+#     -e BITNODE_RPC_PASSWORD_HASH='$argon2id$...' \
+#     -e BITNODE_RPC_TOKEN_SECRET=<strong-random-secret> \
+#     -v bitcoin-data:/home/bitcoin/.bitcoin \
+#     -p 8090:8090 -p 50051:50051 -p 8333:8333 \
+#     bitnode-node
+
+# --- Stage 1: Install frontend dependencies ---
+# Isolates the pnpm install into its own stage so the dependency layer is
+# cached independently of Rust source changes.
+FROM node:22-bookworm-slim AS node-builder
+
+WORKDIR /app
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+
+# --mount=type=cache persists the pnpm content-addressable store between builds,
+# avoiding re-downloading packages that haven't changed.
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    corepack enable && pnpm install --frozen-lockfile
+
+# --- Stage 2: Build Rust binary ---
+# Node.js is required here because lib_web/build.rs calls `pnpm run build`
+# during `cargo build` to compile the React frontend into the assets directory.
+FROM rust:1-bookworm AS rust-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler libsystemd-dev pkg-config curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22 so lib_web/build.rs can invoke pnpm at compile time.
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+RUN corepack enable
+
+WORKDIR /workspace
+
+# Pre-populate node_modules from Stage 1 so the pnpm install triggered by
+# lib_web/build.rs is a fast cache hit rather than a full download.
+COPY --from=node-builder /app/node_modules frontend/node_modules
+
+COPY . .
+
+# Frontend build-time variables: baked into the JS bundle by Vite when
+# lib_web/build.rs invokes `pnpm build`. Cannot be changed at runtime.
+ARG BITNODE_RPC_BASE_URL=http://127.0.0.1:50051
+ARG BITNODE_RPC_DEADLINE_MS=30000
+ENV BITNODE_RPC_BASE_URL=$BITNODE_RPC_BASE_URL \
+    BITNODE_RPC_DEADLINE_MS=$BITNODE_RPC_DEADLINE_MS
+
+# TARGETPLATFORM is injected automatically by BuildKit for multi-platform builds.
+# Scoping the cache IDs to the platform prevents concurrent amd64/arm64 builds
+# from racing on the same cargo registry or target directory.
+ARG TARGETPLATFORM
+
+# --mount=type=cache keeps the Cargo registry and build artefacts between runs.
+# After the build, copy the binary and frontend dist out of the cache mounts so
+# they are accessible to later stages as regular image layers.
+RUN --mount=type=cache,id=cargo-registry-${TARGETPLATFORM},target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-target-${TARGETPLATFORM},target=/workspace/target \
+    cargo build --release -p bin_console && \
+    cp /workspace/target/release/bin_console /bin_console && \
+    cp -r /workspace/frontend/dist/. /workspace/backend/libs/lib_web/assets/
+
+# --- Stage 3: Runtime ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 libsystemd0 wget supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download Bitcoin Knots and verify its SHA256 checksum against the official
+# SHA256SUMS file published alongside each release.
+ARG BITCOIN_KNOTS_VERSION=27.1.knots20240801
+ARG TARGETARCH
+RUN BK_MAJOR=$(echo "$BITCOIN_KNOTS_VERSION" | cut -d. -f1) && \
+    case "$TARGETARCH" in \
+      amd64) BK_ARCH="x86_64-linux-gnu" ;; \
+      arm64) BK_ARCH="aarch64-linux-gnu" ;; \
+      *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
+    esac && \
+    TARBALL="bitcoin-${BITCOIN_KNOTS_VERSION}-${BK_ARCH}.tar.gz" && \
+    BASE_URL="https://bitcoinknots.org/files/${BK_MAJOR}.x/${BITCOIN_KNOTS_VERSION}" && \
+    wget -q "${BASE_URL}/${TARBALL}"   -O /tmp/${TARBALL} && \
+    wget -q "${BASE_URL}/SHA256SUMS"   -O /tmp/SHA256SUMS && \
+    cd /tmp && grep "${TARBALL}" SHA256SUMS | sha256sum -c - && \
+    tar -xzf /tmp/${TARBALL} -C /tmp && \
+    install -m 0755 /tmp/bitcoin-${BITCOIN_KNOTS_VERSION}/bin/bitcoind   /usr/local/bin/ && \
+    install -m 0755 /tmp/bitcoin-${BITCOIN_KNOTS_VERSION}/bin/bitcoin-cli /usr/local/bin/ && \
+    rm -rf /tmp/bitcoin*
+
+# Copy the BitNode Console binary and its frontend assets.
+# The assets path matches the value of CARGO_MANIFEST_DIR/assets baked into the
+# binary at compile time (lib_web/server.rs: ASSETS_DIR).
+COPY --from=rust-builder /bin_console /usr/local/bin/bin_console
+COPY --from=rust-builder \
+    /workspace/backend/libs/lib_web/assets \
+    /workspace/backend/libs/lib_web/assets
+
+# supervisord.conf goes to the main config path that the CMD references.
+# It already contains the [supervisord] section and all [program:*] blocks so
+# it fully replaces the package default rather than being included from conf.d/.
+COPY docker/supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker/entrypoint.node.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create a dedicated user for bitcoind (no home shell needed; the data
+# directory is mounted as a volume). A separate bitnode user runs bin_console.
+RUN useradd --system --no-create-home --shell /bin/false bitcoin && \
+    useradd --system --no-create-home --shell /bin/false bitnode && \
+    mkdir -p /home/bitcoin/.bitcoin && \
+    chown bitcoin:bitcoin /home/bitcoin/.bitcoin
+
+# Bitcoin data directory — mount a named volume here to persist the chain.
+VOLUME ["/home/bitcoin/.bitcoin"]
+
+# Runtime defaults — overridden at `docker run` time via -e or --env-file.
+ENV BITNODE_WEB_PORT=8090 \
+    BITNODE_RPC_PORT=50051
+
+# HTTP probe against the BitNode Console web port. start-period is longer than
+# other images because bitcoind takes extra time to initialise before the
+# console can connect to it.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD bash -c "</dev/tcp/localhost/${BITNODE_WEB_PORT}" 2>/dev/null || exit 1
+
+# 8090  — BitNode Console HTTP interface  (BITNODE_WEB_PORT)
+# 50051 — BitNode Console gRPC interface  (BITNODE_RPC_PORT)
+# 8333  — Bitcoin P2P network (mainnet)
+# 8332  — Bitcoin JSON-RPC   (internal use; expose only if needed)
+EXPOSE 8090 50051 8333 8332
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,5 +1,5 @@
 [package]
-name = "bin_rpc"
+name = "bin_backend"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

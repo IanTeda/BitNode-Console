@@ -12,9 +12,8 @@ use std::path::{Path, PathBuf};
 /// This should match the binary name and be used consistently across the application.
 const APPLICATION_NAME: &str = "bitnode_console";
 
-/// Environment variable prefix derived from the application name.
-/// Converts "bitnode-console" to "`BITNODE_CONSOLE`" for environment variables.
-const ENV_PREFIX: &str = "BITNODE_CONSOLE";
+/// Environment variable prefix for all configuration overrides.
+const ENV_PREFIX: &str = "BITNODE";
 
 /// Settings for the Application.
 ///

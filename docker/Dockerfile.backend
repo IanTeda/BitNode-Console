@@ -1,0 +1,82 @@
+# syntax=docker/dockerfile:1
+# Pins the Dockerfile syntax to BuildKit 1.x, enabling --mount=type=cache and
+# other BuildKit features on Docker 23+.
+#
+# Dockerfile for the BitNode Console gRPC-only (headless) server.
+#
+# Two-stage build:
+#   1. rust:1-bookworm  — compiles bin_backend, the RPC-only binary (no web frontend).
+#   2. debian:bookworm-slim — minimal runtime; runs as non-root user `bitnode`.
+#
+# bin_backend reads all configuration from environment variables (prefix
+# BITNODE_) and/or a bitnode_console.conf file. Mount the conf file
+# into the container or pass env vars at `docker run` time.
+#
+# Key environment variables (see lib_settings/src/rpc.rs for all fields):
+#   BITNODE_RPC_HOST          — bind address       (default: 127.0.0.1)
+#   BITNODE_RPC_PORT          — gRPC port          (default: 50051)
+#   BITNODE_RPC_PASSWORD_HASH — Argon2id PHC hash  (required for auth)
+#   BITNODE_RPC_TOKEN_SECRET  — JWT signing key    (required for auth)
+#   BITNODE_RPC_ALLOWED_IPS   — permitted CIDRs    (default: 127.0.0.1/32)
+#
+# Example:
+#   docker build -f docker/Dockerfile.backend -t bitnode-backend .
+#   docker run \
+#     -e BITNODE_RPC_HOST=0.0.0.0 \
+#     -e BITNODE_RPC_PASSWORD_HASH='$argon2id$...' \
+#     -e BITNODE_RPC_TOKEN_SECRET=<strong-random-secret> \
+#     -p 50051:50051 bitnode-backend
+
+# --- Stage 1: Build Rust binary ---
+FROM rust:1-bookworm AS rust-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler libsystemd-dev pkg-config ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+COPY . .
+
+# TARGETPLATFORM is injected automatically by BuildKit for multi-platform builds.
+# Scoping the cache IDs to the platform prevents concurrent amd64/arm64 builds
+# from racing on the same cargo registry or target directory.
+ARG TARGETPLATFORM
+
+# --mount=type=cache keeps the Cargo registry and build artifacts between runs,
+# avoiding full re-downloads and recompiles of unchanged dependencies.
+# The binary is copied to /bin_backend so it survives outside the cache mount.
+RUN --mount=type=cache,id=cargo-registry-${TARGETPLATFORM},target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-target-${TARGETPLATFORM},target=/workspace/target \
+    cargo build --release -p bin_backend && \
+    cp /workspace/target/release/bin_backend /bin_backend
+
+# --- Stage 2: Minimal runtime ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 libsystemd0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a dedicated non-root system user; the binary does not need a home
+# directory or a login shell.
+RUN useradd --system --no-create-home --shell /bin/false bitnode
+
+# Copy artefacts and set ownership during copy to avoid a separate chown layer.
+COPY --chown=bitnode:bitnode --from=rust-builder /bin_backend /usr/local/bin/bin_backend
+COPY --chown=bitnode:bitnode docker/entrypoint.backend.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENV BITNODE_RPC_PORT=50051
+
+USER bitnode
+
+# TCP probe against the gRPC port — lightweight and requires no extra tooling.
+# start-period gives the server time to load config and bind before the first check.
+# Uses the env var so the probe tracks whichever port the server is actually bound to.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD bash -c "</dev/tcp/localhost/${BITNODE_RPC_PORT}" 2>/dev/null || exit 1
+
+# EXPOSE is documentation only; the actual port is set via
+# BITNODE_RPC_PORT (default 50051).
+EXPOSE 50051
+ENTRYPOINT ["/entrypoint.sh"]
