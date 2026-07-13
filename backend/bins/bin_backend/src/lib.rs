@@ -8,7 +8,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Run the BitNode Console RPC-only server.
 pub async fn run() -> Result<()> {
-    let settings: lib_settings::Settings = lib_settings::Settings::parse(None)?;
+    let settings: lib_settings::Settings = lib_settings::Settings::parse()?;
 
     if settings.tracing.enabled {
         let tracing_level = Some(settings.tracing.level);

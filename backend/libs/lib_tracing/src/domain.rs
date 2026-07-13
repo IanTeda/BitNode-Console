@@ -64,6 +64,32 @@ impl From<Levels> for tracing::level_filters::LevelFilter {
     }
 }
 
+/// Parses a telemetry level from a lowercase string.
+///
+/// Used by clap to parse `--log-level` values.
+///
+/// Accepts the same lowercase strings produced by [`Display`]: `off`, `error`,
+/// `warn`, `info`, `debug`, `trace`. Used by clap to parse `--log-level` values.
+///
+/// [`Display`]: std::fmt::Display
+impl std::str::FromStr for Levels {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "off" => Ok(Self::OFF),
+            "error" => Ok(Self::ERROR),
+            "warn" => Ok(Self::WARN),
+            "info" => Ok(Self::INFO),
+            "debug" => Ok(Self::DEBUG),
+            "trace" => Ok(Self::TRACE),
+            _ => Err(format!(
+                "unknown log level '{s}'; expected one of: off, error, warn, info, debug, trace"
+            )),
+        }
+    }
+}
+
 /// Formats the telemetry level as a lowercase string.
 ///
 /// This implementation matches the serde serialization format, producing
@@ -188,5 +214,27 @@ mod tests {
     #[test]
     fn debug_format_includes_variant_name() {
         assert_eq!(format!("{:?}", Levels::TRACE), "TRACE");
+    }
+
+    #[test]
+    fn parses_all_level_variants_from_lowercase_str() {
+        assert_eq!("off".parse::<Levels>().unwrap(), Levels::OFF);
+        assert_eq!("error".parse::<Levels>().unwrap(), Levels::ERROR);
+        assert_eq!("warn".parse::<Levels>().unwrap(), Levels::WARN);
+        assert_eq!("info".parse::<Levels>().unwrap(), Levels::INFO);
+        assert_eq!("debug".parse::<Levels>().unwrap(), Levels::DEBUG);
+        assert_eq!("trace".parse::<Levels>().unwrap(), Levels::TRACE);
+    }
+
+    #[test]
+    fn parse_is_case_insensitive() {
+        assert_eq!("INFO".parse::<Levels>().unwrap(), Levels::INFO);
+        assert_eq!("Debug".parse::<Levels>().unwrap(), Levels::DEBUG);
+    }
+
+    #[test]
+    fn parse_rejects_unknown_level() {
+        assert!("verbose".parse::<Levels>().is_err());
+        assert!("".parse::<Levels>().is_err());
     }
 }

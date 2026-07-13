@@ -13,7 +13,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Run the BitNode Console backend application.
 pub async fn run() -> Result<()> {
     //--- Get application settings
-    let settings: lib_settings::Settings = lib_settings::Settings::parse(None)?;
+    let settings: lib_settings::Settings = lib_settings::Settings::parse()?;
 
     //--- Initialize telemetry if enabled
     if settings.tracing.enabled {

@@ -38,25 +38,35 @@ pub struct Settings {
 }
 
 impl Settings {
-    /// Parses the configuration files from the various directories and environment variables.
+    /// Parses configuration from all sources, with CLI flags as the highest-priority override.
     ///
-    /// The function first applies default settings, then overrides them with higher precedence sources:
-    /// 01. Built-in default config values (lowest)
-    /// 02. System config directory
-    /// 03. User config directory
-    /// 04. Executable directory
-    /// 05. Working directory
-    /// 06. Explicit config file
-    /// 07. Environment variables
-    /// 08. Command line arguments (highest)
-    /// 09. Build the config
+    /// Calls [`clap::Parser::parse`] to read process arguments, then delegates to
+    /// [`Settings::parse_with_cli`]. Sources are applied in ascending priority:
+    /// 01. Built-in defaults → 02. System config → 03. User config →
+    /// 04. Executable dir → 05. Working dir → 06. Explicit config file (from `--config`) →
+    /// 07. Environment variables → 08. CLI flags (highest).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any configuration source fails to parse or if the merged
+    /// configuration cannot be deserialized into [`Settings`].
+    pub fn parse() -> crate::Result<Self> {
+        use clap::Parser as _;
+        Self::parse_with_cli(&crate::Cli::parse())
+    }
+
+    /// Builds [`Settings`] from an explicit [`Cli`] value.
+    ///
+    /// This is the inner implementation used by [`Settings::parse`] and by tests
+    /// that need to supply a specific config file path or flag values without
+    /// going through process argument parsing.
     ///
     /// # Errors
     ///
     /// Returns an error if the current directory or executable path cannot be
     /// determined, if any configuration source fails to parse, or if the
-    /// merged configuration cannot be deserialized into `Settings<S>`.
-    pub fn parse(config_file: Option<&Path>) -> crate::Result<Self> {
+    /// merged configuration cannot be deserialized into [`Settings`].
+    pub(crate) fn parse_with_cli(cli: &crate::Cli) -> crate::Result<Self> {
         //--- 01. Build-in defaults
         // Seed the config builder with the default configuration so that
         // any fields not supplied by later sources default back to this.
@@ -119,12 +129,11 @@ impl Settings {
         }
 
         //--- 06. Explicit config file
-        // The config file path passed into the parse method. Typically the --config --c CLI argument.
+        // The path supplied via the --config / -c CLI flag.
 
-        if let Some(explicit_config_file) = config_file {
+        if let Some(explicit_config_file) = &cli.config {
             config_builder = config_builder.add_source(
-                config::File::from(explicit_config_file.to_path_buf())
-                    .format(config::FileFormat::Ini),
+                config::File::from(explicit_config_file.clone()).format(config::FileFormat::Ini),
             );
         }
 
@@ -133,10 +142,14 @@ impl Settings {
 
         config_builder = config_builder.add_source(config::Environment::with_prefix(ENV_PREFIX));
 
-        //--- 08. Command line arguments
-        // Override all other config values with command line arguments passed to the application binary.
+        //--- 08. Command line arguments (highest priority)
+        // Individual flag values override every other source via set_override.
 
-        // TODO: Add command line arguments source using CLAP
+        if let Some(level) = cli.log_level {
+            config_builder = config_builder
+                .set_override("tracing.level", level.to_string())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
 
         //--- 09. Build the config
         // Take the config builder, build the config, and deserialize it into a `Settings` struct. Then
@@ -259,7 +272,8 @@ mod tests {
 
     #[test]
     fn parse_with_no_config_file_returns_defaults() {
-        let settings = Settings::parse(None).expect("parse should succeed");
+        let settings =
+            Settings::parse_with_cli(&crate::Cli::default()).expect("parse should succeed");
         assert_eq!(settings.web.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert_eq!(settings.application.password(), "");
@@ -272,7 +286,8 @@ mod tests {
         writeln!(file, "port = 9100").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.web.port, 9100);
         assert_eq!(settings.web.host, "0.0.0.0");
@@ -284,7 +299,8 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = debug").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.tracing.level, lib_tracing::Levels::DEBUG);
     }
@@ -295,7 +311,8 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "enabled = false").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert!(!settings.tracing.enabled);
     }
@@ -306,7 +323,8 @@ mod tests {
         writeln!(file, "[application]").unwrap();
         writeln!(file, "password = hunter2").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.application.password(), "hunter2");
     }
@@ -320,7 +338,8 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = warn").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.web.port, 9200);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::WARN);
@@ -328,7 +347,11 @@ mod tests {
 
     #[test]
     fn parse_with_missing_config_file_fails() {
-        let result = Settings::parse(Some(Path::new("/nonexistent/bitnode_console.conf")));
+        let cli = crate::Cli {
+            config: Some(std::path::PathBuf::from("/nonexistent/bitnode_console.conf")),
+            ..Default::default()
+        };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
 
@@ -338,7 +361,8 @@ mod tests {
         writeln!(file, "[web]").unwrap();
         writeln!(file, "port = not_a_number").unwrap();
 
-        let result = Settings::parse(Some(file.path()));
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
 
@@ -348,8 +372,51 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = verbose").unwrap();
 
-        let result = Settings::parse(Some(file.path()));
+        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn cli_log_level_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "level = warn").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            log_level: Some(lib_tracing::Levels::TRACE),
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::TRACE);
+    }
+
+    #[test]
+    fn cli_args_log_level_flag_flows_through_to_settings() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from(["bin", "--log-level", "trace"])
+            .expect("CLI should parse --log-level trace");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::TRACE);
+    }
+
+    #[test]
+    fn cli_args_config_flag_flows_through_to_settings() {
+        use clap::Parser as _;
+        use std::io::Write as _;
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[web]").unwrap();
+        writeln!(file, "port = 9999").unwrap();
+        writeln!(file, "host = 0.0.0.0").unwrap();
+
+        let path = file.path().to_str().expect("path is valid UTF-8");
+        let cli = crate::Cli::try_parse_from(["bin", "--config", path])
+            .expect("CLI should parse --config");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+
+        assert_eq!(settings.web.port, 9999);
+        assert_eq!(settings.web.host, "0.0.0.0");
     }
 
     #[cfg(target_os = "linux")]

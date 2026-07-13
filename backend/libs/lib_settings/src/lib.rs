@@ -6,6 +6,7 @@
 
 mod application;
 mod bitcoind;
+mod cli;
 mod error;
 mod rpc;
 mod settings;
@@ -14,6 +15,9 @@ mod web;
 
 /// Re-export Settings error type
 pub use error::Error;
+
+/// Re-export CLI argument struct.
+pub use cli::Cli;
 
 /// Result type alias used across the settings module.
 pub type Result<T> = std::result::Result<T, Error>;
