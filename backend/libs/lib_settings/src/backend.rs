@@ -1,7 +1,7 @@
-//-- ./backend/libs/lib_settings/src/rpc.rs
+//-- ./backend/libs/lib_settings/src/backend.rs
 
-//! RPC Settings
-//! This module contains the RPC settings struct and related functions.
+//! Backend Settings
+//! This module contains the backend server settings struct and related functions.
 
 /// Default port for the server.
 const DEFAULT_PORT: u16 = 50051;
@@ -40,9 +40,9 @@ fn default_allowed_ips() -> Vec<ipnet::IpNet> {
         .collect()
 }
 
-/// RPC server configuration.
+/// Backend server configuration.
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct RpcSettings {
+pub struct BackendSettings {
     /// Server port.
     pub port: u16,
 
@@ -70,7 +70,7 @@ pub struct RpcSettings {
     #[serde(serialize_with = "serialize_secret_string")]
     pub token_secret: secrecy::SecretString, // TODO: Move to a domain type
 
-    /// List of IP addresses and CIDR subnets permitted to connect to the RPC server.
+    /// List of IP addresses and CIDR subnets permitted to connect to the backend server.
     ///
     /// Each entry is an [`ipnet::IpNet`], which accepts both host addresses
     /// (`"192.168.1.10/32"`) and subnet ranges (`"192.168.1.0/24"`).
@@ -79,7 +79,7 @@ pub struct RpcSettings {
     pub allowed_ips: Vec<ipnet::IpNet>,
 }
 
-impl PartialEq for RpcSettings {
+impl PartialEq for BackendSettings {
     fn eq(&self, other: &Self) -> bool {
         use secrecy::ExposeSecret;
         self.port == other.port
@@ -90,9 +90,9 @@ impl PartialEq for RpcSettings {
     }
 }
 
-impl Eq for RpcSettings {}
+impl Eq for BackendSettings {}
 
-impl Default for RpcSettings {
+impl Default for BackendSettings {
     fn default() -> Self {
         Self {
             port: DEFAULT_PORT,
@@ -104,8 +104,8 @@ impl Default for RpcSettings {
     }
 }
 
-impl RpcSettings {
-    /// Creates a new [`RpcSettings`] with default values.
+impl BackendSettings {
+    /// Creates a new [`BackendSettings`] with default values.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -162,13 +162,13 @@ mod tests {
     // A well-formed Argon2id PHC string used in tests that need a valid hash value.
     const SAMPLE_HASH: &str = "$argon2id$v=19$m=15000,t=2,p=1$c29tZXNhbHQ$bWh0ZSB0ZXN0IGhhc2g";
 
-    fn settings() -> RpcSettings {
-        RpcSettings {
+    fn settings() -> BackendSettings {
+        BackendSettings {
             port: 8080,
             host: "127.0.0.1".to_string(),
             password_hash: SAMPLE_HASH.to_string(),
             token_secret: secrecy::SecretString::from("supersecret"),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         }
     }
 
@@ -176,54 +176,54 @@ mod tests {
 
     #[test]
     fn test_address() {
-        let settings = RpcSettings {
+        let settings = BackendSettings {
             port: 8080,
             host: "localhost".to_string(),
             password_hash: String::new(),
             token_secret: secrecy::SecretString::from(""),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(settings.address(), "localhost:8080");
     }
 
     #[test]
     fn test_address_with_default() {
-        let settings = RpcSettings::default();
+        let settings = BackendSettings::default();
         assert_eq!(settings.address(), format!("{DEFAULT_HOST}:{DEFAULT_PORT}"));
     }
 
     #[test]
     fn address_with_port_zero() {
-        let settings = RpcSettings {
+        let settings = BackendSettings {
             port: 0,
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
             token_secret: secrecy::SecretString::from(""),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(settings.address(), "127.0.0.1:0");
     }
 
     #[test]
     fn address_with_max_port() {
-        let settings = RpcSettings {
+        let settings = BackendSettings {
             port: u16::MAX,
             host: "127.0.0.1".to_string(),
             password_hash: String::new(),
             token_secret: secrecy::SecretString::from(""),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(settings.address(), format!("127.0.0.1:{}", u16::MAX));
     }
 
     #[test]
     fn address_with_ipv6_host() {
-        let settings = RpcSettings {
+        let settings = BackendSettings {
             port: 8080,
             host: "::1".to_string(),
             password_hash: String::new(),
             token_secret: secrecy::SecretString::from(""),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(settings.address(), "::1:8080");
     }
@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_default() {
-        let s = RpcSettings::default();
+        let s = BackendSettings::default();
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let s = RpcSettings::new();
+        let s = BackendSettings::new();
         assert_eq!(s.port, DEFAULT_PORT);
         assert_eq!(s.host, DEFAULT_HOST);
         assert_eq!(s.password_hash, DEFAULT_PASSWORD_HASH);
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn new_and_default_produce_equal_values() {
-        assert_eq!(RpcSettings::new(), RpcSettings::default());
+        assert_eq!(BackendSettings::new(), BackendSettings::default());
     }
 
     // --- clone / debug ---
@@ -269,9 +269,9 @@ mod tests {
 
     #[test]
     fn test_debug_format() {
-        let s = RpcSettings::new();
+        let s = BackendSettings::new();
         let debug = format!("{s:?}");
-        assert!(debug.contains("RpcSettings"));
+        assert!(debug.contains("BackendSettings"));
         assert!(debug.contains(DEFAULT_HOST));
     }
 
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn default_password_hash_is_empty() {
         assert_eq!(
-            RpcSettings::default().password_hash(),
+            BackendSettings::default().password_hash(),
             DEFAULT_PASSWORD_HASH
         );
     }
@@ -292,9 +292,9 @@ mod tests {
 
     #[test]
     fn password_hash_stores_arbitrary_string() {
-        let s = RpcSettings {
+        let s = BackendSettings {
             password_hash: "some-phc-string".to_string(),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(s.password_hash(), "some-phc-string");
     }
@@ -305,7 +305,7 @@ mod tests {
     fn default_token_secret_is_empty() {
         use secrecy::ExposeSecret;
         assert_eq!(
-            RpcSettings::default().token_secret().expose_secret(),
+            BackendSettings::default().token_secret().expose_secret(),
             DEFAULT_TOKEN_SECRET
         );
     }
@@ -319,9 +319,9 @@ mod tests {
     #[test]
     fn token_secret_stores_arbitrary_value() {
         use secrecy::ExposeSecret;
-        let s = RpcSettings {
+        let s = BackendSettings {
             token_secret: secrecy::SecretString::from("my-jwt-signing-key"),
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(s.token_secret().expose_secret(), "my-jwt-signing-key");
     }
@@ -331,15 +331,15 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         let s = settings();
-        let json = serde_json::to_string(&s).expect("serialize RpcSettings");
-        let deserialized: RpcSettings =
-            serde_json::from_str(&json).expect("deserialize RpcSettings");
+        let json = serde_json::to_string(&s).expect("serialize BackendSettings");
+        let deserialized: BackendSettings =
+            serde_json::from_str(&json).expect("deserialize BackendSettings");
         assert_eq!(s, deserialized);
     }
 
     #[test]
     fn serialize_produces_expected_json_field_names() {
-        let json = serde_json::to_string(&settings()).expect("serialize RpcSettings");
+        let json = serde_json::to_string(&settings()).expect("serialize BackendSettings");
         assert!(json.contains("\"port\""), "missing 'port': {json}");
         assert!(json.contains("\"host\""), "missing 'host': {json}");
         assert!(
@@ -358,46 +358,47 @@ mod tests {
 
     #[test]
     fn test_deserialize_missing_fields_fails() {
-        assert!(serde_json::from_str::<RpcSettings>("{}").is_err());
+        assert!(serde_json::from_str::<BackendSettings>("{}").is_err());
     }
 
     #[test]
     fn deserialize_missing_host_fails() {
         let json = r#"{"port": 8080, "password_hash": "", "token_secret": "s"}"#;
-        assert!(serde_json::from_str::<RpcSettings>(json).is_err());
+        assert!(serde_json::from_str::<BackendSettings>(json).is_err());
     }
 
     #[test]
     fn deserialize_missing_port_fails() {
         let json = r#"{"host": "127.0.0.1", "password_hash": "", "token_secret": "s"}"#;
-        assert!(serde_json::from_str::<RpcSettings>(json).is_err());
+        assert!(serde_json::from_str::<BackendSettings>(json).is_err());
     }
 
     #[test]
     fn deserialize_missing_password_hash_fails() {
         let json = r#"{"host": "127.0.0.1", "port": 50051, "token_secret": "s"}"#;
-        assert!(serde_json::from_str::<RpcSettings>(json).is_err());
+        assert!(serde_json::from_str::<BackendSettings>(json).is_err());
     }
 
     #[test]
     fn deserialize_missing_token_secret_fails() {
         let json = r#"{"host": "127.0.0.1", "port": 50051, "password_hash": ""}"#;
-        assert!(serde_json::from_str::<RpcSettings>(json).is_err());
+        assert!(serde_json::from_str::<BackendSettings>(json).is_err());
     }
 
     #[test]
     fn deserialize_without_allowed_ips_uses_default() {
         let json =
             r#"{"host": "127.0.0.1", "port": 50051, "password_hash": "", "token_secret": "s"}"#;
-        let s: RpcSettings = serde_json::from_str(json).expect("deserialise without allowed_ips");
-        assert_eq!(s.allowed_ips(), RpcSettings::default().allowed_ips());
+        let s: BackendSettings =
+            serde_json::from_str(json).expect("deserialise without allowed_ips");
+        assert_eq!(s.allowed_ips(), BackendSettings::default().allowed_ips());
     }
 
     // --- allowed_ips ---
 
     #[test]
     fn default_allowed_ips_contains_localhost() {
-        let s = RpcSettings::default();
+        let s = BackendSettings::default();
         let localhost: ipnet::IpNet = "127.0.0.1/32".parse().unwrap();
         assert!(s.allowed_ips().contains(&localhost));
     }
@@ -405,9 +406,9 @@ mod tests {
     #[test]
     fn allowed_ips_accessor_returns_field_value() {
         let net: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
-        let s = RpcSettings {
+        let s = BackendSettings {
             allowed_ips: vec![net],
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert_eq!(s.allowed_ips(), &[net]);
     }
@@ -416,48 +417,48 @@ mod tests {
 
     #[test]
     fn localhost_is_allowed_by_default() {
-        let s = RpcSettings::default();
+        let s = BackendSettings::default();
         assert!(s.is_ip_allowed("127.0.0.1".parse().unwrap()));
     }
 
     #[test]
     fn non_localhost_is_denied_by_default() {
-        let s = RpcSettings::default();
+        let s = BackendSettings::default();
         assert!(!s.is_ip_allowed("192.168.1.1".parse().unwrap()));
     }
 
     #[test]
     fn ip_within_cidr_subnet_is_allowed() {
-        let s = RpcSettings {
+        let s = BackendSettings {
             allowed_ips: vec!["192.168.1.0/24".parse().unwrap()],
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert!(s.is_ip_allowed("192.168.1.42".parse().unwrap()));
     }
 
     #[test]
     fn ip_outside_cidr_subnet_is_denied() {
-        let s = RpcSettings {
+        let s = BackendSettings {
             allowed_ips: vec!["192.168.1.0/24".parse().unwrap()],
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert!(!s.is_ip_allowed("192.168.2.1".parse().unwrap()));
     }
 
     #[test]
     fn ipv6_loopback_allowed_when_listed() {
-        let s = RpcSettings {
+        let s = BackendSettings {
             allowed_ips: vec!["::1/128".parse().unwrap()],
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert!(s.is_ip_allowed("::1".parse().unwrap()));
     }
 
     #[test]
     fn empty_allowed_ips_denies_all() {
-        let s = RpcSettings {
+        let s = BackendSettings {
             allowed_ips: vec![],
-            ..RpcSettings::default()
+            ..BackendSettings::default()
         };
         assert!(!s.is_ip_allowed("127.0.0.1".parse().unwrap()));
     }

@@ -276,7 +276,6 @@ name = "bin_console"
 version = "0.1.0"
 dependencies = [
  "axum 0.7.9",
- "clap",
  "lib_auth",
  "lib_rpc",
  "lib_settings",
@@ -1344,7 +1343,6 @@ name = "lib_web"
 version = "0.1.0"
 dependencies = [
  "axum 0.7.9",
- "clap",
  "lib_settings",
  "lib_tracing",
  "serde",

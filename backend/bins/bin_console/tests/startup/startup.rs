@@ -16,7 +16,7 @@ fn valid_access_token() -> String {
 
 fn rpc_settings(password_hash: &str) -> lib_settings::Settings {
     lib_settings::Settings {
-        rpc: lib_settings::RpcSettings {
+        backend: lib_settings::BackendSettings {
             host: "127.0.0.1".to_string(),
             port: 0,
             password_hash: password_hash.to_string(),

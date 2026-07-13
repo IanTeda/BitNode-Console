@@ -24,7 +24,7 @@ Sources are applied from lowest to highest precedence:
 | 4 | Executable directory | `<binary_dir>/bitnode_console.conf` |
 | 5 | Working directory | `./bitnode_console.conf` |
 | 6 | Explicit config file | Path passed to `Settings::parse(Some(path))` |
-| 7 | Environment variables | `BITNODE_CONSOLE_WEB_PORT=9100` |
+| 7 | Environment variables | `BITNODE_CONSOLE_FRONTEND_PORT=9100` |
 
 A source is silently skipped if the file does not exist. An error is
 returned if a file exists but cannot be parsed.
@@ -40,7 +40,7 @@ fn main() -> Result<(), lib_settings::SettingsError> {
     // Load from all standard locations; fall back to built-in defaults.
     let settings = Settings::parse(None)?;
 
-    println!("Listening on {}:{}", settings.web.host, settings.web.port);
+    println!("Listening on {}:{}", settings.frontend.host, settings.frontend.port);
     Ok(())
 }
 ```
@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Start the web server.
-    let server = lib_web::HttpServer::new(&settings.web.host, settings.web.port);
+    let server = lib_web::HttpServer::new(&settings.frontend.host, settings.frontend.port);
     server.run().await?;
 
     Ok(())
@@ -95,7 +95,7 @@ lib_settings/
     ├── settings.rs         — Settings struct and parse() logic
     ├── application.rs      — ApplicationSettings ([application] section)
     ├── tracing.rs          — TracingSettings     ([tracing] section)
-    ├── web.rs              — WebSettings         ([web] section)
+    ├── frontend.rs         — FrontendSettings    ([frontend] section)
     └── error.rs            — SettingsError and SettingsResult
 ```
 

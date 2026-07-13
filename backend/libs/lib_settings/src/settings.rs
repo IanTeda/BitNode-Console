@@ -6,7 +6,7 @@ use config::Config;
 use directories as Directories;
 use std::path::{Path, PathBuf};
 
-// use crate::{ApplicationSettings, Error, Result, TracingSettings, WebSettings};
+// use crate::{ApplicationSettings, Error, Result, FrontendSettings, TracingSettings};
 
 /// Application name used for configuration directories and environment variables.
 /// This should match the binary name and be used consistently across the application.
@@ -28,35 +28,45 @@ pub struct Settings {
     pub bitcoind: crate::BitcoinDaemonSettings,
 
     #[serde(default)]
-    pub rpc: crate::RpcSettings,
+    pub backend: crate::BackendSettings,
 
     #[serde(default)]
     pub tracing: crate::TracingSettings,
 
     #[serde(default)]
-    pub web: crate::WebSettings,
+    pub frontend: crate::FrontendSettings,
 }
 
 impl Settings {
-    /// Parses the configuration files from the various directories and environment variables.
+    /// Parses configuration from all sources, with CLI flags as the highest-priority override.
     ///
-    /// The function first applies default settings, then overrides them with higher precedence sources:
-    /// 01. Built-in default config values (lowest)
-    /// 02. System config directory
-    /// 03. User config directory
-    /// 04. Executable directory
-    /// 05. Working directory
-    /// 06. Explicit config file
-    /// 07. Environment variables
-    /// 08. Command line arguments (highest)
-    /// 09. Build the config
+    /// Calls [`clap::Parser::parse`] to read process arguments, then delegates to
+    /// [`Settings::parse_with_cli`]. Sources are applied in ascending priority:
+    /// 01. Built-in defaults → 02. System config → 03. User config →
+    /// 04. Executable dir → 05. Working dir → 06. Explicit config file (from `--config`) →
+    /// 07. Environment variables → 08. CLI flags (highest).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any configuration source fails to parse or if the merged
+    /// configuration cannot be deserialized into [`Settings`].
+    pub fn parse() -> crate::Result<Self> {
+        use clap::Parser as _;
+        Self::parse_with_cli(&crate::Cli::parse())
+    }
+
+    /// Builds [`Settings`] from an explicit [`Cli`] value.
+    ///
+    /// This is the inner implementation used by [`Settings::parse`] and by tests
+    /// that need to supply a specific config file path or flag values without
+    /// going through process argument parsing.
     ///
     /// # Errors
     ///
     /// Returns an error if the current directory or executable path cannot be
     /// determined, if any configuration source fails to parse, or if the
-    /// merged configuration cannot be deserialized into `Settings<S>`.
-    pub fn parse(config_file: Option<&Path>) -> crate::Result<Self> {
+    /// merged configuration cannot be deserialized into [`Settings`].
+    pub(crate) fn parse_with_cli(cli: &crate::Cli) -> crate::Result<Self> {
         //--- 01. Build-in defaults
         // Seed the config builder with the default configuration so that
         // any fields not supplied by later sources default back to this.
@@ -119,12 +129,11 @@ impl Settings {
         }
 
         //--- 06. Explicit config file
-        // The config file path passed into the parse method. Typically the --config --c CLI argument.
+        // The path supplied via the --config / -c CLI flag.
 
-        if let Some(explicit_config_file) = config_file {
+        if let Some(explicit_config_file) = &cli.config {
             config_builder = config_builder.add_source(
-                config::File::from(explicit_config_file.to_path_buf())
-                    .format(config::FileFormat::Ini),
+                config::File::from(explicit_config_file.clone()).format(config::FileFormat::Ini),
             );
         }
 
@@ -133,10 +142,106 @@ impl Settings {
 
         config_builder = config_builder.add_source(config::Environment::with_prefix(ENV_PREFIX));
 
-        //--- 08. Command line arguments
-        // Override all other config values with command line arguments passed to the application binary.
+        //--- 08. Command line arguments (highest priority)
+        // Individual flag values override every other source via set_override.
 
-        // TODO: Add command line arguments source using CLAP
+        if let Some(enabled) = cli.tracing_enabled {
+            config_builder = config_builder
+                .set_override("tracing.enabled", enabled)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(level) = cli.tracing_level {
+            config_builder = config_builder
+                .set_override("tracing.level", level.to_string())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(show) = cli.tracing_show_settings_startup {
+            config_builder = config_builder
+                .set_override("tracing.show_settings_startup", show)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.backend_port {
+            config_builder = config_builder
+                .set_override("backend.port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.backend_host {
+            config_builder = config_builder
+                .set_override("backend.host", host.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref hash) = cli.backend_password_hash {
+            config_builder = config_builder
+                .set_override("backend.password_hash", hash.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref secret) = cli.backend_token_secret {
+            config_builder = config_builder
+                .set_override("backend.token_secret", secret.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref ips) = cli.backend_allowed_ips {
+            let ip_strings: Vec<String> = ips.iter().map(|ip| ip.to_string()).collect();
+            config_builder = config_builder
+                .set_override("backend.allowed_ips", ip_strings)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref name) = cli.bitcoind_unit_name {
+            config_builder = config_builder
+                .set_override("bitcoind.unit_name", name.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.bitcoind_rpc_host {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_host", host.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.bitcoind_rpc_port {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref user) = cli.bitcoind_rpc_user {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_user", user.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref password) = cli.bitcoind_rpc_password {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_password", password.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref path) = cli.bitcoind_cookie_file {
+            let path_str = path.to_string_lossy();
+            config_builder = config_builder
+                .set_override("bitcoind.cookie_file", path_str.as_ref())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.web_port {
+            config_builder = config_builder
+                .set_override("frontend.port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.web_host {
+            config_builder = config_builder
+                .set_override("frontend.host", host.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
 
         //--- 09. Build the config
         // Take the config builder, build the config, and deserialize it into a `Settings` struct. Then
@@ -209,8 +314,8 @@ mod tests {
         assert!(settings.tracing.enabled);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.tracing.show_settings_startup);
-        assert_eq!(settings.web.port, 8090);
-        assert_eq!(settings.web.host, "127.0.0.1");
+        assert_eq!(settings.frontend.port, 8090);
+        assert_eq!(settings.frontend.host, "127.0.0.1");
     }
 
     #[test]
@@ -219,8 +324,8 @@ mod tests {
         let cloned = original.clone();
         assert_eq!(original.application, cloned.application);
         assert_eq!(original.tracing, cloned.tracing);
-        assert_eq!(original.web.port, cloned.web.port);
-        assert_eq!(original.web.host, cloned.web.host);
+        assert_eq!(original.frontend.port, cloned.frontend.port);
+        assert_eq!(original.frontend.host, cloned.frontend.host);
     }
 
     #[test]
@@ -233,15 +338,15 @@ mod tests {
     #[test]
     fn deserialize_from_empty_json_uses_section_defaults() {
         let settings: Settings = serde_json::from_str("{}").expect("deserialize Settings");
-        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.frontend.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert_eq!(settings.application.password(), "");
     }
 
     #[test]
     fn deserialize_partial_section_still_requires_all_section_fields() {
-        // [web] section without `host` — serde requires all WebSettings fields
-        let json = r#"{"web": {"port": 9000}}"#;
+        // [frontend] section without `host` — serde requires all FrontendSettings fields
+        let json = r#"{"frontend": {"port": 9000}}"#;
         let result: Result<Settings, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
@@ -251,16 +356,17 @@ mod tests {
         let settings = Settings::default();
         let json = serde_json::to_string(&settings).expect("serialize Settings");
         let deserialized: Settings = serde_json::from_str(&json).expect("deserialize Settings");
-        assert_eq!(deserialized.web.port, settings.web.port);
-        assert_eq!(deserialized.web.host, settings.web.host);
+        assert_eq!(deserialized.frontend.port, settings.frontend.port);
+        assert_eq!(deserialized.frontend.host, settings.frontend.host);
         assert_eq!(deserialized.tracing, settings.tracing);
         assert_eq!(deserialized.application, settings.application);
     }
 
     #[test]
     fn parse_with_no_config_file_returns_defaults() {
-        let settings = Settings::parse(None).expect("parse should succeed");
-        assert_eq!(settings.web.port, 8090);
+        let settings =
+            Settings::parse_with_cli(&crate::Cli::default()).expect("parse should succeed");
+        assert_eq!(settings.frontend.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert_eq!(settings.application.password(), "");
     }
@@ -268,14 +374,18 @@ mod tests {
     #[test]
     fn parse_overrides_web_section_from_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = 9100").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
-        assert_eq!(settings.web.port, 9100);
-        assert_eq!(settings.web.host, "0.0.0.0");
+        assert_eq!(settings.frontend.port, 9100);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
     }
 
     #[test]
@@ -284,7 +394,11 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = debug").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.tracing.level, lib_tracing::Levels::DEBUG);
     }
@@ -295,7 +409,11 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "enabled = false").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert!(!settings.tracing.enabled);
     }
@@ -306,7 +424,11 @@ mod tests {
         writeln!(file, "[application]").unwrap();
         writeln!(file, "password = hunter2").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.application.password(), "hunter2");
     }
@@ -314,31 +436,45 @@ mod tests {
     #[test]
     fn parse_applies_multiple_sections_from_one_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = 9200").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = warn").unwrap();
 
-        let settings = Settings::parse(Some(file.path())).expect("parse should succeed");
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
-        assert_eq!(settings.web.port, 9200);
+        assert_eq!(settings.frontend.port, 9200);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::WARN);
     }
 
     #[test]
     fn parse_with_missing_config_file_fails() {
-        let result = Settings::parse(Some(Path::new("/nonexistent/bitnode_console.conf")));
+        let cli = crate::Cli {
+            config: Some(std::path::PathBuf::from(
+                "/nonexistent/bitnode_console.conf",
+            )),
+            ..Default::default()
+        };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
 
     #[test]
     fn parse_with_invalid_port_value_fails() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = not_a_number").unwrap();
 
-        let result = Settings::parse(Some(file.path()));
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
 
@@ -348,8 +484,231 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = verbose").unwrap();
 
-        let result = Settings::parse(Some(file.path()));
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
+        let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn cli_tracing_level_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[tracing]").unwrap();
+        writeln!(file, "level = warn").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            tracing_level: Some(lib_tracing::Levels::TRACE),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::TRACE);
+    }
+
+    #[test]
+    fn cli_tracing_enabled_overrides_default() {
+        let cli = crate::Cli {
+            tracing_enabled: Some(false),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert!(!settings.tracing.enabled);
+    }
+
+    #[test]
+    fn cli_tracing_show_settings_startup_overrides_default() {
+        let cli = crate::Cli {
+            tracing_show_settings_startup: Some(true),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert!(settings.tracing.show_settings_startup);
+    }
+
+    #[test]
+    fn cli_args_tracing_level_flag_flows_through_to_settings() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from(["bin", "--tracing-level", "trace"])
+            .expect("CLI should parse --tracing-level trace");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.tracing.level, lib_tracing::Levels::TRACE);
+    }
+
+    #[test]
+    fn cli_args_config_flag_flows_through_to_settings() {
+        use clap::Parser as _;
+        use std::io::Write as _;
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[frontend]").unwrap();
+        writeln!(file, "port = 9999").unwrap();
+        writeln!(file, "host = 0.0.0.0").unwrap();
+
+        let path = file.path().to_str().expect("path is valid UTF-8");
+        let cli = crate::Cli::try_parse_from(["bin", "--config", path])
+            .expect("CLI should parse --config");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+
+        assert_eq!(settings.frontend.port, 9999);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_backend_port_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[backend]").unwrap();
+        writeln!(file, "port = 50051").unwrap();
+        writeln!(file, "host = 127.0.0.1").unwrap();
+        writeln!(file, "password_hash = ").unwrap();
+        writeln!(file, "token_secret = s").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            backend_port: Some(9090),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.backend.port, 9090);
+    }
+
+    #[test]
+    fn cli_backend_host_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[backend]").unwrap();
+        writeln!(file, "port = 50051").unwrap();
+        writeln!(file, "host = 127.0.0.1").unwrap();
+        writeln!(file, "password_hash = ").unwrap();
+        writeln!(file, "token_secret = s").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            backend_host: Some("0.0.0.0".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.backend.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_backend_allowed_ips_overrides_default() {
+        let cli = crate::Cli {
+            backend_allowed_ips: Some(vec!["10.0.0.0/8".parse().unwrap()]),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        let expected: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
+        assert_eq!(settings.backend.allowed_ips(), &[expected]);
+    }
+
+    #[test]
+    fn cli_backend_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from([
+            "bin",
+            "--backend-port",
+            "9090",
+            "--backend-host",
+            "0.0.0.0",
+        ])
+        .expect("CLI should parse backend flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.backend.port, 9090);
+        assert_eq!(settings.backend.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_bitcoind_rpc_port_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_rpc_port: Some(18443),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_port(), 18443);
+    }
+
+    #[test]
+    fn cli_bitcoind_rpc_host_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_rpc_host: Some("192.168.1.10".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_host(), "192.168.1.10");
+    }
+
+    #[test]
+    fn cli_bitcoind_unit_name_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_unit_name: Some("knots.service".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.unit_name(), "knots.service");
+    }
+
+    #[test]
+    fn cli_bitcoind_cookie_file_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_cookie_file: Some(std::path::PathBuf::from("/var/lib/bitcoind/.cookie")),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(
+            settings.bitcoind.cookie_file(),
+            Some(std::path::Path::new("/var/lib/bitcoind/.cookie"))
+        );
+    }
+
+    #[test]
+    fn cli_web_port_overrides_default() {
+        let cli = crate::Cli {
+            web_port: Some(3000),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.frontend.port, 3000);
+    }
+
+    #[test]
+    fn cli_web_host_overrides_default() {
+        let cli = crate::Cli {
+            web_host: Some("0.0.0.0".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.frontend.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_web_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli =
+            crate::Cli::try_parse_from(["bin", "--web-port", "3000", "--web-host", "0.0.0.0"])
+                .expect("CLI should parse web flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.frontend.port, 3000);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_bitcoind_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from([
+            "bin",
+            "--bitcoind-rpc-port",
+            "18443",
+            "--bitcoind-rpc-host",
+            "192.168.1.10",
+            "--bitcoind-rpc-user",
+            "alice",
+        ])
+        .expect("CLI should parse bitcoind flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_port(), 18443);
+        assert_eq!(settings.bitcoind.rpc_host(), "192.168.1.10");
+        assert_eq!(settings.bitcoind.rpc_user(), "alice");
     }
 
     #[cfg(target_os = "linux")]
