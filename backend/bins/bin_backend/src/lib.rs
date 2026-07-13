@@ -18,8 +18,8 @@ pub async fn run() -> Result<()> {
         }
     }
 
-    let rpc_server = lib_rpc::Server::new(settings).await?;
-    rpc_server.run().await.map_err(Error::from)?;
+    let backend_server = lib_rpc::Server::new(settings).await?;
+    backend_server.run().await.map_err(Error::from)?;
 
     Ok(())
 }

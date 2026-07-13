@@ -6,7 +6,7 @@ use config::Config;
 use directories as Directories;
 use std::path::{Path, PathBuf};
 
-// use crate::{ApplicationSettings, Error, Result, TracingSettings, WebSettings};
+// use crate::{ApplicationSettings, Error, Result, FrontendSettings, TracingSettings};
 
 /// Application name used for configuration directories and environment variables.
 /// This should match the binary name and be used consistently across the application.
@@ -34,7 +34,7 @@ pub struct Settings {
     pub tracing: crate::TracingSettings,
 
     #[serde(default)]
-    pub web: crate::WebSettings,
+    pub frontend: crate::FrontendSettings,
 }
 
 impl Settings {
@@ -233,13 +233,13 @@ impl Settings {
 
         if let Some(port) = cli.web_port {
             config_builder = config_builder
-                .set_override("web.port", i64::from(port))
+                .set_override("frontend.port", i64::from(port))
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
         if let Some(ref host) = cli.web_host {
             config_builder = config_builder
-                .set_override("web.host", host.as_str())
+                .set_override("frontend.host", host.as_str())
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
@@ -314,8 +314,8 @@ mod tests {
         assert!(settings.tracing.enabled);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert!(!settings.tracing.show_settings_startup);
-        assert_eq!(settings.web.port, 8090);
-        assert_eq!(settings.web.host, "127.0.0.1");
+        assert_eq!(settings.frontend.port, 8090);
+        assert_eq!(settings.frontend.host, "127.0.0.1");
     }
 
     #[test]
@@ -324,8 +324,8 @@ mod tests {
         let cloned = original.clone();
         assert_eq!(original.application, cloned.application);
         assert_eq!(original.tracing, cloned.tracing);
-        assert_eq!(original.web.port, cloned.web.port);
-        assert_eq!(original.web.host, cloned.web.host);
+        assert_eq!(original.frontend.port, cloned.frontend.port);
+        assert_eq!(original.frontend.host, cloned.frontend.host);
     }
 
     #[test]
@@ -338,15 +338,15 @@ mod tests {
     #[test]
     fn deserialize_from_empty_json_uses_section_defaults() {
         let settings: Settings = serde_json::from_str("{}").expect("deserialize Settings");
-        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.frontend.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert_eq!(settings.application.password(), "");
     }
 
     #[test]
     fn deserialize_partial_section_still_requires_all_section_fields() {
-        // [web] section without `host` — serde requires all WebSettings fields
-        let json = r#"{"web": {"port": 9000}}"#;
+        // [frontend] section without `host` — serde requires all FrontendSettings fields
+        let json = r#"{"frontend": {"port": 9000}}"#;
         let result: Result<Settings, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
@@ -356,8 +356,8 @@ mod tests {
         let settings = Settings::default();
         let json = serde_json::to_string(&settings).expect("serialize Settings");
         let deserialized: Settings = serde_json::from_str(&json).expect("deserialize Settings");
-        assert_eq!(deserialized.web.port, settings.web.port);
-        assert_eq!(deserialized.web.host, settings.web.host);
+        assert_eq!(deserialized.frontend.port, settings.frontend.port);
+        assert_eq!(deserialized.frontend.host, settings.frontend.host);
         assert_eq!(deserialized.tracing, settings.tracing);
         assert_eq!(deserialized.application, settings.application);
     }
@@ -366,7 +366,7 @@ mod tests {
     fn parse_with_no_config_file_returns_defaults() {
         let settings =
             Settings::parse_with_cli(&crate::Cli::default()).expect("parse should succeed");
-        assert_eq!(settings.web.port, 8090);
+        assert_eq!(settings.frontend.port, 8090);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::INFO);
         assert_eq!(settings.application.password(), "");
     }
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn parse_overrides_web_section_from_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = 9100").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
 
@@ -384,8 +384,8 @@ mod tests {
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
-        assert_eq!(settings.web.port, 9100);
-        assert_eq!(settings.web.host, "0.0.0.0");
+        assert_eq!(settings.frontend.port, 9100);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
     }
 
     #[test]
@@ -436,7 +436,7 @@ mod tests {
     #[test]
     fn parse_applies_multiple_sections_from_one_config_file() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = 9200").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
         writeln!(file, "[tracing]").unwrap();
@@ -448,7 +448,7 @@ mod tests {
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
-        assert_eq!(settings.web.port, 9200);
+        assert_eq!(settings.frontend.port, 9200);
         assert_eq!(settings.tracing.level, lib_tracing::Levels::WARN);
     }
 
@@ -467,7 +467,7 @@ mod tests {
     #[test]
     fn parse_with_invalid_port_value_fails() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = not_a_number").unwrap();
 
         let cli = crate::Cli {
@@ -542,7 +542,7 @@ mod tests {
         use clap::Parser as _;
         use std::io::Write as _;
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[web]").unwrap();
+        writeln!(file, "[frontend]").unwrap();
         writeln!(file, "port = 9999").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
 
@@ -551,8 +551,8 @@ mod tests {
             .expect("CLI should parse --config");
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
-        assert_eq!(settings.web.port, 9999);
-        assert_eq!(settings.web.host, "0.0.0.0");
+        assert_eq!(settings.frontend.port, 9999);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
     }
 
     #[test]
@@ -668,7 +668,7 @@ mod tests {
             ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.web.port, 3000);
+        assert_eq!(settings.frontend.port, 3000);
     }
 
     #[test]
@@ -678,7 +678,7 @@ mod tests {
             ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.web.host, "0.0.0.0");
+        assert_eq!(settings.frontend.host, "0.0.0.0");
     }
 
     #[test]
@@ -688,8 +688,8 @@ mod tests {
             crate::Cli::try_parse_from(["bin", "--web-port", "3000", "--web-host", "0.0.0.0"])
                 .expect("CLI should parse web flags");
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.web.port, 3000);
-        assert_eq!(settings.web.host, "0.0.0.0");
+        assert_eq!(settings.frontend.port, 3000);
+        assert_eq!(settings.frontend.host, "0.0.0.0");
     }
 
     #[test]

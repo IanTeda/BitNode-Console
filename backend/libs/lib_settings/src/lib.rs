@@ -11,7 +11,7 @@ mod error;
 mod backend;
 mod settings;
 mod tracing;
-mod web;
+mod frontend;
 
 /// Re-export Settings error type
 pub use error::Error;
@@ -28,4 +28,4 @@ pub use bitcoind::BitcoinDaemonSettings;
 pub use backend::BackendSettings;
 pub use settings::Settings;
 pub use tracing::TracingSettings;
-pub use web::WebSettings;
+pub use frontend::FrontendSettings;

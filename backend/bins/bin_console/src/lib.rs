@@ -25,15 +25,15 @@ pub async fn run() -> Result<()> {
     }
 
     //--- Create web server for serving HTTP ReactJS requests
-    let web_server = lib_web::HttpServer::new(&settings.web.host, settings.web.port);
-    let web_future = async { web_server.run().await.map_err(Error::from) };
+    let frontend_server = lib_web::HttpServer::new(&settings.frontend.host, settings.frontend.port);
+    let frontend_future = async { frontend_server.run().await.map_err(Error::from) };
 
     //--- Create RPC server for serving gRPC requests
-    let rpc_server = lib_rpc::Server::new(settings).await?;
-    let rpc_future = async { rpc_server.run().await.map_err(Error::from) };
+    let backend_server = lib_rpc::Server::new(settings).await?;
+    let backend_future = async { backend_server.run().await.map_err(Error::from) };
 
     //--- Join the web and RPC server futures to run them concurrently
-    tokio::try_join!(web_future, rpc_future)?;
+    tokio::try_join!(frontend_future, backend_future)?;
 
     Ok(())
 }
