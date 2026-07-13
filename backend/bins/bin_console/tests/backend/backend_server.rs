@@ -71,7 +71,7 @@ async fn rpc_server_bind_failure_returns_error() {
     let taken_port = first.address().unwrap().port();
 
     let conflict_settings = lib_settings::Settings {
-        rpc: lib_settings::BackendSettings {
+        backend: lib_settings::BackendSettings {
             port: taken_port,
             ..crate::support::test_settings().backend
         },

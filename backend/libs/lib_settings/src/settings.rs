@@ -28,7 +28,7 @@ pub struct Settings {
     pub bitcoind: crate::BitcoinDaemonSettings,
 
     #[serde(default)]
-    pub rpc: crate::RpcSettings,
+    pub backend: crate::BackendSettings,
 
     #[serde(default)]
     pub tracing: crate::TracingSettings,
@@ -163,34 +163,34 @@ impl Settings {
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
-        if let Some(port) = cli.rpc_port {
+        if let Some(port) = cli.backend_port {
             config_builder = config_builder
-                .set_override("rpc.port", i64::from(port))
+                .set_override("backend.port", i64::from(port))
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
-        if let Some(ref host) = cli.rpc_host {
+        if let Some(ref host) = cli.backend_host {
             config_builder = config_builder
-                .set_override("rpc.host", host.as_str())
+                .set_override("backend.host", host.as_str())
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
-        if let Some(ref hash) = cli.rpc_password_hash {
+        if let Some(ref hash) = cli.backend_password_hash {
             config_builder = config_builder
-                .set_override("rpc.password_hash", hash.as_str())
+                .set_override("backend.password_hash", hash.as_str())
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
-        if let Some(ref secret) = cli.rpc_token_secret {
+        if let Some(ref secret) = cli.backend_token_secret {
             config_builder = config_builder
-                .set_override("rpc.token_secret", secret.as_str())
+                .set_override("backend.token_secret", secret.as_str())
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
-        if let Some(ref ips) = cli.rpc_allowed_ips {
+        if let Some(ref ips) = cli.backend_allowed_ips {
             let ip_strings: Vec<String> = ips.iter().map(|ip| ip.to_string()).collect();
             config_builder = config_builder
-                .set_override("rpc.allowed_ips", ip_strings)
+                .set_override("backend.allowed_ips", ip_strings)
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
@@ -378,7 +378,10 @@ mod tests {
         writeln!(file, "port = 9100").unwrap();
         writeln!(file, "host = 0.0.0.0").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.web.port, 9100);
@@ -391,7 +394,10 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = debug").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.tracing.level, lib_tracing::Levels::DEBUG);
@@ -403,7 +409,10 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "enabled = false").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert!(!settings.tracing.enabled);
@@ -415,7 +424,10 @@ mod tests {
         writeln!(file, "[application]").unwrap();
         writeln!(file, "password = hunter2").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.application.password(), "hunter2");
@@ -430,7 +442,10 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = warn").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
         assert_eq!(settings.web.port, 9200);
@@ -440,7 +455,9 @@ mod tests {
     #[test]
     fn parse_with_missing_config_file_fails() {
         let cli = crate::Cli {
-            config: Some(std::path::PathBuf::from("/nonexistent/bitnode_console.conf")),
+            config: Some(std::path::PathBuf::from(
+                "/nonexistent/bitnode_console.conf",
+            )),
             ..Default::default()
         };
         let result = Settings::parse_with_cli(&cli);
@@ -453,7 +470,10 @@ mod tests {
         writeln!(file, "[web]").unwrap();
         writeln!(file, "port = not_a_number").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
@@ -464,7 +484,10 @@ mod tests {
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = verbose").unwrap();
 
-        let cli = crate::Cli { config: Some(file.path().to_path_buf()), ..Default::default() };
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            ..Default::default()
+        };
         let result = Settings::parse_with_cli(&cli);
         assert!(result.is_err());
     }
@@ -487,15 +510,20 @@ mod tests {
 
     #[test]
     fn cli_tracing_enabled_overrides_default() {
-        let cli = crate::Cli { tracing_enabled: Some(false), ..Default::default() };
+        let cli = crate::Cli {
+            tracing_enabled: Some(false),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         assert!(!settings.tracing.enabled);
     }
 
     #[test]
     fn cli_tracing_show_settings_startup_overrides_default() {
-        let cli =
-            crate::Cli { tracing_show_settings_startup: Some(true), ..Default::default() };
+        let cli = crate::Cli {
+            tracing_show_settings_startup: Some(true),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         assert!(settings.tracing.show_settings_startup);
     }
@@ -528,9 +556,9 @@ mod tests {
     }
 
     #[test]
-    fn cli_rpc_port_overrides_config_file_value() {
+    fn cli_backend_port_overrides_config_file_value() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[rpc]").unwrap();
+        writeln!(file, "[backend]").unwrap();
         writeln!(file, "port = 50051").unwrap();
         writeln!(file, "host = 127.0.0.1").unwrap();
         writeln!(file, "password_hash = ").unwrap();
@@ -538,17 +566,17 @@ mod tests {
 
         let cli = crate::Cli {
             config: Some(file.path().to_path_buf()),
-            rpc_port: Some(9090),
+            backend_port: Some(9090),
             ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.rpc.port, 9090);
+        assert_eq!(settings.backend.port, 9090);
     }
 
     #[test]
-    fn cli_rpc_host_overrides_config_file_value() {
+    fn cli_backend_host_overrides_config_file_value() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
-        writeln!(file, "[rpc]").unwrap();
+        writeln!(file, "[backend]").unwrap();
         writeln!(file, "port = 50051").unwrap();
         writeln!(file, "host = 127.0.0.1").unwrap();
         writeln!(file, "password_hash = ").unwrap();
@@ -556,43 +584,46 @@ mod tests {
 
         let cli = crate::Cli {
             config: Some(file.path().to_path_buf()),
-            rpc_host: Some("0.0.0.0".to_string()),
+            backend_host: Some("0.0.0.0".to_string()),
             ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.rpc.host, "0.0.0.0");
+        assert_eq!(settings.backend.host, "0.0.0.0");
     }
 
     #[test]
-    fn cli_rpc_allowed_ips_overrides_default() {
+    fn cli_backend_allowed_ips_overrides_default() {
         let cli = crate::Cli {
-            rpc_allowed_ips: Some(vec!["10.0.0.0/8".parse().unwrap()]),
+            backend_allowed_ips: Some(vec!["10.0.0.0/8".parse().unwrap()]),
             ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         let expected: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
-        assert_eq!(settings.rpc.allowed_ips(), &[expected]);
+        assert_eq!(settings.backend.allowed_ips(), &[expected]);
     }
 
     #[test]
-    fn cli_rpc_flags_flow_through_from_parse_from() {
+    fn cli_backend_flags_flow_through_from_parse_from() {
         use clap::Parser as _;
         let cli = crate::Cli::try_parse_from([
             "bin",
-            "--rpc-port",
+            "--backend-port",
             "9090",
-            "--rpc-host",
+            "--backend-host",
             "0.0.0.0",
         ])
-        .expect("CLI should parse rpc flags");
+        .expect("CLI should parse backend flags");
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
-        assert_eq!(settings.rpc.port, 9090);
-        assert_eq!(settings.rpc.host, "0.0.0.0");
+        assert_eq!(settings.backend.port, 9090);
+        assert_eq!(settings.backend.host, "0.0.0.0");
     }
 
     #[test]
     fn cli_bitcoind_rpc_port_overrides_default() {
-        let cli = crate::Cli { bitcoind_rpc_port: Some(18443), ..Default::default() };
+        let cli = crate::Cli {
+            bitcoind_rpc_port: Some(18443),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         assert_eq!(settings.bitcoind.rpc_port(), 18443);
     }
@@ -632,7 +663,10 @@ mod tests {
 
     #[test]
     fn cli_web_port_overrides_default() {
-        let cli = crate::Cli { web_port: Some(3000), ..Default::default() };
+        let cli = crate::Cli {
+            web_port: Some(3000),
+            ..Default::default()
+        };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         assert_eq!(settings.web.port, 3000);
     }

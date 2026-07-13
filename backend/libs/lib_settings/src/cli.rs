@@ -28,28 +28,28 @@ pub struct Cli {
     #[arg(long, value_name = "BOOL")]
     pub tracing_show_settings_startup: Option<bool>,
 
-    /// Override the RPC server port.
+    /// Override the backend server port.
     #[arg(long, value_name = "PORT")]
-    pub rpc_port: Option<u16>,
+    pub backend_port: Option<u16>,
 
-    /// Override the RPC server host address.
+    /// Override the backend server host address.
     #[arg(long, value_name = "HOST")]
-    pub rpc_host: Option<String>,
+    pub backend_host: Option<String>,
 
-    /// Override the RPC password hash (Argon2id PHC string).
+    /// Override the backend password hash (Argon2id PHC string).
     #[arg(long, value_name = "HASH")]
-    pub rpc_password_hash: Option<String>,
+    pub backend_password_hash: Option<String>,
 
-    /// Override the RPC token signing secret.
+    /// Override the backend token signing secret.
     #[arg(long, value_name = "SECRET")]
-    pub rpc_token_secret: Option<String>,
+    pub backend_token_secret: Option<String>,
 
-    /// Override the RPC allowed IP addresses and CIDR subnets.
+    /// Override the backend allowed IP addresses and CIDR subnets.
     ///
     /// May be supplied multiple times or as a space-separated list.
     /// Replaces the entire allowed list when set.
     #[arg(long, value_name = "CIDR", num_args = 1..)]
-    pub rpc_allowed_ips: Option<Vec<ipnet::IpNet>>,
+    pub backend_allowed_ips: Option<Vec<ipnet::IpNet>>,
 
     /// Override the Bitcoin daemon systemd unit name.
     #[arg(long, value_name = "UNIT")]
@@ -91,11 +91,11 @@ impl Default for Cli {
             tracing_enabled: None,
             tracing_level: None,
             tracing_show_settings_startup: None,
-            rpc_port: None,
-            rpc_host: None,
-            rpc_password_hash: None,
-            rpc_token_secret: None,
-            rpc_allowed_ips: None,
+            backend_port: None,
+            backend_host: None,
+            backend_password_hash: None,
+            backend_token_secret: None,
+            backend_allowed_ips: None,
             bitcoind_unit_name: None,
             bitcoind_rpc_host: None,
             bitcoind_rpc_port: None,
@@ -141,32 +141,32 @@ impl Cli {
 
     /// Returns the RPC server port override, if set.
     #[must_use]
-    pub fn rpc_port(&self) -> Option<u16> {
-        self.rpc_port
+    pub fn backend_port(&self) -> Option<u16> {
+        self.backend_port
     }
 
     /// Returns the RPC server host override, if set.
     #[must_use]
-    pub fn rpc_host(&self) -> Option<&str> {
-        self.rpc_host.as_deref()
+    pub fn backend_host(&self) -> Option<&str> {
+        self.backend_host.as_deref()
     }
 
     /// Returns the RPC password hash override, if set.
     #[must_use]
-    pub fn rpc_password_hash(&self) -> Option<&str> {
-        self.rpc_password_hash.as_deref()
+    pub fn backend_password_hash(&self) -> Option<&str> {
+        self.backend_password_hash.as_deref()
     }
 
     /// Returns the RPC token secret override, if set.
     #[must_use]
-    pub fn rpc_token_secret(&self) -> Option<&str> {
-        self.rpc_token_secret.as_deref()
+    pub fn backend_token_secret(&self) -> Option<&str> {
+        self.backend_token_secret.as_deref()
     }
 
     /// Returns the RPC allowed IP networks override, if set.
     #[must_use]
-    pub fn rpc_allowed_ips(&self) -> Option<&[ipnet::IpNet]> {
-        self.rpc_allowed_ips.as_deref()
+    pub fn backend_allowed_ips(&self) -> Option<&[ipnet::IpNet]> {
+        self.backend_allowed_ips.as_deref()
     }
 
     /// Returns the Bitcoin daemon systemd unit name override, if set.
@@ -232,11 +232,11 @@ mod tests {
         assert!(cli.tracing_enabled.is_none());
         assert!(cli.tracing_level.is_none());
         assert!(cli.tracing_show_settings_startup.is_none());
-        assert!(cli.rpc_port.is_none());
-        assert!(cli.rpc_host.is_none());
-        assert!(cli.rpc_password_hash.is_none());
-        assert!(cli.rpc_token_secret.is_none());
-        assert!(cli.rpc_allowed_ips.is_none());
+        assert!(cli.backend_port.is_none());
+        assert!(cli.backend_host.is_none());
+        assert!(cli.backend_password_hash.is_none());
+        assert!(cli.backend_token_secret.is_none());
+        assert!(cli.backend_allowed_ips.is_none());
     }
 
     #[test]
@@ -246,11 +246,11 @@ mod tests {
         assert!(cli.tracing_enabled.is_none());
         assert!(cli.tracing_level.is_none());
         assert!(cli.tracing_show_settings_startup.is_none());
-        assert!(cli.rpc_port.is_none());
-        assert!(cli.rpc_host.is_none());
-        assert!(cli.rpc_password_hash.is_none());
-        assert!(cli.rpc_token_secret.is_none());
-        assert!(cli.rpc_allowed_ips.is_none());
+        assert!(cli.backend_port.is_none());
+        assert!(cli.backend_host.is_none());
+        assert!(cli.backend_password_hash.is_none());
+        assert!(cli.backend_token_secret.is_none());
+        assert!(cli.backend_allowed_ips.is_none());
     }
 
     #[test]
@@ -335,76 +335,76 @@ mod tests {
         assert_eq!(cli.tracing_show_settings_startup(), Some(true));
     }
 
-    // --- rpc_port accessor ---
+    // --- backend_port accessor ---
 
     #[test]
-    fn default_rpc_port_is_none() {
-        assert!(Cli::default().rpc_port().is_none());
+    fn default_backend_port_is_none() {
+        assert!(Cli::default().backend_port().is_none());
     }
 
     #[test]
-    fn rpc_port_accessor_returns_value() {
-        let cli = Cli { rpc_port: Some(9090), ..Cli::default() };
-        assert_eq!(cli.rpc_port(), Some(9090));
+    fn backend_port_accessor_returns_value() {
+        let cli = Cli { backend_port: Some(9090), ..Cli::default() };
+        assert_eq!(cli.backend_port(), Some(9090));
     }
 
-    // --- rpc_host accessor ---
+    // --- backend_host accessor ---
 
     #[test]
-    fn default_rpc_host_is_none() {
-        assert!(Cli::default().rpc_host().is_none());
-    }
-
-    #[test]
-    fn rpc_host_accessor_returns_value() {
-        let cli = Cli { rpc_host: Some("0.0.0.0".to_string()), ..Cli::default() };
-        assert_eq!(cli.rpc_host(), Some("0.0.0.0"));
-    }
-
-    // --- rpc_password_hash accessor ---
-
-    #[test]
-    fn default_rpc_password_hash_is_none() {
-        assert!(Cli::default().rpc_password_hash().is_none());
+    fn default_backend_host_is_none() {
+        assert!(Cli::default().backend_host().is_none());
     }
 
     #[test]
-    fn rpc_password_hash_accessor_returns_value() {
+    fn backend_host_accessor_returns_value() {
+        let cli = Cli { backend_host: Some("0.0.0.0".to_string()), ..Cli::default() };
+        assert_eq!(cli.backend_host(), Some("0.0.0.0"));
+    }
+
+    // --- backend_password_hash accessor ---
+
+    #[test]
+    fn default_backend_password_hash_is_none() {
+        assert!(Cli::default().backend_password_hash().is_none());
+    }
+
+    #[test]
+    fn backend_password_hash_accessor_returns_value() {
         let cli = Cli {
-            rpc_password_hash: Some("$argon2id$...".to_string()),
+            backend_password_hash: Some("$argon2id$...".to_string()),
             ..Cli::default()
         };
-        assert_eq!(cli.rpc_password_hash(), Some("$argon2id$..."));
+        assert_eq!(cli.backend_password_hash(), Some("$argon2id$..."));
     }
 
-    // --- rpc_token_secret accessor ---
+    // --- backend_token_secret accessor ---
 
     #[test]
-    fn default_rpc_token_secret_is_none() {
-        assert!(Cli::default().rpc_token_secret().is_none());
+    fn default_backend_token_secret_is_none() {
+        assert!(Cli::default().backend_token_secret().is_none());
     }
 
     #[test]
-    fn rpc_token_secret_accessor_returns_value() {
+    fn backend_token_secret_accessor_returns_value() {
         let cli = Cli {
-            rpc_token_secret: Some("my-secret".to_string()),
+            backend_token_secret: Some("my-secret".to_string()),
             ..Cli::default()
         };
-        assert_eq!(cli.rpc_token_secret(), Some("my-secret"));
+        assert_eq!(cli.backend_token_secret(), Some("my-secret"));
     }
 
-    // --- rpc_allowed_ips accessor ---
+    // --- backend_allowed_ips accessor ---
 
     #[test]
-    fn default_rpc_allowed_ips_is_none() {
-        assert!(Cli::default().rpc_allowed_ips().is_none());
+    fn default_backend_allowed_ips_is_none() {
+        assert!(Cli::default().backend_allowed_ips().is_none());
     }
 
     #[test]
-    fn rpc_allowed_ips_accessor_returns_slice() {
+    fn backend_allowed_ips_accessor_returns_slice() {
         let net: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
-        let cli = Cli { rpc_allowed_ips: Some(vec![net]), ..Cli::default() };
-        assert_eq!(cli.rpc_allowed_ips(), Some([net].as_slice()));
+        let cli = Cli { backend_allowed_ips: Some(vec![net]), ..Cli::default() };
+        assert_eq!(cli.backend_allowed_ips(), Some([net].as_slice()));
     }
 
     // --- bitcoind_unit_name accessor ---
@@ -538,11 +538,11 @@ mod tests {
         assert!(cli.tracing_enabled.is_none());
         assert!(cli.tracing_level.is_none());
         assert!(cli.tracing_show_settings_startup.is_none());
-        assert!(cli.rpc_port.is_none());
-        assert!(cli.rpc_host.is_none());
-        assert!(cli.rpc_password_hash.is_none());
-        assert!(cli.rpc_token_secret.is_none());
-        assert!(cli.rpc_allowed_ips.is_none());
+        assert!(cli.backend_port.is_none());
+        assert!(cli.backend_host.is_none());
+        assert!(cli.backend_password_hash.is_none());
+        assert!(cli.backend_token_secret.is_none());
+        assert!(cli.backend_allowed_ips.is_none());
         assert!(cli.bitcoind_unit_name.is_none());
         assert!(cli.bitcoind_rpc_host.is_none());
         assert!(cli.bitcoind_rpc_port.is_none());
@@ -627,62 +627,62 @@ mod tests {
     }
 
     #[test]
-    fn rpc_port_flag_sets_port() {
-        let cli = Cli::try_parse_from(["bin", "--rpc-port", "9090"]).unwrap();
-        assert_eq!(cli.rpc_port, Some(9090));
+    fn backend_port_flag_sets_port() {
+        let cli = Cli::try_parse_from(["bin", "--backend-port", "9090"]).unwrap();
+        assert_eq!(cli.backend_port, Some(9090));
     }
 
     #[test]
-    fn rpc_host_flag_sets_host() {
-        let cli = Cli::try_parse_from(["bin", "--rpc-host", "0.0.0.0"]).unwrap();
-        assert_eq!(cli.rpc_host, Some("0.0.0.0".to_string()));
+    fn backend_host_flag_sets_host() {
+        let cli = Cli::try_parse_from(["bin", "--backend-host", "0.0.0.0"]).unwrap();
+        assert_eq!(cli.backend_host, Some("0.0.0.0".to_string()));
     }
 
     #[test]
-    fn rpc_password_hash_flag_sets_hash() {
+    fn backend_password_hash_flag_sets_hash() {
         let cli =
-            Cli::try_parse_from(["bin", "--rpc-password-hash", "$argon2id$..."]).unwrap();
-        assert_eq!(cli.rpc_password_hash, Some("$argon2id$...".to_string()));
+            Cli::try_parse_from(["bin", "--backend-password-hash", "$argon2id$..."]).unwrap();
+        assert_eq!(cli.backend_password_hash, Some("$argon2id$...".to_string()));
     }
 
     #[test]
-    fn rpc_token_secret_flag_sets_secret() {
+    fn backend_token_secret_flag_sets_secret() {
         let cli =
-            Cli::try_parse_from(["bin", "--rpc-token-secret", "my-secret"]).unwrap();
-        assert_eq!(cli.rpc_token_secret, Some("my-secret".to_string()));
+            Cli::try_parse_from(["bin", "--backend-token-secret", "my-secret"]).unwrap();
+        assert_eq!(cli.backend_token_secret, Some("my-secret".to_string()));
     }
 
     #[test]
-    fn rpc_allowed_ips_flag_accepts_single_cidr() {
+    fn backend_allowed_ips_flag_accepts_single_cidr() {
         let cli =
-            Cli::try_parse_from(["bin", "--rpc-allowed-ips", "192.168.1.0/24"]).unwrap();
+            Cli::try_parse_from(["bin", "--backend-allowed-ips", "192.168.1.0/24"]).unwrap();
         let expected: ipnet::IpNet = "192.168.1.0/24".parse().unwrap();
-        assert_eq!(cli.rpc_allowed_ips, Some(vec![expected]));
+        assert_eq!(cli.backend_allowed_ips, Some(vec![expected]));
     }
 
     #[test]
-    fn rpc_allowed_ips_flag_accepts_multiple_cidrs() {
+    fn backend_allowed_ips_flag_accepts_multiple_cidrs() {
         let cli = Cli::try_parse_from([
             "bin",
-            "--rpc-allowed-ips",
+            "--backend-allowed-ips",
             "192.168.1.0/24",
             "10.0.0.0/8",
         ])
         .unwrap();
         let expected: Vec<ipnet::IpNet> =
             ["192.168.1.0/24", "10.0.0.0/8"].iter().map(|s| s.parse().unwrap()).collect();
-        assert_eq!(cli.rpc_allowed_ips, Some(expected));
+        assert_eq!(cli.backend_allowed_ips, Some(expected));
     }
 
     #[test]
-    fn invalid_rpc_port_returns_error() {
-        let result = Cli::try_parse_from(["bin", "--rpc-port", "99999"]);
+    fn invalid_backend_port_returns_error() {
+        let result = Cli::try_parse_from(["bin", "--backend-port", "99999"]);
         assert!(result.is_err());
     }
 
     #[test]
-    fn invalid_rpc_allowed_ip_returns_error() {
-        let result = Cli::try_parse_from(["bin", "--rpc-allowed-ips", "not-a-cidr"]);
+    fn invalid_backend_allowed_ip_returns_error() {
+        let result = Cli::try_parse_from(["bin", "--backend-allowed-ips", "not-a-cidr"]);
         assert!(result.is_err());
     }
 

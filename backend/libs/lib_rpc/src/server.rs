@@ -48,8 +48,10 @@ impl Server {
     /// Returns [`crate::Error::Transport`] if the TCP listener cannot bind to the address.
     #[tracing::instrument(skip(settings))]
     pub async fn new(settings: lib_settings::Settings) -> crate::Result<Self> {
-        let address =
-            settings.rpc.socket_address().map_err(|e| crate::Error::Config(e.to_string()))?;
+        let address = settings
+            .backend
+            .socket_address()
+            .map_err(|e| crate::Error::Config(e.to_string()))?;
 
         let listener = tokio::net::TcpListener::bind(address)
             .await
@@ -82,7 +84,7 @@ impl Server {
     #[tracing::instrument(skip(self))]
     pub async fn run(self) -> crate::Result<()> {
         //--- Check that password_hash is configured, else stop the server
-        if self.settings.rpc.password_hash().is_empty() {
+        if self.settings.backend.password_hash().is_empty() {
             return Err(crate::Error::Config(
                 "rpc.password_hash is not configured".to_string(),
             ));
@@ -90,12 +92,13 @@ impl Server {
 
         //--- Build interceptors
         let allowed_ips_interceptor = crate::interceptors::AllowedIpsInterceptor::new(
-            self.settings.rpc.allowed_ips().to_vec(),
+            self.settings.backend.allowed_ips().to_vec(),
         );
-        let allowed_ips_interceptor = tonic::service::InterceptorLayer::new(allowed_ips_interceptor);
+        let allowed_ips_interceptor =
+            tonic::service::InterceptorLayer::new(allowed_ips_interceptor);
 
         let access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
-            self.settings.rpc.token_secret().clone(),
+            self.settings.backend.token_secret().clone(),
         );
 
         // --- CORS Layer
@@ -120,9 +123,9 @@ impl Server {
 
         // --- Authentication RPC Service
         // Build a new authentication service (no access-token required to log in).
-        let password_hash = lib_auth::PasswordHash::try_from(self.settings.rpc.password_hash())
+        let password_hash = lib_auth::PasswordHash::try_from(self.settings.backend.password_hash())
             .map_err(|e| crate::Error::Config(e.to_string()))?;
-        let token_secret = self.settings.rpc.token_secret().clone();
+        let token_secret = self.settings.backend.token_secret().clone();
         let auth_service = AuthenticationServiceServer::new(AuthenticationServiceImpl::new(
             password_hash,
             token_secret,
@@ -140,7 +143,7 @@ impl Server {
         // --- Journals RPC Service
         // Build a new journals service, protected by a separate access-token interceptor.
         let journals_access_token_interceptor = crate::interceptors::AccessTokenInterceptor::new(
-            self.settings.rpc.token_secret().clone(),
+            self.settings.backend.token_secret().clone(),
         );
         let journals_service = JournalsServiceServer::with_interceptor(
             JournalsServiceImpl::new(self.settings.bitcoind.unit_name()),
@@ -200,7 +203,7 @@ mod tests {
     /// Base settings: binds to `127.0.0.1:0` so the OS assigns an ephemeral port.
     fn settings() -> lib_settings::Settings {
         lib_settings::Settings {
-            rpc: lib_settings::RpcSettings {
+            backend: lib_settings::BackendSettings {
                 host: "127.0.0.1".to_string(),
                 port: 0,
                 password_hash: test_hash().as_ref().to_string(),
@@ -213,9 +216,9 @@ mod tests {
 
     fn settings_with_host(host: &str) -> lib_settings::Settings {
         lib_settings::Settings {
-            rpc: lib_settings::RpcSettings {
+            backend: lib_settings::BackendSettings {
                 host: host.to_string(),
-                ..settings().rpc
+                ..settings().backend
             },
             ..settings()
         }
@@ -223,9 +226,9 @@ mod tests {
 
     fn settings_with_port(port: u16) -> lib_settings::Settings {
         lib_settings::Settings {
-            rpc: lib_settings::RpcSettings {
+            backend: lib_settings::BackendSettings {
                 port,
-                ..settings().rpc
+                ..settings().backend
             },
             ..settings()
         }
@@ -513,9 +516,9 @@ mod tests {
     #[tokio::test]
     async fn run_with_empty_password_hash_returns_config_error() {
         let server = Server::new(lib_settings::Settings {
-            rpc: lib_settings::RpcSettings {
+            backend: lib_settings::BackendSettings {
                 password_hash: String::new(),
-                ..settings().rpc
+                ..settings().backend
             },
             ..settings()
         })
@@ -533,9 +536,9 @@ mod tests {
     #[tokio::test]
     async fn run_with_malformed_password_hash_returns_config_error() {
         let server = Server::new(lib_settings::Settings {
-            rpc: lib_settings::RpcSettings {
+            backend: lib_settings::BackendSettings {
                 password_hash: "not-a-phc-string".to_string(),
-                ..settings().rpc
+                ..settings().backend
             },
             ..settings()
         })
