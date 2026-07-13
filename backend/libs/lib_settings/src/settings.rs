@@ -145,9 +145,101 @@ impl Settings {
         //--- 08. Command line arguments (highest priority)
         // Individual flag values override every other source via set_override.
 
-        if let Some(level) = cli.log_level {
+        if let Some(enabled) = cli.tracing_enabled {
+            config_builder = config_builder
+                .set_override("tracing.enabled", enabled)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(level) = cli.tracing_level {
             config_builder = config_builder
                 .set_override("tracing.level", level.to_string())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(show) = cli.tracing_show_settings_startup {
+            config_builder = config_builder
+                .set_override("tracing.show_settings_startup", show)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.rpc_port {
+            config_builder = config_builder
+                .set_override("rpc.port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.rpc_host {
+            config_builder = config_builder
+                .set_override("rpc.host", host.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref hash) = cli.rpc_password_hash {
+            config_builder = config_builder
+                .set_override("rpc.password_hash", hash.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref secret) = cli.rpc_token_secret {
+            config_builder = config_builder
+                .set_override("rpc.token_secret", secret.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref ips) = cli.rpc_allowed_ips {
+            let ip_strings: Vec<String> = ips.iter().map(|ip| ip.to_string()).collect();
+            config_builder = config_builder
+                .set_override("rpc.allowed_ips", ip_strings)
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref name) = cli.bitcoind_unit_name {
+            config_builder = config_builder
+                .set_override("bitcoind.unit_name", name.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.bitcoind_rpc_host {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_host", host.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.bitcoind_rpc_port {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref user) = cli.bitcoind_rpc_user {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_user", user.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref password) = cli.bitcoind_rpc_password {
+            config_builder = config_builder
+                .set_override("bitcoind.rpc_password", password.as_str())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref path) = cli.bitcoind_cookie_file {
+            let path_str = path.to_string_lossy();
+            config_builder = config_builder
+                .set_override("bitcoind.cookie_file", path_str.as_ref())
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(port) = cli.web_port {
+            config_builder = config_builder
+                .set_override("web.port", i64::from(port))
+                .map_err(|err| crate::Error::Generic(err.to_string()))?;
+        }
+
+        if let Some(ref host) = cli.web_host {
+            config_builder = config_builder
+                .set_override("web.host", host.as_str())
                 .map_err(|err| crate::Error::Generic(err.to_string()))?;
         }
 
@@ -378,14 +470,15 @@ mod tests {
     }
 
     #[test]
-    fn cli_log_level_overrides_config_file_value() {
+    fn cli_tracing_level_overrides_config_file_value() {
         let mut file = tempfile::NamedTempFile::new().expect("create temp file");
         writeln!(file, "[tracing]").unwrap();
         writeln!(file, "level = warn").unwrap();
 
         let cli = crate::Cli {
             config: Some(file.path().to_path_buf()),
-            log_level: Some(lib_tracing::Levels::TRACE),
+            tracing_level: Some(lib_tracing::Levels::TRACE),
+            ..Default::default()
         };
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
 
@@ -393,10 +486,25 @@ mod tests {
     }
 
     #[test]
-    fn cli_args_log_level_flag_flows_through_to_settings() {
+    fn cli_tracing_enabled_overrides_default() {
+        let cli = crate::Cli { tracing_enabled: Some(false), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert!(!settings.tracing.enabled);
+    }
+
+    #[test]
+    fn cli_tracing_show_settings_startup_overrides_default() {
+        let cli =
+            crate::Cli { tracing_show_settings_startup: Some(true), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert!(settings.tracing.show_settings_startup);
+    }
+
+    #[test]
+    fn cli_args_tracing_level_flag_flows_through_to_settings() {
         use clap::Parser as _;
-        let cli = crate::Cli::try_parse_from(["bin", "--log-level", "trace"])
-            .expect("CLI should parse --log-level trace");
+        let cli = crate::Cli::try_parse_from(["bin", "--tracing-level", "trace"])
+            .expect("CLI should parse --tracing-level trace");
         let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
         assert_eq!(settings.tracing.level, lib_tracing::Levels::TRACE);
     }
@@ -417,6 +525,156 @@ mod tests {
 
         assert_eq!(settings.web.port, 9999);
         assert_eq!(settings.web.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_rpc_port_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[rpc]").unwrap();
+        writeln!(file, "port = 50051").unwrap();
+        writeln!(file, "host = 127.0.0.1").unwrap();
+        writeln!(file, "password_hash = ").unwrap();
+        writeln!(file, "token_secret = s").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            rpc_port: Some(9090),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.rpc.port, 9090);
+    }
+
+    #[test]
+    fn cli_rpc_host_overrides_config_file_value() {
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        writeln!(file, "[rpc]").unwrap();
+        writeln!(file, "port = 50051").unwrap();
+        writeln!(file, "host = 127.0.0.1").unwrap();
+        writeln!(file, "password_hash = ").unwrap();
+        writeln!(file, "token_secret = s").unwrap();
+
+        let cli = crate::Cli {
+            config: Some(file.path().to_path_buf()),
+            rpc_host: Some("0.0.0.0".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.rpc.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_rpc_allowed_ips_overrides_default() {
+        let cli = crate::Cli {
+            rpc_allowed_ips: Some(vec!["10.0.0.0/8".parse().unwrap()]),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        let expected: ipnet::IpNet = "10.0.0.0/8".parse().unwrap();
+        assert_eq!(settings.rpc.allowed_ips(), &[expected]);
+    }
+
+    #[test]
+    fn cli_rpc_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from([
+            "bin",
+            "--rpc-port",
+            "9090",
+            "--rpc-host",
+            "0.0.0.0",
+        ])
+        .expect("CLI should parse rpc flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.rpc.port, 9090);
+        assert_eq!(settings.rpc.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_bitcoind_rpc_port_overrides_default() {
+        let cli = crate::Cli { bitcoind_rpc_port: Some(18443), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_port(), 18443);
+    }
+
+    #[test]
+    fn cli_bitcoind_rpc_host_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_rpc_host: Some("192.168.1.10".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_host(), "192.168.1.10");
+    }
+
+    #[test]
+    fn cli_bitcoind_unit_name_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_unit_name: Some("knots.service".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.unit_name(), "knots.service");
+    }
+
+    #[test]
+    fn cli_bitcoind_cookie_file_overrides_default() {
+        let cli = crate::Cli {
+            bitcoind_cookie_file: Some(std::path::PathBuf::from("/var/lib/bitcoind/.cookie")),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(
+            settings.bitcoind.cookie_file(),
+            Some(std::path::Path::new("/var/lib/bitcoind/.cookie"))
+        );
+    }
+
+    #[test]
+    fn cli_web_port_overrides_default() {
+        let cli = crate::Cli { web_port: Some(3000), ..Default::default() };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.web.port, 3000);
+    }
+
+    #[test]
+    fn cli_web_host_overrides_default() {
+        let cli = crate::Cli {
+            web_host: Some("0.0.0.0".to_string()),
+            ..Default::default()
+        };
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.web.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_web_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli =
+            crate::Cli::try_parse_from(["bin", "--web-port", "3000", "--web-host", "0.0.0.0"])
+                .expect("CLI should parse web flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.web.port, 3000);
+        assert_eq!(settings.web.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cli_bitcoind_flags_flow_through_from_parse_from() {
+        use clap::Parser as _;
+        let cli = crate::Cli::try_parse_from([
+            "bin",
+            "--bitcoind-rpc-port",
+            "18443",
+            "--bitcoind-rpc-host",
+            "192.168.1.10",
+            "--bitcoind-rpc-user",
+            "alice",
+        ])
+        .expect("CLI should parse bitcoind flags");
+        let settings = Settings::parse_with_cli(&cli).expect("parse should succeed");
+        assert_eq!(settings.bitcoind.rpc_port(), 18443);
+        assert_eq!(settings.bitcoind.rpc_host(), "192.168.1.10");
+        assert_eq!(settings.bitcoind.rpc_user(), "alice");
     }
 
     #[cfg(target_os = "linux")]
