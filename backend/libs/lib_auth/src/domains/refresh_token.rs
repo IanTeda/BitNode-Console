@@ -18,7 +18,7 @@ pub static REFRESH_TOKEN_DURATION: u64 = 2 * 60 * 60;
 /// value.
 ///
 /// [`AccessToken`]: super::AccessToken
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RefreshToken(String);
 
 impl AsRef<str> for RefreshToken {
@@ -53,6 +53,10 @@ impl RefreshToken {
     /// Generate a new refresh token signed with `secret`.
     ///
     /// The embedded claim expires after [`REFRESH_TOKEN_DURATION`] seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if encoding the JWT with `secret` fails.
     #[tracing::instrument(skip(secret))]
     pub fn new(secret: &SecretString) -> crate::Result<Self> {
         let claim = TokenClaim::new(&TokenType::Refresh, REFRESH_TOKEN_DURATION);
@@ -62,6 +66,8 @@ impl RefreshToken {
     }
 
     /// Decode and verify a refresh token string, returning its embedded claim.
+    ///
+    /// # Errors
     ///
     /// Returns an error if the signature is invalid, the token has expired, the
     /// `nbf` or `iss` claims fail validation, or the token is not a refresh
@@ -87,6 +93,10 @@ impl RefreshToken {
     /// token string — use this when you already hold a typed [`RefreshToken`]
     /// instance and want to verify it without extracting the inner string
     /// manually.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`RefreshToken::from_token`].
     #[tracing::instrument(skip(self, secret))]
     pub fn validate(&self, secret: &SecretString) -> crate::Result<TokenClaim> {
         Self::from_token(self.as_ref(), secret)

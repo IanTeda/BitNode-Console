@@ -1,4 +1,4 @@
-//! Error types for the `bin_rpc` binary.
+//! Error types for the `bin_backend` binary.
 
 /// Top-level error type for the RPC-only server.
 #[derive(thiserror::Error, Debug)]

@@ -4,8 +4,8 @@ import logger from "@/lib/logger";
 
 const log = logger.getSubLogger({ name: "Authentication RPC" });
 
-const RPC_BASE_URL = import.meta.env.VITE_RPC_BASE_URL as string;
-const RPC_DEADLINE_MS = Number(import.meta.env.VITE_RPC_DEADLINE_MS);
+const RPC_BASE_URL = import.meta.env.BITNODE_RPC_BASE_URL as string;
+const RPC_DEADLINE_MS = Number(import.meta.env.BITNODE_RPC_DEADLINE_MS);
 
 let client: AuthenticationServiceClient | undefined;
 

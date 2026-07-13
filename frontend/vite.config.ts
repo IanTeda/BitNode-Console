@@ -7,6 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { protocBuild } from "./vite-plugins/protoc-build";
 
 export default defineConfig({
+  envPrefix: "BITNODE_",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -14,7 +14,10 @@ fn authenticated_get_journals() -> tonic::Request<GetJournalsRequest> {
 }
 
 fn authenticated_follow_journals(tail_lines: Option<u32>) -> tonic::Request<FollowJournalsRequest> {
-    let mut request = tonic::Request::new(FollowJournalsRequest { tail_lines, priority: None });
+    let mut request = tonic::Request::new(FollowJournalsRequest {
+        tail_lines,
+        priority: None,
+    });
     request.metadata_mut().insert(
         "access_token",
         crate::support::valid_access_token().parse().unwrap(),
@@ -69,7 +72,7 @@ async fn get_journals_default_request_is_accepted_by_server() {
     let result = client.get_journals(authenticated_get_journals()).await;
 
     match result {
-        Ok(_) => {}
+        Ok(_) => {},
         Err(status) => assert_ne!(status.code(), tonic::Code::InvalidArgument),
     }
 }

@@ -14,7 +14,10 @@
       "Bash(pnpm tsc *)",
       "Bash(cargo check *)",
       "Bash(cargo doc *)",
-      "Read(//home/ian/.cargo/registry/src/**)"
+      "Read(//home/ian/.cargo/registry/src/**)",
+      "Bash(git rm *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo clean *)"
     ]
   }
 }

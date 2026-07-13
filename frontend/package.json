@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsr generate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "proto:gen": "protoc --ts_out src/lib/generated_protos --ts_opt long_type_string --proto_path protos protos/bitnode_console/authentication/authentication.proto protos/bitnode_console/common/pagination.proto protos/bitnode_console/journals/journals.proto protos/bitnode_console/utilities/utilities.proto && find src/lib/generated_protos -name '*.ts' -exec sed -i '1i\\// @ts-nocheck' {} +"
@@ -40,6 +40,7 @@
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-query-devtools": "^5.101.1",
     "@tanstack/react-router-devtools": "^1.167.0",
+    "@tanstack/router-cli": "^1.167.0",
     "@tanstack/router-plugin": "^1.168.18",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^26.0.1",

@@ -3,9 +3,9 @@
 use lib_core::domains::pagination::PaginationResponse;
 use systemd::journal::JournalSeek;
 
-use crate::{Entry, Connection, Page, Query, Result};
+use crate::{Connection, Entry, Page, Query, Result};
 
-impl<'a> Query<'a> {
+impl Query<'_> {
     /// Seek backward through the journal, reading entries from newest to oldest.
     ///
     /// Starts at [`JournalSeek::Tail`] when no cursor is provided, or just before `page_token`
@@ -57,10 +57,8 @@ impl<'a> Query<'a> {
             };
             let timestamp_us = i64::try_from(conn.journal.timestamp_usec()?)?;
             // Stop once we've gone back past the lower timestamp bound.
-            if let Some(from) = self.timestamp_from {
-                if timestamp_us < from {
-                    break;
-                }
+            if self.timestamp_from.is_some_and(|from| timestamp_us < from) {
+                break;
             }
             let mut entry = Entry::from_record(&record, timestamp_us);
             // __CURSOR is metadata, not a data field — fetch it separately after positioning.
@@ -128,7 +126,7 @@ mod tests {
     }
 
     /// Run a backward seek through the proper entry point so the unit filter is applied.
-    fn backward_seek(query: Query<'_>, conn: &mut Connection) -> crate::Result<crate::Page> {
+    fn backward_seek(query: &Query<'_>, conn: &mut Connection) -> crate::Result<crate::Page> {
         query.seek(conn)
     }
 
@@ -140,7 +138,7 @@ mod tests {
     fn unknown_unit_returns_empty_page() {
         let mut conn = open();
         let query = make_query("lib-jd-bwd-no-such-unit.service", 10, None);
-        let page = backward_seek(query, &mut conn).expect("seek must succeed");
+        let page = backward_seek(&query, &mut conn).expect("seek must succeed");
         assert!(page.entries.is_empty());
         assert!(page.pagination.next_page_token.is_none());
     }
@@ -149,7 +147,7 @@ mod tests {
     fn page_size_zero_returns_empty_page() {
         let mut conn = open();
         let query = make_query("lib-jd-bwd-limit-zero.service", 0, None);
-        let page = backward_seek(query, &mut conn).expect("seek must succeed");
+        let page = backward_seek(&query, &mut conn).expect("seek must succeed");
         assert!(page.entries.is_empty());
     }
 
@@ -162,7 +160,7 @@ mod tests {
         }
 
         let mut conn = open();
-        let page = backward_seek(make_query("lib-jd-bwd-order.service", 50, None), &mut conn)
+        let page = backward_seek(&make_query("lib-jd-bwd-order.service", 50, None), &mut conn)
             .expect("seek must succeed");
 
         assert!(!page.entries.is_empty(), "expected entries after injection");
@@ -183,7 +181,7 @@ mod tests {
         }
 
         let mut conn = open();
-        let page = backward_seek(make_query("lib-jd-bwd-limit.service", 3, None), &mut conn)
+        let page = backward_seek(&make_query("lib-jd-bwd-limit.service", 3, None), &mut conn)
             .expect("seek must succeed");
 
         assert!(
@@ -205,7 +203,7 @@ mod tests {
 
         let mut conn = open();
         let page = backward_seek(
-            make_query("lib-jd-bwd-no-prev.service", 50, None),
+            &make_query("lib-jd-bwd-no-prev.service", 50, None),
             &mut conn,
         )
         .expect("seek must succeed");
@@ -224,7 +222,7 @@ mod tests {
         }
 
         let mut conn = open();
-        let first = backward_seek(make_query("lib-jd-bwd-cursor.service", 3, None), &mut conn)
+        let first = backward_seek(&make_query("lib-jd-bwd-cursor.service", 3, None), &mut conn)
             .expect("first seek must succeed");
         assert!(!first.entries.is_empty(), "expected entries on first page");
 
@@ -235,7 +233,7 @@ mod tests {
 
         let mut conn2 = open();
         let second = backward_seek(
-            make_query("lib-jd-bwd-cursor.service", 3, Some(token)),
+            &make_query("lib-jd-bwd-cursor.service", 3, Some(token)),
             &mut conn2,
         )
         .expect("second seek must succeed");
@@ -263,7 +261,7 @@ mod tests {
                 direction: Direction::Backward,
             },
         );
-        let page = backward_seek(query, &mut conn).expect("seek must succeed");
+        let page = backward_seek(&query, &mut conn).expect("seek must succeed");
 
         for entry in &page.entries {
             assert!(

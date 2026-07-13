@@ -2,10 +2,8 @@
 
 use tokio_stream::StreamExt;
 use tonic_reflection::pb::v1::{
-    server_reflection_client::ServerReflectionClient,
-    server_reflection_request::MessageRequest,
-    server_reflection_response::MessageResponse,
-    ServerReflectionRequest,
+    ServerReflectionRequest, server_reflection_client::ServerReflectionClient,
+    server_reflection_request::MessageRequest, server_reflection_response::MessageResponse,
 };
 
 use crate::support::TestRpcServer;

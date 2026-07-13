@@ -21,7 +21,7 @@ fn main() {
         .args(["run", "build"])
         .current_dir(&frontend_dir)
         .status()
-        .expect("failed to spawn `npm run build`");
+        .expect("failed to spawn `pnpm run build`");
 
-    assert!(status.success(), "`npm run build` exited with {status}");
+    assert!(status.success(), "`pnpm run build` exited with {status}");
 }

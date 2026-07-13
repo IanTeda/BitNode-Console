@@ -12,17 +12,17 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_tracing = { path = "../../libs/lib_tracing" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 clap = { workspace = true }
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
 ## --- Library Dependencies
-config = { version = "0.15.19" }
+config = { version = "0.15.25" }
 directories = { version = "6.0.0" }
 ipnet = { version = "2", features = ["serde"] }
 

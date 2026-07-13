@@ -1,11 +1,18 @@
-#[path = "bitnode_console.authentication.v1.rs"]
-pub mod authentication;
+pub mod authentication {
+    include!(concat!(
+        env!("OUT_DIR"),
+        "/bitnode_console.authentication.v1.rs"
+    ));
+}
 
-#[path = "bitnode_console.common.v1.rs"]
-pub mod common;
+pub mod common {
+    include!(concat!(env!("OUT_DIR"), "/bitnode_console.common.v1.rs"));
+}
 
-#[path = "bitnode_console.journals.v1.rs"]
-pub mod journals;
+pub mod journals {
+    include!(concat!(env!("OUT_DIR"), "/bitnode_console.journals.v1.rs"));
+}
 
-#[path = "bitnode_console.utilities.v1.rs"]
-pub mod utilities;
+pub mod utilities {
+    include!(concat!(env!("OUT_DIR"), "/bitnode_console.utilities.v1.rs"));
+}

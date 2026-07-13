@@ -400,6 +400,8 @@ stderr_logfile_maxbytes=0
   via `cargo-binstall`.
 - **Frontend tsc check** — `pnpm exec tsc --noEmit` requires `typescript` in
   `devDependencies`; verify it is present in `frontend/package.json`.
-- **`lib_web/build.rs`** calls `npm` (not `pnpm`). The Node 22 install provides
+- ~~**`lib_web/build.rs`** calls `npm` (not `pnpm`). The Node 22 install provides
   `npm` as a shim; verify `npm run build` resolves to pnpm's script runner, or
-  change the build.rs to call `pnpm` directly.
+  change the build.rs to call `pnpm` directly.~~ **Done** — `build.rs` already
+  spawns `pnpm run build`; stale `npm` strings in the panic messages have been
+  updated to match.

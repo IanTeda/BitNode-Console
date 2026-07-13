@@ -2,10 +2,9 @@
 
 // Build script for BitNode-Console RPC library
 // Compiles protobuf files using tonic_prost_build to generate Rust gRPC code
-//
-// Note: Comment `out_dir` and `.file_descriptor` if you want tonic_prost_build
-// to build the code in the OUT_DIR (i.e. /target) instead of directly in src/rpc.
-// This will also require adjusting the module paths in src/rpc/mod.rs accordingly.
+// into the standard OUT_DIR. Generated files are pulled into the crate via
+// `include!()` in src/generated_protos/mod.rs and are not committed to git —
+// this avoids rustfmt version churn on generated code.
 
 use std::{env, path::PathBuf};
 
@@ -18,8 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=protos/bitnode_console/");
 
-    tonic_build::configure()
-        .out_dir(manifest_dir.join("src/generated_protos"))
+    tonic_prost_build::configure()
         .protoc_arg("--experimental_allow_proto3_optional")
         .build_client(true)
         .build_server(true)
@@ -33,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 proto_dir.join("bitnode_console/journals/journals.proto"),
                 proto_dir.join("bitnode_console/utilities/utilities.proto"),
             ],
-            &[&proto_dir],
+            &[proto_dir],
         )?;
     Ok(())
 }

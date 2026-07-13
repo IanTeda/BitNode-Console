@@ -27,7 +27,7 @@ static REFRESH_AUDIENCE: &str = "BitNode-Console:Auth";
 /// Standard registered claims follow [RFC 7519 §4.1](https://www.rfc-editor.org/rfc/rfc7519#section-4.1).
 /// `jty` is a private claim that records the token type so callers can
 /// distinguish an access token from a refresh token after decoding.
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct TokenClaim {
     /// Issuer — always [`TOKEN_ISSUER`].
     pub iss: String,
@@ -50,6 +50,11 @@ impl TokenClaim {
     ///
     /// `duration` is in seconds. Both `nbf` and `iat` are set to the current
     /// moment; `exp` is `duration` seconds from now.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the system clock is set before the Unix epoch, or if adding
+    /// `duration` to the current time overflows.
     #[tracing::instrument(fields(token_type = %token_type))]
     pub fn new(token_type: &TokenType, duration: u64) -> Self {
         let now = SystemTime::now();
@@ -83,6 +88,10 @@ impl TokenClaim {
     }
 
     /// Sign and encode the claim as a compact JWT string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if signing with `secret` fails.
     #[tracing::instrument(skip(self, secret), fields(jty = %self.jty, jti = %self.jti))]
     pub fn encode(&self, secret: &SecretString) -> crate::Result<String> {
         let key = EncodingKey::from_secret(secret.expose_secret().as_bytes());
@@ -95,6 +104,11 @@ impl TokenClaim {
     /// (`iss`). Audience is not validated here because access and refresh tokens
     /// carry different audiences; check [`TokenClaim::jty`] when the caller
     /// must distinguish the two token types.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signature is invalid, the token has expired, or
+    /// the `nbf`/`iss` claims fail validation.
     #[tracing::instrument(skip(token, secret))]
     pub fn from_token(token: &str, secret: &SecretString) -> crate::Result<Self> {
         let mut validation = Validation::new(Algorithm::HS256);
@@ -105,7 +119,7 @@ impl TokenClaim {
         validation.validate_aud = false;
         validation.set_required_spec_claims(&["iss", "exp", "nbf"]);
 
-        decode::<TokenClaim>(
+        decode::<Self>(
             token,
             &DecodingKey::from_secret(secret.expose_secret().as_bytes()),
             &validation,

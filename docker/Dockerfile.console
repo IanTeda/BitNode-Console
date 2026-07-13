@@ -1,0 +1,137 @@
+# syntax=docker/dockerfile:1
+# Pins the Dockerfile syntax to BuildKit 1.x, enabling --mount=type=cache and
+# other BuildKit features on Docker 23+.
+#
+# Dockerfile for the BitNode Console all-in-one server.
+#
+# Three-stage build:
+#   1. node:22-bookworm-slim — installs pnpm dependencies.
+#   2. rust:1-bookworm       — compiles bin_console (HTTP + gRPC in one binary).
+#                              lib_web/build.rs calls `pnpm build` during compilation,
+#                              baking the React frontend into the assets directory.
+#   3. debian:bookworm-slim  — minimal runtime; runs as non-root user `bitnode`.
+#
+# Frontend configuration is baked into the JS bundle at build time (Vite).
+# Pass --build-arg to change these; they cannot be overridden at runtime:
+#   BITNODE_RPC_BASE_URL    — gRPC-Web backend URL the browser connects to
+#                             (default: http://127.0.0.1:50051)
+#   BITNODE_RPC_DEADLINE_MS — gRPC call timeout in ms  (default: 30000)
+#
+# Runtime configuration is read from environment variables (prefix: BITNODE_)
+# or a bitnode_console.conf file mounted into the container.
+#
+# Key runtime environment variables (see lib_settings for all fields):
+#   BITNODE_WEB_HOST          — HTTP bind address    (default: 127.0.0.1)
+#   BITNODE_WEB_PORT          — HTTP port            (default: 8090)
+#   BITNODE_RPC_HOST          — gRPC bind address    (default: 127.0.0.1)
+#   BITNODE_RPC_PORT          — gRPC port            (default: 50051)
+#   BITNODE_RPC_PASSWORD_HASH — Argon2id PHC hash    (required for auth)
+#   BITNODE_RPC_TOKEN_SECRET  — JWT signing key      (required for auth)
+#   BITNODE_RPC_ALLOWED_IPS   — permitted CIDRs      (default: 127.0.0.1/32)
+#
+# Example:
+#   docker build \
+#     --build-arg BITNODE_RPC_BASE_URL=https://rpc.example.com \
+#     -f docker/Dockerfile.console -t bitnode-console .
+#   docker run \
+#     -e BITNODE_WEB_HOST=0.0.0.0 \
+#     -e BITNODE_RPC_HOST=0.0.0.0 \
+#     -e BITNODE_RPC_PASSWORD_HASH='$argon2id$...' \
+#     -e BITNODE_RPC_TOKEN_SECRET=<strong-random-secret> \
+#     -p 8090:8090 -p 50051:50051 bitnode-console
+
+# --- Stage 1: Install frontend dependencies ---
+# Isolates the pnpm install into its own stage so the dependency layer is
+# cached independently of Rust source changes.
+FROM node:22-bookworm-slim AS node-builder
+
+WORKDIR /app
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+
+# --mount=type=cache persists the pnpm content-addressable store between builds,
+# avoiding re-downloading packages that haven't changed.
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    corepack enable && pnpm install --frozen-lockfile
+
+# --- Stage 2: Build Rust binary ---
+# Node.js is required here because lib_web/build.rs calls `pnpm run build`
+# during `cargo build` to compile the React frontend into the assets directory.
+FROM rust:1-bookworm AS rust-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler libsystemd-dev pkg-config curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22 so lib_web/build.rs can invoke pnpm at compile time.
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+RUN corepack enable
+
+WORKDIR /workspace
+
+# Pre-populate node_modules from Stage 1 so the pnpm install triggered by
+# lib_web/build.rs is a fast cache hit rather than a full download.
+COPY --from=node-builder /app/node_modules frontend/node_modules
+
+COPY . .
+
+# Frontend build-time variables: baked into the JS bundle by Vite when
+# lib_web/build.rs invokes `pnpm build`. Cannot be changed at runtime.
+ARG BITNODE_RPC_BASE_URL=http://127.0.0.1:50051
+ARG BITNODE_RPC_DEADLINE_MS=30000
+ENV BITNODE_RPC_BASE_URL=$BITNODE_RPC_BASE_URL \
+    BITNODE_RPC_DEADLINE_MS=$BITNODE_RPC_DEADLINE_MS
+
+# TARGETPLATFORM is injected automatically by BuildKit for multi-platform builds.
+# Scoping the cache IDs to the platform prevents concurrent amd64/arm64 builds
+# from racing on the same cargo registry or target directory.
+ARG TARGETPLATFORM
+
+# --mount=type=cache keeps the Cargo registry and build artefacts between runs.
+# After the build, copy the binary and frontend dist out of the cache mounts so
+# they are accessible to later stages as regular image layers.
+RUN --mount=type=cache,id=cargo-registry-${TARGETPLATFORM},target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-target-${TARGETPLATFORM},target=/workspace/target \
+    cargo build --release -p bin_console && \
+    cp /workspace/target/release/bin_console /bin_console && \
+    cp -r /workspace/frontend/dist/. /workspace/backend/libs/lib_web/assets/
+
+# --- Stage 3: Minimal runtime ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 libsystemd0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a dedicated non-root system user; the binary does not need a home
+# directory or a login shell.
+RUN useradd --system --no-create-home --shell /bin/false bitnode
+
+# Copy artefacts and set ownership during copy to avoid a separate chown layer.
+COPY --chown=bitnode:bitnode --from=rust-builder /bin_console /usr/local/bin/bin_console
+COPY --chown=bitnode:bitnode docker/entrypoint.console.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# The server resolves static assets from the path baked in at compile time
+# (lib_web/server.rs: ASSETS_DIR = CARGO_MANIFEST_DIR/assets). Recreate that
+# exact path so the binary can find the frontend files at runtime.
+COPY --chown=bitnode:bitnode \
+    --from=rust-builder /workspace/backend/libs/lib_web/assets \
+    /workspace/backend/libs/lib_web/assets
+
+# Runtime defaults — overridden at `docker run` time via -e or --env-file.
+ENV BITNODE_WEB_PORT=8090 \
+    BITNODE_RPC_PORT=50051
+
+USER bitnode
+
+# HTTP probe against the web port — lighter than a gRPC check and requires no
+# extra tooling in the slim image. start-period allows time to load config.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD bash -c "</dev/tcp/localhost/${BITNODE_WEB_PORT}" 2>/dev/null || exit 1
+
+# EXPOSE is documentation only; actual ports are set via BITNODE_WEB_PORT and
+# BITNODE_RPC_PORT (defaults: 8090 and 50051).
+EXPOSE 8090 50051
+ENTRYPOINT ["/entrypoint.sh"]

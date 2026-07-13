@@ -12,11 +12,11 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_tracing = { path = "../../libs/lib_tracing" }
 lib_settings = { path = "../../libs/lib_settings" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }

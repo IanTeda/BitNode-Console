@@ -10,14 +10,14 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 lib_auth = { path = "../../libs/lib_auth" }
 lib_rpc = { path = "../../libs/lib_rpc" }
 lib_settings = { path = "../../libs/lib_settings" }
 lib_tracing = { path = "../../libs/lib_tracing" }
 lib_web = { path = "../../libs/lib_web" }
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
@@ -36,4 +36,4 @@ reqwest = { version = "0.12", default-features = false }
 secrecy = { workspace = true }
 serde_json = { version = "1.0" }
 tokio-stream = { workspace = true }
-tonic-reflection = "0.12"
+tonic-reflection = { workspace = true }

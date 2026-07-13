@@ -12,9 +12,9 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-## --- Internal Dependencies
+## --- Internal Library Dependencies
 
-## --- Workspace Dependencies
+## --- Workspace Crate Dependencies
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

@@ -1,0 +1,179 @@
+name: Build and Publish Container Images
+
+# Triggered when a GitHub Release is published via the Releases UI or API,
+# and on every push to `main`. Release events publish semver-tagged images
+# (e.g. :1.2.3, :1.2) alongside the binaries produced by `release.yaml`; main
+# pushes publish the rolling `:latest` tag. A `workflow_dispatch` entry lets
+# maintainers rebuild an image on demand without cutting a release —
+# convenient when the base image gets a security patch but no source has
+# changed.
+on:
+  release:
+    types: [created]
+
+  workflow_dispatch:
+
+# Least-privilege token: three scopes are required, everything else stays at
+# the default `none`.
+# - contents: read         — checkout the repo at the release/main SHA.
+# - packages: write        — push image layers and manifests to
+#                            ghcr.io/<owner>/<image>. GITHUB_TOKEN carries
+#                            this scope automatically when granted here.
+# - id-token: write        — actions/attest-build-provenance signs the
+#                            attestation with a short-lived OIDC token
+#                            minted by the runner (used as its Sigstore
+#                            identity).
+# - attestations: write    — records the signed attestation in this
+#                            repository's attestation store so consumers
+#                            can verify pulled images with
+#                            `gh attestation verify`.
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    # One job per (image, Dockerfile) pair. Each entry produces a multi-arch
+    # manifest published to ghcr.io/<owner>/<image>.
+    name: build ${{ matrix.image }}
+
+    # Pin the runner OS rather than tracking `ubuntu-latest`. The buildx
+    # driver and QEMU shims are OS-scoped; a moving base image would silently
+    # change emulator versions between runs. Update this deliberately (with
+    # a release note) when bumping the runner.
+    runs-on: ubuntu-24.04
+
+    # Serialise runs for the same release tag (or ref) + image so a rapid
+    # republish (edit-and-save via the Releases UI, or a fast-follow main
+    # push) can't race two builds writing to the same manifest.
+    # `cancel-in-progress: false` lets an in-flight push finish rather than
+    # being killed mid-write, which would leave partial layers referenced
+    # by an incomplete manifest.
+    concurrency:
+      group: package-${{ github.event.release.tag_name || github.ref }}-${{ matrix.image }}
+      cancel-in-progress: false
+
+    strategy:
+      # keep building other images if one fails
+      fail-fast: false
+
+      matrix:
+        include:
+          # Full server (web UI + gRPC). Bundles the compiled React frontend
+          # inside the Rust binary via `lib_web`'s build.rs, so nothing
+          # further is required at runtime.
+          - image: bitnode-console
+            dockerfile: docker/Dockerfile.console
+
+          # gRPC-only server. Same Rust workspace, no frontend served — for
+          # headless / API-only deployments where the SPA is hosted
+          # elsewhere (see `bitnode-frontend`).
+          - image: bitnode-backend
+            dockerfile: docker/Dockerfile.backend
+
+          # Standalone React SPA served by nginx. Useful for putting the
+          # frontend behind a CDN or on a separate host from the RPC
+          # backend.
+          - image: bitnode-frontend
+            dockerfile: docker/Dockerfile.frontend
+
+          # All-in-one image: `bin_console` + a Bitcoin Knots daemon
+          # supervised by supervisord. `Dockerfile.node` uses TARGETARCH to
+          # download the correct Bitcoin Knots tarball, so the
+          # BITCOIN_KNOTS_VERSION build arg must be pinned here — bump it
+          # when a newer Knots release is available.
+          - image: bitnode-node
+            dockerfile: docker/Dockerfile.node
+            build_args: |
+              BITCOIN_KNOTS_VERSION=27.1.knots20240801
+
+    steps:
+      # Checkout the repository source code. The Dockerfiles expect the
+      # workspace root as the build context (they reference `frontend/`,
+      # `backend/`, and `docker/` paths), so no `path:` override is needed.
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Register binfmt handlers so the amd64 runner can execute arm64
+      # binaries during `docker buildx build --platform linux/arm64,...`.
+      # Without this, arm64 stages fail with "exec format error" the first
+      # time a foreign-arch RUN instruction executes.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Enable buildx's containerd-based builder, which is required for
+      # multi-platform builds and for the `cache-from: type=gha` /
+      # `cache-to: type=gha` cache backend used below.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Authenticate against GitHub Container Registry using the
+      # workflow-scoped GITHUB_TOKEN. No PAT or org secret is required
+      # because `permissions.packages: write` above already grants push
+      # access to ghcr.io/<owner>/*.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive the tag and label set for this build from the triggering
+      # event. `type=semver` fires on release/tag refs and produces both
+      # the full `X.Y.Z` and the rolling `X.Y` tag; `type=raw,value=latest`
+      # only enables on the default branch, so main pushes publish
+      # `:latest` without ever writing it from a release build. The
+      # `enable=` predicate keeps the tag empty on unrelated refs (e.g. a
+      # `workflow_dispatch` on a feature branch) rather than mis-tagging.
+      # See: https://github.com/docker/metadata-action
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+
+      # Build the image for both supported platforms and push the resulting
+      # manifest to ghcr.io. `cache-from`/`cache-to: type=gha` reuses the
+      # GitHub Actions cache backend so cargo's target dir and pnpm's
+      # node_modules survive between runs — critical because a cold Rust
+      # build under QEMU takes considerably longer than a cache-warm one.
+      # `provenance: mode=max` bakes SLSA provenance metadata directly into
+      # the image; the separate `attest-build-provenance` step below signs
+      # the manifest and registers it in the repo's attestation store for
+      # `gh attestation verify` consumers.
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: mode=max
+
+      # Produce a signed SLSA-style build attestation binding the pushed
+      # image's manifest digest to this workflow file, this repository,
+      # this commit, and this run. Consumers can then verify provenance
+      # offline with
+      # `gh attestation verify oci://ghcr.io/<owner>/<image>:<tag> --owner <org>`,
+      # giving them proof that the image came from an authorised build
+      # rather than a hijacked tag or a compromised maintainer machine.
+      # See: https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
