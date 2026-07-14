@@ -71,6 +71,15 @@ jobs:
             target: x86_64-unknown-linux-gnu
             needs_frontend: true
 
+          # Web-frontend-only server (no gRPC). Uses lib_web, whose build.rs
+          # runs `pnpm run build` to compile the React app, so it needs the
+          # same Node.js/pnpm setup as bin_console. No libsystemd dependency.
+          - package: bin_frontend
+            binary: bin_frontend
+            asset_name: frontend
+            target: x86_64-unknown-linux-gnu
+            needs_frontend: true
+
     steps:
       # Checkout the repository source code.
       - name: Checkout Repository
