@@ -17,7 +17,8 @@
       "Read(//home/ian/.cargo/registry/src/**)",
       "Bash(git rm *)",
       "Bash(cargo clippy *)",
-      "Bash(cargo clean *)"
+      "Bash(cargo clean *)",
+      "WebSearch"
     ]
   }
 }
