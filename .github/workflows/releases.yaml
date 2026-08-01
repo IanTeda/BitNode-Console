@@ -119,7 +119,7 @@ jobs:
       # `cache: 'pnpm'` option can find the pnpm binary.
       - name: Install pnpm
         if: matrix.needs_frontend
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
