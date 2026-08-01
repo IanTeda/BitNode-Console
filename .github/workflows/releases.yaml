@@ -221,7 +221,7 @@ jobs:
       # here as a file.
       # https://github.com/softprops/action-gh-release
       - name: Upload to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ env.ARCHIVE_NAME }}
