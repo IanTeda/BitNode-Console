@@ -28,7 +28,7 @@ tracing = { workspace = true }
 
 ## --- Library Dependencies
 axum = { version = "0.7", features = ["macros"] }
-tower-http = { version = "0.6", features = ["fs", "trace"] }  # fs for static files
+tower-http = { version = "0.7", features = ["fs", "trace"] }  # fs for static files
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
