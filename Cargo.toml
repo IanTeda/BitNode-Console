@@ -140,6 +140,7 @@ fake = { version = "5.1.0", features = [
 ] }
 secrecy = { version = "0.10.3"}
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.151" }
 prost = { version = "0.14" }
 prost-types = { version = "0.14" }
 thiserror = { version = "2.0.18" }

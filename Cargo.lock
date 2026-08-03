@@ -1287,6 +1287,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "lib_bitcoind"
+version = "0.1.0"
+
+[[package]]
 name = "lib_core"
 version = "0.1.0"
 dependencies = [
