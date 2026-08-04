@@ -5,6 +5,13 @@ pub mod authentication {
     ));
 }
 
+pub mod bitcoin_daemon {
+    include!(concat!(
+        env!("OUT_DIR"),
+        "/bitnode_console.bitcoin_daemon.v1.rs"
+    ));
+}
+
 pub mod common {
     include!(concat!(env!("OUT_DIR"), "/bitnode_console.common.v1.rs"));
 }

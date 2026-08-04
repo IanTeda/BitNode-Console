@@ -27,6 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .compile_protos(
             &[
                 proto_dir.join("bitnode_console/authentication/authentication.proto"),
+                proto_dir.join("bitnode_console/bitcoind/bitcoin_daemon.proto"),
                 proto_dir.join("bitnode_console/common/pagination.proto"),
                 proto_dir.join("bitnode_console/journals/journals.proto"),
                 proto_dir.join("bitnode_console/utilities/utilities.proto"),

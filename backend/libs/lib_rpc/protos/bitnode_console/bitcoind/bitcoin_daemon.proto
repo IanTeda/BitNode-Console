@@ -1,0 +1,90 @@
+// BitNode-Console Bitcoin Daemon Service Protocol Buffer Definition
+//
+// Defines the RPC service and messages for reading the status
+// from the Bitcoin Knots/Core daemon (bitcoind). All data is sourced
+// from the daemon's JSON-RPC API;
+
+syntax = "proto3";
+package bitnode_console.bitcoin_daemon.v1;
+
+// BitcoinDaemonService exposeses Bitcoin daemon status for the
+// dashboard.
+service BitcoinDaemonService {
+  // BlockchainInfo returns the current state of the block chain,
+  // including sync progress and disk usage.
+  rpc BlockchainInfo (BlockchainInfoRequest) returns (BlockchainInfoResponse);
+
+  // NetworkInfo returns the daemon's network configuration and
+  // per-transport reachability.
+  rpc NetworkInfo    (NetworkInfoRequest)    returns (NetworkInfoResponse);
+  // Future: rpc PeerInfo, rpc Uptime, rpc MempoolInfo, rpc NetTotals …
+}
+
+// BlockchainInfoRequest has no parameters; the daemon connection is
+// determined solely by server configuration.
+message BlockchainInfoRequest {}
+
+// NetworkInfoRequest has no parameters; the daemon connection is
+// determined solely by server configuration.
+message NetworkInfoRequest {}
+
+// BlockchainInfoResponse carries the fields returned by the bitcoind
+// `getblockchaininfo` JSON-RPC call that are relevant to the dashboard.
+message BlockchainInfoResponse {
+  // Name of the current network: "main", "test", "signet", or "regtest".
+  string chain = 1;
+
+  // Height of the most-work fully-validated chain (i.e. the tip block number).
+  uint64 blocks = 2;
+
+  // Height of the best block header downloaded so far; may exceed `blocks`
+  // while the node is still validating.
+  uint64 headers = 3;
+
+  // Estimated fraction of the chain that has been verified, in [0.0, 1.0].
+  // Reaches 1.0 once the node is fully synced.
+  double verification_progress = 4;
+
+  // True while the node is in Initial Block Download (IBD) mode,
+  // i.e. still catching up to the chain tip.
+  bool initial_block_download = 5;
+
+  // Total size of all block and undo files on disk, in bytes.
+  uint64 size_on_disk = 6;
+
+  // True if pruning is enabled; old block files are deleted to save space.
+  bool pruned = 7;
+}
+
+// NetworkInfoResponse carries the fields returned by the bitcoind
+// `getnetworkinfo` JSON-RPC call that are relevant to the dashboard.
+message NetworkInfoResponse {
+  // Daemon protocol version number (e.g. 70016).
+  uint64 version = 1;
+
+  // Human-readable implementation name derived from the user-agent string
+  // advertised to peers (e.g. "Bitcoin Core" or "Bitcoin Knots").
+  string implementation = 2;
+
+  // Total number of open peer connections (inbound + outbound).
+  uint32 connections = 3;
+
+  // Number of inbound peer connections.
+  uint32 connections_in = 4;
+
+  // Number of outbound peer connections.
+  uint32 connections_out = 5;
+
+  // Reachability status for each network transport the daemon knows about.
+  repeated NetworkReachability networks = 6;
+}
+
+// NetworkReachability describes whether a specific network transport is
+// reachable from this daemon.
+message NetworkReachability {
+  // Transport name: one of "ipv4", "ipv6", "onion", "i2p", or "cjdns".
+  string name = 1;
+
+  // True if the daemon can reach peers over this transport.
+  bool reachable = 2;
+}
