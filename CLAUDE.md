@@ -132,3 +132,17 @@ For `.md` files (docs are built with mdBook from `docs/SUMMARY.md`):
 - Include YAML front matter with required metadata where applicable.
 - Use fenced code blocks with a language identifier.
 - Wrap prose at roughly 80 characters.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues (IanTeda/BitNode-Console) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
