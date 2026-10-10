@@ -1,0 +1,186 @@
+# BitNode Console development environment
+#
+# `mise` (https://mise.jdx.dev) manages the CLI toolchain used for local
+# development, replacing the previous Nix + direnv setup, and the `[tasks]`
+# below replace the previous cargo-make (Makefile.toml) task definitions —
+# cargo-make is no longer a dependency of this repo. Install mise, then run
+# `mise install` from the repo root to fetch everything below; `mise
+# activate` (see the mise docs for your shell) puts it all on PATH. Run
+# `mise tasks` to list tasks, `mise run <task>` to execute one.
+#
+# System libraries needed for native builds (openssl, pkg-config, argon2,
+# systemd/journalctl) are not managed here — install them via your OS
+# package manager, matching whatever ships on the host.
+
+[tools]
+# Rust toolchain: cargo, rustc, rustfmt, clippy, rust-analyzer, rustup
+rust = "latest"
+
+# Docs
+mdbook = "latest"
+
+# Linting, formatting, coverage, auditing
+taplo = "latest"
+"cargo:cargo-tarpaulin" = "latest"
+"cargo:cargo-audit" = "latest"
+
+# Cargo subcommands used by the [tasks] below
+"cargo:cargo-watch" = "latest"
+"cargo:cargo-edit" = "latest"
+"cargo:cargo-upgrades" = "latest"
+
+# Frontend tooling
+node = "22"
+pnpm = "latest"
+
+# gRPC / protobuf tooling
+protoc = "latest"
+buf = "latest"
+grpcurl = "latest"
+
+# Bitcoin Knots daemon for local dev (regtest) and journalctl/systemd
+# integration. Knots has no mise/asdf plugin, so this pulls the official
+# release tarball directly. mise's http backend has no os/arch template
+# variables, so the platform is hardcoded to linux-x86_64 here — on other
+# platforms, override the url in a local mise.local.toml. Bump `version`
+# against https://github.com/bitcoinknots/bitcoin/releases when a new
+# release lands.
+[tools."http:bitcoin-knots"]
+version = "29.4.knots20260508"
+url = "https://github.com/bitcoinknots/bitcoin/releases/download/v{{ version }}/bitcoin-{{ version }}-x86_64-linux-gnu.tar.gz"
+bin_path = "bitcoin-{{ version }}/bin"
+
+
+## --- [ CARGO UPDATES ] ---------------------------------------------------------
+
+[tasks.cargo-check-updates]
+description = "List available dependency upgrades (read-only)"
+run = "cargo upgrades"
+
+[tasks.cargo-update]
+description = "Upgrade dependency versions in Cargo.toml"
+run = "cargo upgrade"
+
+
+## --- [ DOCUMENTATION ] ---------------------------------------------------------
+# Tasks related to building and serving documentation.
+
+[tasks.docs-build]
+description = "Build mdBook documentation"
+run = "mdbook build"
+
+[tasks.docs-serve]
+description = "Serve mdBook documentation on port 8001"
+run = "mdbook serve --port 8001"
+
+
+## --- [ FRONTEND ] ---------------------------------------------------------------
+# Tasks related to building and serving the frontend.
+
+[tasks.frontend-install]
+description = "Install frontend npm dependencies"
+dir = "frontend"
+run = "npm install"
+
+[tasks.frontend-build]
+description = "Build frontend production assets"
+depends = ["frontend-install"]
+dir = "frontend"
+run = "npm run build"
+
+[tasks.frontend-dev]
+description = "Run Vite dev server with hot reload"
+dir = "frontend"
+run = "npm run dev"
+
+[tasks.frontend-lint]
+description = "Lint frontend code"
+dir = "frontend"
+run = "npm run lint"
+
+
+## --- [ BITCOIN ] ------------------------------------------------------------------
+# Tasks related to the Bitcoin Knots daemon.
+
+[tasks.bitcoind]
+description = "Start bitcoind-knots in regtest mode, piping logs to the journal (foreground)"
+run = "bash ./dev/run-bitcoind.sh"
+
+
+## --- [ BIN_CONSOLE ] --------------------------------------------------------------
+## Full server: serves the React web frontend (HTTP) and gRPC backend together.
+
+[tasks.console-assets-copy]
+description = "Copy frontend build output to lib_web/assets"
+depends = ["frontend-build"]
+run = '''
+rm -rf backend/libs/lib_web/assets
+cp -r frontend/dist backend/libs/lib_web/assets
+'''
+
+[tasks.console-dev]
+description = "Build frontend, copy assets, start bitcoind in background, then watch and reload the full console server (frontend + backend)"
+depends = ["console-assets-copy"]
+run = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -w backend -x "run -p bin_console"
+'''
+
+[tasks.console-release]
+description = "Build frontend, copy assets, then compile a release binary for the full console server"
+depends = ["console-assets-copy"]
+run = "cargo build -p bin_console --release"
+
+[tasks.console-run-release]
+description = "Build frontend, copy assets, then run the release console server binary"
+depends = ["console-assets-copy"]
+run = "cargo run -p bin_console --release"
+
+
+## --- [ BIN_BACKEND ] --------------------------------------------------------------
+## Backend-only RPC server: serves only the gRPC backend — no web frontend.
+
+[tasks.backend-dev]
+description = "Start bitcoind in background, then watch and reload the Backend RPC server on backend changes"
+run = '''
+./dev/run-bitcoind.sh &
+BITCOIND_PID=$!
+trap "kill $BITCOIND_PID 2>/dev/null" EXIT
+cargo watch -w backend -x "run -p bin_backend"
+'''
+
+[tasks.backend-release]
+description = "Compile a release binary for the Backend RPC server"
+run = "cargo build -p bin_backend --release"
+
+[tasks.backend-run-release]
+description = "Run the release Backend RPC server binary"
+run = "cargo run -p bin_backend --release"
+
+
+## --- [ DOCKER ] ---------------------------------------------------------------------
+## Tasks related to building container images locally. All Dockerfiles use the
+## workspace root as their build context (they reference frontend/, backend/,
+## and docker/ paths), so these tasks intentionally do not set `dir`.
+
+[tasks.docker-build-backend]
+description = "Build the bitnode-backend image (bin_backend: gRPC-only, headless)"
+run = "docker build --format docker -f docker/Dockerfile.backend -t bitnode-backend:local ."
+
+[tasks.docker-build-frontend]
+description = "Build the bitnode-frontend image (React SPA served by nginx)"
+run = "docker build --format docker -f docker/Dockerfile.frontend -t bitnode-frontend:local ."
+
+[tasks.docker-build-console]
+description = "Build the bitnode-console image (bin_console: HTTP + gRPC, embeds frontend)"
+run = "docker build --format docker -f docker/Dockerfile.console -t bitnode-console:local ."
+
+[tasks.docker-build-node]
+description = "Build the bitnode-node image (console + Bitcoin Knots via supervisord)"
+run = "docker build --format docker -f docker/Dockerfile.node --build-arg BITCOIN_KNOTS_VERSION=27.1.knots20240801 -t bitnode-node:local ."
+
+[tasks.docker-build-all]
+description = "Build all four bitnode container images locally"
+depends = ["docker-build-console", "docker-build-backend", "docker-build-frontend", "docker-build-node"]
