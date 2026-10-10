@@ -18,3 +18,9 @@ description: Domain glossary for BitNode Console.
   _Avoid_: Priority, Severity.
 - **Category**: the bitcoind subsystem that wrote a Log Entry (for example
   `net`, `mempool`, `validation`), shown in the line as `[net]`.
+- **Log Unavailable**: the console cannot show the Log, for one of four
+  reasons:
+  - **Disabled**: bitcoind is not writing a Log File.
+  - **Not Found**: the Log File's location is known but no file is there.
+  - **Unreadable**: the Log File exists but the console may not read it.
+  - **Unlocatable**: the console cannot work out where the Log File is.
