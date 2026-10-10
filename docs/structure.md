@@ -7,9 +7,8 @@ This document describes the structure of the BitNode Console project.
 ```bash
 .
 ├── Cargo.toml                          # Workspace root
-├── Makefile.toml                       # cargo-make task definitions
+├── mise.toml                           # mise dev toolchain + task definitions
 ├── rustfmt.toml                        # Rust formatter configuration
-├── shell.nix                           # Nix development environment
 ├── bitnode_console.conf                # Local development config
 ├── book.toml                           # mdBook configuration
 ├── mkdocs.yaml                         # MkDocs configuration
