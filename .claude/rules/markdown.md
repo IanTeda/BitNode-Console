@@ -1,6 +1,7 @@
 ---
 description: 'Documentation and content creation standards'
-applyTo: '**/*.md'
+paths:
+  - '**/*.md'
 ---
 
 ## Markdown Content Rules

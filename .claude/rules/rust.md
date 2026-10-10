@@ -1,6 +1,7 @@
 ---
 description: 'Rust programming language coding conventions and best practices'
-applyTo: '**/*.rs'
+paths:
+  - '**/*.rs'
 ---
 
 # Rust Coding Conventions and Best Practices
